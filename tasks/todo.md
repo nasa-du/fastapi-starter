@@ -57,15 +57,15 @@
 **描述**：新增 `POST /api/v1/users/{user_id}/reset-password`（仅超级用户）：生成随机临时密码并写入 `hashed_password`，响应体 `{"new_password": "..."}` 一次性返回。不落明文、不发邮件、不写日志；不新增 `must_change_password`。此端点与 email 无关，先于 Task 4 落地。
 
 **验收标准**：
-- [ ] `models.py` 新增 `ResetPasswordResponse(new_password: str)`；`routes/users.py` 新增端点（`Depends(get_current_active_superuser)`）
-- [ ] 目标不存在 → 404；普通用户调用 → 403；对停用用户可重置
-- [ ] 成功响应含 ≥16 字符临时密码，且用该密码可登录
-- [ ] 响应之外无明文密码留存（无日志/无邮件）
+- [x] `models.py` 新增 `ResetPasswordResponse(new_password: str)`；`routes/users.py` 新增端点（`Depends(get_current_active_superuser)`）
+- [x] 目标不存在 → 404；普通用户调用 → 403；对停用用户可重置
+- [x] 成功响应含 ≥16 字符临时密码，且用该密码可登录
+- [x] 响应之外无明文密码留存（无日志/无邮件）
 
 **验证**：
-- [ ] 测试通过：`cd backend && uv run pytest backend/tests/api/routes/test_users.py -q`
-- [ ] lint 通过：`bash backend/scripts/lint.sh`
-- [ ] 手动检查：Swagger 中该端点仅超级用户 token 可 200
+- [x] 测试通过：`cd backend && uv run pytest backend/tests/api/routes/test_users.py -q`（实际以 `uv run pytest tests/api/routes/test_users.py -q` 执行；31 passed，含 4 个新用例；全量 `uv run pytest -q` 66 passed）
+- [x] lint 通过：`bash backend/scripts/lint.sh`（实际以 `cd backend && uv run bash scripts/lint.sh` 在项目 venv 中执行；mypy/ty/ruff 全绿）
+- [x] 手动检查：Swagger 中该端点仅超级用户 token 可 200（实际以真实服务 + curl 验证：超级用户 200 且临时密码可登录、普通用户 403、无 token 401、未知 id 404、OpenAPI 已注册 `users-{user_id}-reset-password`；明文密码未落库）
 
 **依赖**：Task 2
 
