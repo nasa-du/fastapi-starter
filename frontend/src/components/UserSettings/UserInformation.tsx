@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { LoadingButton } from "@/components/ui/loading-button"
 import useAuth from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
@@ -23,7 +24,6 @@ import { handleError } from "@/utils"
 
 const formSchema = z.object({
   full_name: z.string().max(30).optional(),
-  email: z.email({ message: "Invalid email address" }),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -40,7 +40,6 @@ const UserInformation = () => {
     criteriaMode: "all",
     defaultValues: {
       full_name: currentUser?.full_name ?? undefined,
-      email: currentUser?.email,
     },
   })
 
@@ -67,9 +66,6 @@ const UserInformation = () => {
     // only include fields that have changed
     if (data.full_name !== currentUser?.full_name) {
       updateData.full_name = data.full_name
-    }
-    if (data.email !== currentUser?.email) {
-      updateData.email = data.email
     }
 
     mutation.mutate(updateData)
@@ -116,26 +112,10 @@ const UserInformation = () => {
             }
           />
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) =>
-              editMode ? (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              ) : (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <p className="py-2 truncate max-w-sm">{field.value}</p>
-                </FormItem>
-              )
-            }
-          />
+          <FormItem>
+            <Label>User Code</Label>
+            <p className="py-2 truncate max-w-sm">{currentUser?.user_code}</p>
+          </FormItem>
 
           <div className="flex gap-3">
             {editMode ? (

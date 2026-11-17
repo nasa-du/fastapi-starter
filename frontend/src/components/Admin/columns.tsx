@@ -33,10 +33,10 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
     },
   },
   {
-    accessorKey: "email",
-    header: "Email",
+    accessorKey: "user_code",
+    header: "User Code",
     cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.email}</span>
+      <span className="text-muted-foreground">{row.original.user_code}</span>
     ),
   },
   {

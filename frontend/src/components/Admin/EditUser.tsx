@@ -21,6 +21,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,7 +34,10 @@ import { handleError } from "@/utils"
 
 const formSchema = z
   .object({
-    email: z.email({ message: "Invalid email address" }),
+    user_code: z
+      .string()
+      .min(1, { message: "User code is required" })
+      .max(50, { message: "User code must be at most 50 characters" }),
     full_name: z.string().optional(),
     password: z
       .string()
@@ -66,7 +70,7 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      email: user.email,
+      user_code: user.user_code,
       full_name: user.full_name ?? undefined,
       is_superuser: user.is_superuser,
       is_active: user.is_active,
@@ -117,20 +121,23 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
             <div className="grid gap-4 py-4">
               <FormField
                 control={form.control}
-                name="email"
+                name="user_code"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Email <span className="text-destructive">*</span>
+                      User Code <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Email"
-                        type="email"
+                        placeholder="User code"
+                        type="text"
                         {...field}
                         required
                       />
                     </FormControl>
+                    <FormDescription>
+                      Must be unique. Users log in with this code.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
