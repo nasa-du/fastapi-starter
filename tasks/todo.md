@@ -79,9 +79,9 @@
 ---
 
 ## ✅ 检查点 A：后端地基
-- [ ] `cd backend && uv run pytest` 全绿
-- [ ] `bash backend/scripts/lint.sh` 通过
-- [ ] Task 1–3 验收标准全部勾选，向人工同步进度
+- [x] `cd backend && uv run pytest` 全绿（66 passed；本结果在 Task 3 落地后的代码上取得，其后仅 tasks/todo.md 变更，无代码漂移）
+- [x] `bash backend/scripts/lint.sh` 通过（mypy / ty / ruff check / ruff format 全绿，同一代码状态）
+- [x] Task 1–3 验收标准全部勾选，向人工同步进度（进度同步见会话报告）
 
 ---
 
