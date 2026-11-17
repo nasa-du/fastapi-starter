@@ -136,17 +136,19 @@
 **描述**：后端契约变更后执行一次 `sh scripts/generate-client.sh`，随后修复所有编译强耦合点（生成类型中 email 消失、signup/recover/reset 路由方法消失，TanStack 类型化 Link 指向已删路由）。
 
 **验收标准**：
-- [ ] `sh scripts/generate-client.sh` 成功；`frontend/src/client/` 仅含生成产物（零手改）
-- [ ] 删除 `routes/signup.tsx`、`routes/recover-password.tsx`、`routes/reset-password.tsx`（`routeTree.gen.ts` 由 build 重生成）
-- [ ] `useAuth.ts` 删 `signUpMutation` 与 `UserRegister` 引用；全库无 `UserRegister` 残留
-- [ ] `Admin/columns.tsx`、`AddUser.tsx`、`EditUser.tsx`：email 字段 → `user_code`（必填、唯一提示）
-- [ ] `UserSettings/UserInformation.tsx`：user_code 只读展示；`Sidebar/User.tsx` 副标题 full_name（空则 user_code）
-- [ ] `routes/login.tsx`：单输入框 `data-testid="identifier-input"`（type=text）、占位符「User code or name」、删除 Sign up / Forgot password 链接；zod schema 消息「User code or name is required」
+- [x] `sh scripts/generate-client.sh` 成功；`frontend/src/client/` 仅含生成产物（零手改）
+- [x] 删除 `routes/signup.tsx`、`routes/recover-password.tsx`、`routes/reset-password.tsx`（`routeTree.gen.ts` 由 build 重生成）
+- [x] `useAuth.ts` 删 `signUpMutation` 与 `UserRegister` 引用；全库无 `UserRegister` 残留
+- [x] `Admin/columns.tsx`、`AddUser.tsx`、`EditUser.tsx`：email 字段 → `user_code`（必填、唯一提示）
+- [x] `UserSettings/UserInformation.tsx`：user_code 只读展示；`Sidebar/User.tsx` 副标题 full_name（空则 user_code）
+- [x] `routes/login.tsx`：单输入框 `data-testid="identifier-input"`（type=text）、占位符「User code or name」、删除 Sign up / Forgot password 链接；zod schema 消息「User code or name is required」
 
 **验证**：
-- [ ] 契约同步：`sh scripts/generate-client.sh` 成功结束
-- [ ] 构建通过：`bun run --filter frontend build`（同时重生成 routeTree）
-- [ ] lint 通过：`bun run lint`
+- [x] 契约同步：`sh scripts/generate-client.sh` 成功结束（exit 0，脚本内 lint 一并通过；生成类型无 email/UserRegister/NewPassword，SDK 无 signup/recover/reset 方法、新增 `resetUserPassword` 供 Task 6 使用）
+- [x] 构建通过：`bun run --filter frontend build`（同时重生成 routeTree；首次失败为 useAuth 残留 `queryClient` 未用，清理后通过）
+- [x] lint 通过：`bun run lint`
+
+**注记**：清单外两个编译/残留耦合点一并修复——`routes/_layout/index.tsx` 问候语 `full_name || email` → `full_name || user_code`（UserPublic 已无 email，属编译强耦合）；`components/Pending/PendingUsers.tsx` 骨架表头 `Email` → `User Code`（Task 9 要求 frontend/src 零 email 残留）。
 
 **依赖**：Task 4
 
