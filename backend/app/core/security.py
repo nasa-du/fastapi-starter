@@ -1,3 +1,4 @@
+import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -34,3 +35,8 @@ def verify_password(
 
 def get_password_hash(password: str) -> str:
     return password_hash.hash(password)
+
+
+def generate_random_password() -> str:
+    """Return a URL-safe random password of at least 16 characters."""
+    return secrets.token_urlsafe(16)
