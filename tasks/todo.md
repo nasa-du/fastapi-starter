@@ -104,18 +104,18 @@
 12. 测试重写（spec 测试策略）：`conftest.py`、`tests/utils/user.py`（`create_random_user` 生成唯一 user_code）、`tests/utils/utils.py`、`test_login.py`、`test_users.py`、`test_private.py`、`crud/test_user.py`；删密码找回/signup/邮件桩用例；新增：编码登录、唯一姓名登录、重名 400、错误凭据统一信息 + dummy-hash spy 断言、user_code 查重 400/409、重置密码四场景（沿用 Task 3）
 
 **验收标准**：
-- [ ] `user` 表无 `email` 列；`UserPublic` 不含 email 字段；`grep -rn "email" backend/app backend/tests` 无业务性残留
-- [ ] `POST /api/v1/utils/test-email/`、`password-recovery*`、`POST /api/v1/users/signup` 均 404
-- [ ] backend 依赖中无 `emails`、`email-validator`；`uv.lock` 已同步
-- [ ] 迁移在空库与含存量 email 数据的库上均可 `alembic upgrade head`；历史迁移文件零改动
-- [ ] 新建行 id 为 v7、存量行不回填（沿用 Task 1 断言）
-- [ ] 后端新增测试全部通过且未删除既有用例致覆盖率下降（`bash scripts/test.sh` 的 coverage 口径）
+- [x] `user` 表无 `email` 列；`UserPublic` 不含 email 字段；`grep -rn "email" backend/app backend/tests` 无业务性残留（仅历史 Alembic 迁移文件按「历史迁移零改动」规则保留原文）
+- [x] `POST /api/v1/utils/test-email/`、`password-recovery*`、`POST /api/v1/reset-password/` 均 404；`POST /api/v1/users/signup` 为 405（路由已删除，`/users/{user_id}` 模式匹配所致；OpenAPI paths 已确认无 signup），已在测试中断言 404/405 且 OpenAPI 无注册
+- [x] backend 依赖中无 `emails`、`email-validator`；`uv.lock` 已同步（diff 纯删除）
+- [x] 迁移在空库与含存量 email 数据的库上均可 `alembic upgrade head`；历史迁移文件零改动
+- [x] 新建行 id 为 v7、存量行不回填（沿用 Task 1 断言；存量行占位回填 `u_<id前8位>` 已在真实库验证）
+- [x] 后端新增测试全部通过且未删除既有用例致覆盖率下降（`bash scripts/test.sh` 的 coverage 口径：70 passed，TOTAL 94%，改动文件除 preexisting 分支外 100%）
 
 **验证**：
-- [ ] 迁移可重放：对预置 email 数据的库执行 `alembic upgrade head` 后 `user_code` 非空唯一
-- [ ] 测试通过：`cd backend && uv run pytest`
-- [ ] lint 通过：`bash backend/scripts/lint.sh`
-- [ ] 手动检查：Swagger OAuth2 用 `admin` + 密码可取 token；`/login/test-token` 行为不变
+- [x] 迁移可重放：对预置 email 数据的库执行 `alembic upgrade head` 后 `user_code` 非空唯一（`ix_user_user_code` UNIQUE btree）
+- [x] 测试通过：`cd backend && uv run pytest`（70 passed）
+- [x] lint 通过：`bash backend/scripts/lint.sh`（实际以 `cd backend && uv run bash scripts/lint.sh` 执行；mypy/ty/ruff check/ruff format 全绿）
+- [x] 手动检查：Swagger OAuth2 用 `admin` + 密码可取 token；`/login/test-token` 行为不变（真实服务 + curl 验证：OAuth2 表单 `username=admin` 200 取 token、test-token 返回 `user_code: admin`、错误凭据统一返回 `Incorrect user code/name or password`）
 
 **依赖**：Task 1、Task 3
 
@@ -126,8 +126,8 @@
 ---
 
 ## ✅ 检查点 B：后端就绪
-- [ ] 空库 + 存量库迁移均可执行；`uv run pytest` 全绿；lint 通过
-- [ ] 已删除端点均 404；向人工同步进度后再进入前端
+- [x] 空库 + 存量库迁移均可执行；`uv run pytest` 全绿（70 passed）；lint 通过
+- [x] 已删除端点均 404（signup 为 405，见 Task 4 注记）；向人工同步进度后再进入前端
 
 ---
 
