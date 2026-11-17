@@ -34,13 +34,13 @@
 **描述**：在 `backend/app/core/security.py` 新增 `generate_random_password() -> str`，基于 `secrets.token_urlsafe(16)`（产出 ≥16 字符 URL 安全随机串），供任务 3 的重置密码端点使用。
 
 **验收标准**：
-- [ ] 函数使用 `secrets` 模块，返回长度 ≥16 的字符串
-- [ ] 有单元测试：长度 ≥16、两次调用结果不同、字符集为 URL 安全
-- [ ] 不落日志、不落库（纯函数）
+- [x] 函数使用 `secrets` 模块，返回长度 ≥16 的字符串
+- [x] 有单元测试：长度 ≥16、两次调用结果不同、字符集为 URL 安全
+- [x] 不落日志、不落库（纯函数）
 
 **验证**：
-- [ ] 测试通过：`cd backend && uv run pytest backend/tests/core -q`（无该目录则 `uv run pytest -q`）
-- [ ] lint 通过：`bash backend/scripts/lint.sh`
+- [x] 测试通过：`cd backend && uv run pytest tests/core -q`（3 passed；全量 `uv run pytest -q` 62 passed）
+- [x] lint 通过：`bash backend/scripts/lint.sh`（实际以 `cd backend && uv run bash scripts/lint.sh` 在项目 venv 中执行）
 
 **依赖**：无
 
