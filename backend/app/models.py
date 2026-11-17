@@ -47,6 +47,11 @@ class UpdatePassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+# One-time temporary password returned after an admin reset
+class ResetPasswordResponse(SQLModel):
+    new_password: str
+
+
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid7, primary_key=True)

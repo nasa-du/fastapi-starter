@@ -519,3 +519,74 @@ def test_delete_user_without_privileges(
     )
     assert r.status_code == 403
     assert r.json()["detail"] == "The user doesn't have enough privileges"
+
+
+def test_reset_user_password(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    user = create_random_user(db)
+
+    r = client.post(
+        f"{settings.API_V1_STR}/users/{user.id}/reset-password",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 200
+    new_password = r.json()["new_password"]
+    assert len(new_password) >= 16
+
+    # The temporary password can be used to log in
+    login_data = {"username": user.email, "password": new_password}
+    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
+    assert r.status_code == 200
+    assert "access_token" in r.json()
+
+    # Only the hash is persisted, the plaintext never is
+    db.refresh(user)
+    assert user.hashed_password != new_password
+    verified, _ = verify_password(new_password, user.hashed_password)
+    assert verified
+
+
+def test_reset_user_password_not_found(
+    client: TestClient, superuser_token_headers: dict[str, str]
+) -> None:
+    r = client.post(
+        f"{settings.API_V1_STR}/users/{uuid.uuid4()}/reset-password",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 404
+    assert r.json() == {"detail": "User not found"}
+
+
+def test_reset_user_password_without_privileges(
+    client: TestClient, normal_user_token_headers: dict[str, str], db: Session
+) -> None:
+    user = create_random_user(db)
+
+    r = client.post(
+        f"{settings.API_V1_STR}/users/{user.id}/reset-password",
+        headers=normal_user_token_headers,
+    )
+    assert r.status_code == 403
+    assert r.json() == {"detail": "The user doesn't have enough privileges"}
+
+
+def test_reset_user_password_for_deactivated_user(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    user = create_random_user(db)
+    user.is_active = False
+    db.add(user)
+    db.commit()
+
+    r = client.post(
+        f"{settings.API_V1_STR}/users/{user.id}/reset-password",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 200
+    new_password = r.json()["new_password"]
+    assert len(new_password) >= 16
+
+    db.refresh(user)
+    verified, _ = verify_password(new_password, user.hashed_password)
+    assert verified

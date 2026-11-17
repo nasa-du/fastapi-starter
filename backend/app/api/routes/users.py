@@ -11,10 +11,15 @@ from app.api.deps import (
     get_current_active_superuser,
 )
 from app.core.config import settings
-from app.core.security import get_password_hash, verify_password
+from app.core.security import (
+    generate_random_password,
+    get_password_hash,
+    verify_password,
+)
 from app.models import (
     Item,
     Message,
+    ResetPasswordResponse,
     UpdatePassword,
     User,
     UserCreate,
@@ -230,3 +235,22 @@ def delete_user(
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")
+
+
+@router.post(
+    "/{user_id}/reset-password",
+    dependencies=[Depends(get_current_active_superuser)],
+    response_model=ResetPasswordResponse,
+)
+def reset_user_password(session: SessionDep, user_id: uuid.UUID) -> Any:
+    """
+    Reset a user's password with a one-time temporary password.
+    """
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    new_password = generate_random_password()
+    user.hashed_password = get_password_hash(new_password)
+    session.add(user)
+    session.commit()
+    return ResetPasswordResponse(new_password=new_password)
