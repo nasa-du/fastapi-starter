@@ -10,14 +10,14 @@
 **描述**：将 `User.id` 与 `Item.id` 的 `default_factory` 从 `uuid.uuid4` 改为 Python 3.14 标准库 `uuid.uuid7`（已验证 3.14.4 可用）。存量 v4 数据不回填，历史迁移文件不动，不新增任何依赖。
 
 **验收标准**：
-- [ ] `backend/app/models.py` 中 `User` 与 `Item` 的 `id` 均为 `Field(default_factory=uuid.uuid7, primary_key=True)`
-- [ ] 新建 User 与 Item 的主键满足 `uuid.UUID(str(id)).version == 7`（有测试断言）
-- [ ] `backend/pyproject.toml` 无新增依赖；历史 Alembic 迁移文件零改动
+- [x] `backend/app/models.py` 中 `User` 与 `Item` 的 `id` 均为 `Field(default_factory=uuid.uuid7, primary_key=True)`
+- [x] 新建 User 与 Item 的主键满足 `uuid.UUID(str(id)).version == 7`（有测试断言）
+- [x] `backend/pyproject.toml` 无新增依赖；历史 Alembic 迁移文件零改动
 
 **验证**：
-- [ ] 测试通过：`cd backend && uv run pytest`
-- [ ] lint 通过：`bash backend/scripts/lint.sh`
-- [ ] 手动检查：`git diff backend/app/alembic/versions/` 为空
+- [x] 测试通过：`cd backend && uv run pytest`（59 passed，含新增 `tests/test_models.py`）
+- [x] lint 通过：`bash backend/scripts/lint.sh`
+- [x] 手动检查：`git diff backend/app/alembic/versions/` 为空
 
 **依赖**：无
 
