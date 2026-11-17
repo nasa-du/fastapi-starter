@@ -31,10 +31,19 @@ def update_user(*, session: Session, db_user: User, user_in: UserUpdate) -> Any:
     return db_user
 
 
-def get_user_by_email(*, session: Session, email: str) -> User | None:
-    statement = select(User).where(User.email == email)
+def get_user_by_code(*, session: Session, user_code: str) -> User | None:
+    statement = select(User).where(User.user_code == user_code)
     session_user = session.exec(statement).first()
     return session_user
+
+
+def get_users_by_full_name(*, session: Session, full_name: str) -> list[User]:
+    statement = select(User).where(User.full_name == full_name)
+    return list(session.exec(statement).all())
+
+
+class UserAmbiguousIdentifierError(Exception):
+    """Raised when a login identifier matches multiple users by full_name."""
 
 
 # Dummy hash to use for timing attack prevention when user is not found
@@ -42,11 +51,21 @@ def get_user_by_email(*, session: Session, email: str) -> User | None:
 DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$MjQyZWE1MzBjYjJlZTI0Yw$YTU4NGM5ZTZmYjE2NzZlZjY0ZWY3ZGRkY2U2OWFjNjk"
 
 
-def authenticate(*, session: Session, email: str, password: str) -> User | None:
-    db_user = get_user_by_email(session=session, email=email)
+def authenticate(*, session: Session, identifier: str, password: str) -> User | None:
+    """Authenticate by user_code first, then by (unique) full_name.
+
+    Raises UserAmbiguousIdentifierError when the identifier matches several
+    users by full_name; the caller must ask for the user code instead.
+    """
+    db_user = get_user_by_code(session=session, user_code=identifier)
     if not db_user:
-        # Prevent timing attacks by running password verification even when user doesn't exist
-        # This ensures the response time is similar whether or not the email exists
+        matches = get_users_by_full_name(session=session, full_name=identifier)
+        if len(matches) > 1:
+            raise UserAmbiguousIdentifierError
+        db_user = matches[0] if matches else None
+    if not db_user:
+        # Prevent timing attacks by running password verification even when
+        # the identifier matches no user
         verify_password(password, DUMMY_HASH)
         return None
     verified, updated_password_hash = verify_password(password, db_user.hashed_password)
