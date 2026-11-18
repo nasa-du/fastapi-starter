@@ -219,20 +219,27 @@
 **描述**：代码之外的全量 email·SMTP·Mailpit 清除（spec §5 配置/CI/工作区/文档条目）。
 
 **验收标准**：
-- [ ] `.env` 删 `SMTP_*`/`EMAILS_*` 块；`compose.yml`/`compose.override.yml`/`compose.deploy.yml` 删 mailpit 服务、SMTP/EMAILS 变量、`MAILPIT_HOST`
-- [ ] CI：`test-backend.yml` 改 `--wait db`；`deploy-docker-compose.yml` 删 `SMTP_*`/`EMAILS_FROM_EMAIL` 透传；`deploy.yml` 的 `FIRST_SUPERUSER` → `FIRST_SUPERUSER_CODE`
-- [ ] 删 `packages/react-email/`；根 `package.json` 删 `email:dev`/`email:export`；`.pre-commit-config.yaml` 删 email-templates 排除项
-- [ ] 文档：`README.md`、`development.md`（Mailpit 节）、`deployment.md`、`deployment-docker-compose.md`（SMTP/EMAILS 变量节）、`backend/README.md`（Email Templates 节）；`FIRST_SUPERUSER_CODE` 语义同步
-- [ ] `release-notes.md` 不动（上游历史）
+- [x] `.env` 删 `SMTP_*`/`EMAILS_*` 块；`compose.yml`/`compose.override.yml`/`compose.deploy.yml` 删 mailpit 服务、SMTP/EMAILS 变量、`MAILPIT_HOST`（`compose.deploy.yml` 本无 mailpit/SMTP/EMAILS 引用，grep 确认零改动；注记①②）
+- [x] CI：`test-backend.yml` 改 `--wait db`；`deploy-docker-compose.yml` 删 `SMTP_*`/`EMAILS_FROM_EMAIL` 透传；`deploy.yml` 的 `FIRST_SUPERUSER` → `FIRST_SUPERUSER_CODE`（注记③）
+- [x] 删 `packages/react-email/`；根 `package.json` 删 `email:dev`/`email:export`；`.pre-commit-config.yaml` 删 email-templates 排除项（`bun.lock` 随 `bun install` 同步移除 `emails` workspace，注记④）
+- [x] 文档：`README.md`、`development.md`（Mailpit 节）、`deployment.md`、`deployment-docker-compose.md`（SMTP/EMAILS 变量节）、`backend/README.md`（Email Templates 节）；`FIRST_SUPERUSER_CODE` 语义同步
+- [x] `release-notes.md` 不动（上游历史，`git log` 确认零提交触碰）
 
 **验证**：
-- [ ] `docker compose config` 三个 compose 文件均合法
-- [ ] `grep -rin -e smtp -e mailpit .env compose*.yml .github/workflows *.md backend/README.md` 仅剩允许残留（CI 的 `git config user.email`、`release-notes.md`）
-- [ ] `bun install` 后 `bun run --filter frontend build` 仍通过
+- [x] `docker compose config` 三个 compose 文件均合法（`docker compose config --quiet`：单文件、+override、+deploy 各一次通过）
+- [x] `grep -rin -e smtp -e mailpit .env compose*.yml .github/workflows *.md backend/README.md` 仅剩允许残留（`release-notes.md` 上游历史；`SPEC.md` 为本次改造规格文本自身，注记⑤）
+- [x] `bun install` 后 `bun run --filter frontend build` 仍通过（exit 0）
+
+**注记**：
+- ① 清单外补刀：`compose.yml`/`compose.override.yml` 的 `FIRST_SUPERUSER` → `FIRST_SUPERUSER_CODE`（Task 4 改名后 `:?Variable not set` 守卫会使 `docker compose config` 直接失败，属本任务验证命令的必要耦合）；`frontend/.env` 删 `MAILPIT_HOST`（消费方已随 Task 7 删除）。
+- ② `deploy-docker-compose.yml` 的 `FIRST_SUPERUSER` 透传同步改为 `FIRST_SUPERUSER_CODE`（compose.yml backend 环境变量改名后的必要耦合），否则 compose 部署链路断裂。
+- ③ 清单外发现（未动）：`compose.yml` backend healthcheck 仍探测 `/api/v1/utils/health-check/`，该端点已随 Task 4 删除 utils 路由而 404，容器会标记 unhealthy（不影响 `docker compose config` 与普通 `up -d`，影响 `up -d --wait` 语义）。建议后续任务处理（改探测路径或补轻量 health 路由）。
+- ④ 清单外发现（未动）：`img/react-email.png`、`img/mailpit.png` 已无任何引用（随 README 截图节删除而成孤儿），可选清理。
+- ⑤ 允许残留口径：`release-notes.md`（上游历史，明确不动）+ `SPEC.md`（规格文本描述删除范围，非活文档；Task 9 残留扫描口径亦不含它）。
 
 **依赖**：Task 4（`.env` 最小改名已就位）
 
-**文件**（~12，配置/文档）：`.env`、`compose.yml`、`compose.override.yml`、`compose.deploy.yml`、`.github/workflows/{test-backend,deploy-docker-compose,deploy}.yml`、`package.json`、`.pre-commit-config.yaml`、删 `packages/react-email/`、`README.md`、`development.md`、`deployment.md`、`deployment-docker-compose.md`、`backend/README.md`
+**文件**（~14，配置/文档）：`.env`、`compose.yml`、`compose.override.yml`、`compose.deploy.yml`（零改动，grep 确认无引用）、`.github/workflows/{test-backend,deploy-docker-compose,deploy}.yml`、`package.json`、`.pre-commit-config.yaml`、`bun.lock`（`bun install` 再生成）、删 `packages/react-email/`、`frontend/.env`（清单外，注记①）、`README.md`、`development.md`、`deployment.md`、`deployment-docker-compose.md`、`backend/README.md`
 
 **规模**：M
 
