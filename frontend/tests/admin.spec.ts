@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { firstSuperuser, firstSuperuserPassword } from "./config.ts"
+import { firstSuperuserCode, firstSuperuserPassword } from "./config.ts"
 import { createUser } from "./utils/privateApi"
 import { randomEmail, randomPassword } from "./utils/random"
 import { logInUser } from "./utils/user"
@@ -196,7 +196,7 @@ test.describe("Admin page access control", () => {
   })
 
   test("Superuser can access admin page", async ({ page }) => {
-    await logInUser(page, firstSuperuser, firstSuperuserPassword)
+    await logInUser(page, firstSuperuserCode, firstSuperuserPassword)
 
     await page.goto("/admin")
 
