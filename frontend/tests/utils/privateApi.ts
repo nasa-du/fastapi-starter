@@ -8,15 +8,15 @@ client.setConfig({
 })
 
 export const createUser = async ({
-  email,
+  user_code,
   password,
 }: {
-  email: string
+  user_code: string
   password: string
 }) => {
   const response = await PrivateService.createUser({
     body: {
-      email,
+      user_code,
       password,
       is_verified: true,
       full_name: "Test User",
