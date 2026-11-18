@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test"
 import { firstSuperuserCode, firstSuperuserPassword } from "./config.ts"
 import { createUser } from "./utils/privateApi"
-import { randomEmail, randomPassword } from "./utils/random"
-import { logInUser } from "./utils/user"
+import { randomPassword, randomUserCode } from "./utils/random"
+import { logInUser, logOutUser } from "./utils/user"
 
 test("Admin page is accessible and shows correct title", async ({ page }) => {
   await page.goto("/admin")
@@ -21,13 +21,13 @@ test.describe("Admin user management", () => {
   test("Create a new user successfully", async ({ page }) => {
     await page.goto("/admin")
 
-    const email = randomEmail()
+    const userCode = randomUserCode()
     const password = randomPassword()
     const fullName = "Test User Admin"
 
     await page.getByRole("button", { name: "Add User" }).click()
 
-    await page.getByPlaceholder("Email").fill(email)
+    await page.getByPlaceholder("User code").fill(userCode)
     await page.getByPlaceholder("Full name").fill(fullName)
     await page.getByPlaceholder("Password").first().fill(password)
     await page.getByPlaceholder("Password").last().fill(password)
@@ -38,19 +38,19 @@ test.describe("Admin user management", () => {
 
     await expect(page.getByRole("dialog")).not.toBeVisible()
 
-    const userRow = page.getByRole("row").filter({ hasText: email })
+    const userRow = page.getByRole("row").filter({ hasText: userCode })
     await expect(userRow).toBeVisible()
   })
 
   test("Create a superuser", async ({ page }) => {
     await page.goto("/admin")
 
-    const email = randomEmail()
+    const userCode = randomUserCode()
     const password = randomPassword()
 
     await page.getByRole("button", { name: "Add User" }).click()
 
-    await page.getByPlaceholder("Email").fill(email)
+    await page.getByPlaceholder("User code").fill(userCode)
     await page.getByPlaceholder("Password").first().fill(password)
     await page.getByPlaceholder("Password").last().fill(password)
     await page.getByLabel("Is superuser?").check()
@@ -62,20 +62,20 @@ test.describe("Admin user management", () => {
 
     await expect(page.getByRole("dialog")).not.toBeVisible()
 
-    const userRow = page.getByRole("row").filter({ hasText: email })
+    const userRow = page.getByRole("row").filter({ hasText: userCode })
     await expect(userRow.getByText("Superuser")).toBeVisible()
   })
 
   test("Edit a user successfully", async ({ page }) => {
     await page.goto("/admin")
 
-    const email = randomEmail()
+    const userCode = randomUserCode()
     const password = randomPassword()
     const originalName = "Original Name"
-    const updatedName = "Updated Name"
+    const updatedName = `Updated ${randomUserCode()}`
 
     await page.getByRole("button", { name: "Add User" }).click()
-    await page.getByPlaceholder("Email").fill(email)
+    await page.getByPlaceholder("User code").fill(userCode)
     await page.getByPlaceholder("Full name").fill(originalName)
     await page.getByPlaceholder("Password").first().fill(password)
     await page.getByPlaceholder("Password").last().fill(password)
@@ -84,7 +84,7 @@ test.describe("Admin user management", () => {
     await expect(page.getByText("User created successfully")).toBeVisible()
     await expect(page.getByRole("dialog")).not.toBeVisible()
 
-    const userRow = page.getByRole("row").filter({ hasText: email })
+    const userRow = page.getByRole("row").filter({ hasText: userCode })
     await userRow.getByRole("button").click()
 
     await page.getByRole("menuitem", { name: "Edit User" }).click()
@@ -93,17 +93,17 @@ test.describe("Admin user management", () => {
     await page.getByRole("button", { name: "Save" }).click()
 
     await expect(page.getByText("User updated successfully")).toBeVisible()
-    await expect(page.getByText(updatedName)).toBeVisible()
+    await expect(userRow.getByText(updatedName)).toBeVisible()
   })
 
   test("Delete a user successfully", async ({ page }) => {
     await page.goto("/admin")
 
-    const email = randomEmail()
+    const userCode = randomUserCode()
     const password = randomPassword()
 
     await page.getByRole("button", { name: "Add User" }).click()
-    await page.getByPlaceholder("Email").fill(email)
+    await page.getByPlaceholder("User code").fill(userCode)
     await page.getByPlaceholder("Password").first().fill(password)
     await page.getByPlaceholder("Password").last().fill(password)
     await page.getByRole("button", { name: "Save" }).click()
@@ -112,7 +112,7 @@ test.describe("Admin user management", () => {
 
     await expect(page.getByRole("dialog")).not.toBeVisible()
 
-    const userRow = page.getByRole("row").filter({ hasText: email })
+    const userRow = page.getByRole("row").filter({ hasText: userCode })
     await userRow.getByRole("button").click()
 
     await page.getByRole("menuitem", { name: "Delete User" }).click()
@@ -124,7 +124,7 @@ test.describe("Admin user management", () => {
     ).toBeVisible()
 
     await expect(
-      page.getByRole("row").filter({ hasText: email }),
+      page.getByRole("row").filter({ hasText: userCode }),
     ).not.toBeVisible()
   })
 
@@ -132,22 +132,35 @@ test.describe("Admin user management", () => {
     await page.goto("/admin")
 
     await page.getByRole("button", { name: "Add User" }).click()
-    await page.getByPlaceholder("Email").fill("test@example.com")
+    await page.getByPlaceholder("User code").fill("test_user_code")
 
     await page.getByRole("button", { name: "Cancel" }).click()
 
     await expect(page.getByRole("dialog")).not.toBeVisible()
   })
 
-  test("Email is required and must be valid", async ({ page }) => {
+  test("User code is required", async ({ page }) => {
     await page.goto("/admin")
 
     await page.getByRole("button", { name: "Add User" }).click()
 
-    await page.getByPlaceholder("Email").fill("invalid-email")
-    await page.getByPlaceholder("Email").blur()
+    await page.getByPlaceholder("User code").fill("")
+    await page.getByPlaceholder("User code").blur()
 
-    await expect(page.getByText("Invalid email address")).toBeVisible()
+    await expect(page.getByText("User code is required")).toBeVisible()
+  })
+
+  test("User code must be at most 50 characters", async ({ page }) => {
+    await page.goto("/admin")
+
+    await page.getByRole("button", { name: "Add User" }).click()
+
+    await page.getByPlaceholder("User code").fill("x".repeat(51))
+    await page.getByPlaceholder("User code").blur()
+
+    await expect(
+      page.getByText("User code must be at most 50 characters"),
+    ).toBeVisible()
   })
 
   test("Password must be at least 8 characters", async ({ page }) => {
@@ -155,7 +168,7 @@ test.describe("Admin user management", () => {
 
     await page.getByRole("button", { name: "Add User" }).click()
 
-    await page.getByPlaceholder("Email").fill(randomEmail())
+    await page.getByPlaceholder("User code").fill(randomUserCode())
     await page.getByPlaceholder("Password").first().fill("short")
     await page.getByPlaceholder("Password").last().fill("short")
     await page.getByRole("button", { name: "Save" }).click()
@@ -170,7 +183,7 @@ test.describe("Admin user management", () => {
 
     await page.getByRole("button", { name: "Add User" }).click()
 
-    await page.getByPlaceholder("Email").fill(randomEmail())
+    await page.getByPlaceholder("User code").fill(randomUserCode())
     await page.getByPlaceholder("Password").first().fill(randomPassword())
     await page.getByPlaceholder("Password").last().fill("different12345")
     await page.getByPlaceholder("Password").last().blur()
@@ -179,15 +192,60 @@ test.describe("Admin user management", () => {
   })
 })
 
+test.describe("Admin reset password", () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test("Admin resets a password, then the user logs in with it", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+
+    const userCode = randomUserCode()
+    const password = randomPassword()
+    await createUser({ user_code: userCode, password })
+
+    await logInUser(page, firstSuperuserCode, firstSuperuserPassword)
+    await page.goto("/admin")
+
+    const userRow = page.getByRole("row").filter({ hasText: userCode })
+    await userRow.getByRole("button").click()
+    await page.getByRole("menuitem", { name: "Reset Password" }).click()
+
+    const dialog = page.getByRole("dialog")
+    await expect(
+      dialog.getByRole("heading", { name: "Reset User Password" }),
+    ).toBeVisible()
+    await dialog.getByRole("button", { name: "Reset Password" }).click()
+
+    const tempPasswordInput = dialog.getByLabel("Temporary password")
+    await expect(tempPasswordInput).toBeVisible()
+    const tempPassword = await tempPasswordInput.inputValue()
+    expect(tempPassword.length).toBeGreaterThanOrEqual(16)
+
+    await dialog
+      .getByRole("button", { name: "Copy temporary password" })
+      .click()
+    const clipboard = await page.evaluate(() => navigator.clipboard.readText())
+    expect(clipboard).toBe(tempPassword)
+
+    await page.keyboard.press("Escape")
+    await expect(page.getByRole("dialog")).not.toBeVisible()
+
+    await logOutUser(page)
+    await logInUser(page, userCode, tempPassword)
+  })
+})
+
 test.describe("Admin page access control", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
 
   test("Non-superuser cannot access admin page", async ({ page }) => {
-    const email = randomEmail()
+    const userCode = randomUserCode()
     const password = randomPassword()
 
-    await createUser({ email, password })
-    await logInUser(page, email, password)
+    await createUser({ user_code: userCode, password })
+    await logInUser(page, userCode, password)
 
     await page.goto("/admin")
 
