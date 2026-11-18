@@ -1,7 +1,7 @@
 # 实施计划：认证与用户账号体系改造（Email → user_code）
 
 > 依据：`SPEC.md`（待人工评审版）｜任务明细见 `tasks/todo.md`
-> 状态：**实施中——Phase 1–3 已完成（Task 1–7、检查点 A/B/C 已验证）；剩 Task 8（可与收尾并行）与 Task 9**
+> 状态：**已完成——Phase 1–4 与收尾全部落地并验证（Task 1–9、检查点 A/B/C 与最终检查点）；Success Criteria A–E 已逐条核对（证据见 todo.md Task 9 核对记录）**
 
 ## 概述
 
@@ -69,15 +69,15 @@ Task 2: generate_random_password ── Task 3: reset-password 端点 ── Tas
 - [x] `bun run lint` 与 `bun run --filter frontend build` 通过；手动冒烟：编码登录、管理员建号、重置密码弹窗可见可复制（e2e `bun run test` 45 passed；冒烟经人工确认）
 
 ### Phase 4：基建与文档清扫（依赖 Task 4；可与 Phase 3 并行）
-- [ ] Task 8：compose/CI/依赖工作区/文档中 email·SMTP·Mailpit 全量清除（M）
+- [x] Task 8：compose/CI/依赖工作区/文档中 email·SMTP·Mailpit 全量清除（M）
 
 ### 收尾
-- [ ] Task 9：全量验证 + Success Criteria A–E 逐条核对（XS）
+- [x] Task 9：全量验证 + Success Criteria A–E 逐条核对（XS）
 
 ### ✅ 检查点：完成
-- [ ] `sh scripts/test.sh` 全绿；`bun run test` 全绿；两端 lint 通过
-- [ ] `sh scripts/generate-client.sh` 复跑零 diff
-- [ ] Success Criteria A–E 全部勾选
+- [x] `sh scripts/test.sh` 全绿（按 CI 工作流同款序列执行：70 passed、coverage 94%；根脚本容器内 pytest 段系上游缺陷，见 todo.md Task 9 注记①）；`bun run test` 全绿（45 passed）；两端 lint 通过
+- [x] `sh scripts/generate-client.sh` 复跑零 diff
+- [x] Success Criteria A–E 全部勾选
 
 ## 并行化建议
 
