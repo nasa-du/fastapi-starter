@@ -163,14 +163,14 @@
 **描述**：用户管理操作菜单新增「Reset password」：调用 `POST /users/{user_id}/reset-password`，弹窗一次性显示临时密码 + 复制按钮（复用 `useCopyToClipboard`），关闭后不可再查看。
 
 **验收标准**：
-- [ ] `UserActionsMenu` 新增菜单项（仅超级用户可见的管理页语境）
-- [ ] 弹窗展示 `new_password`，有复制按钮且可复制成功；关闭/重开不回显旧密码
-- [ ] 请求失败（403/404）走既有 `handleError` toast
+- [x] `UserActionsMenu` 新增菜单项（仅超级用户可见的管理页语境；`/admin` 路由 `beforeLoad` 已限超级用户，`UserActionsMenu` 仅被该页 `columns.tsx` 使用）
+- [x] 弹窗展示 `new_password`，有复制按钮且可复制成功；关闭/重开不回显旧密码（关闭时 `resetPassword.reset()`；Playwright 真实浏览器断言：剪贴板内容与弹窗一致、重开仅显确认态）
+- [x] 请求失败（403/404）走既有 `handleError` toast（`onError: handleError.bind(showErrorToast)`；404 实测返回 `{"detail":"User not found"}`）
 
 **验证**：
-- [ ] 构建通过：`bun run --filter frontend build`
-- [ ] lint 通过：`bun run lint`
-- [ ] 手动检查：dev 环境重置任意用户 → 弹窗显示、复制、用临时密码可登录
+- [x] 构建通过：`bun run --filter frontend build`
+- [x] lint 通过：`bun run lint`
+- [x] 手动检查：dev 环境重置任意用户 → 弹窗显示、复制、用临时密码可登录（真实栈 uvicorn:8000 + 内置构建前端 + Playwright：弹窗显示 22 字符临时密码、复制按钮剪贴板断言一致、关闭重开不回显、登出后以临时密码经 UI 登录成功；另以 curl 实测：超级用户重置 200、旧密码登录 400、二次重置新密码可用）
 
 **依赖**：Task 5（依赖生成客户端中的 `resetUserPassword` 方法）
 
