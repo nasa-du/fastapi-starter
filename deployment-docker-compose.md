@@ -20,19 +20,16 @@ The `--filter=":- .gitignore"` option tells `rsync` to use the same ignore rules
 
 ### Environment Variables
 
-Set the application domain, project name, and first superuser email:
+Set the application domain, project name, and first superuser user code:
 
 ```bash
 export DOMAIN=fastapi-project.example.com
 export PROJECT_NAME="Full Stack FastAPI Project"
-export FIRST_SUPERUSER=admin@example.com
+export FIRST_SUPERUSER_CODE=admin
 ```
 
 You can also configure these environment variables as needed:
 
-* `SMTP_HOST`: The SMTP server host from your email provider.
-* `SMTP_USER`: The SMTP server user.
-* `EMAILS_FROM_EMAIL`: The email account used to send emails.
 * `SENTRY_DSN`: The DSN for Sentry.
 
 ### Secrets
@@ -44,8 +41,6 @@ export POSTGRES_PASSWORD="$(python -c 'import secrets; print(secrets.token_urlsa
 export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 export FIRST_SUPERUSER_PASSWORD="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
 ```
-
-To use an authenticated email provider, also set `SMTP_PASSWORD`.
 
 ## Deploy
 
@@ -72,13 +67,7 @@ In the repository, go to **Settings** > **Secrets and variables** > **Actions** 
 
 * `DOMAIN`
 * `PROJECT_NAME`
-* `FIRST_SUPERUSER`
-
-To enable emails, add these optional repository variables:
-
-* `SMTP_HOST`
-* `SMTP_USER`
-* `EMAILS_FROM_EMAIL`
+* `FIRST_SUPERUSER_CODE`
 
 To enable Sentry, add the optional `SENTRY_DSN` repository variable.
 
@@ -87,8 +76,6 @@ Add these repository secrets:
 * `POSTGRES_PASSWORD`
 * `SECRET_KEY`
 * `FIRST_SUPERUSER_PASSWORD`
-
-To use an authenticated email provider, add the optional `SMTP_PASSWORD` repository secret.
 
 ### Install a Self-Hosted Runner
 

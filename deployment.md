@@ -14,15 +14,9 @@ Connect a PostgreSQL database using the [Neon](https://fastapicloud.com/docs/int
 
 Add these required [environment variables](https://fastapicloud.com/docs/builds-and-deployments/environment-variables/) to the FastAPI Cloud application:
 
-* `PROJECT_NAME`: The name of the project, used in the API documentation and emails.
-* `FIRST_SUPERUSER`: The email address of the first superuser.
+* `PROJECT_NAME`: The name of the project, used in the API documentation.
+* `FIRST_SUPERUSER_CODE`: The user code of the first superuser.
 * `FRONTEND_HOST`: The public URL of the application, such as the generated `https://your-app.fastapicloud.dev` URL or a custom domain.
-
-To enable emails, add these optional environment variables with values from your email provider:
-
-* `SMTP_HOST`
-* `SMTP_USER`
-* `EMAILS_FROM_EMAIL`
 
 To enable Sentry, configure `SENTRY_DSN`.
 
@@ -33,8 +27,6 @@ Add these required values and mark them as secrets:
 * `SECRET_KEY`: A secret key used to sign security tokens.
 * `FIRST_SUPERUSER_PASSWORD`: The password of the first superuser.
 * `DATABASE_URL`: The PostgreSQL connection URL, configured automatically when using a database integration.
-
-To enable emails with an authenticated provider, add `SMTP_PASSWORD` as a secret.
 
 You can generate secure values for `SECRET_KEY` and `FIRST_SUPERUSER_PASSWORD` with:
 
@@ -58,7 +50,7 @@ If the GitHub CLI is installed and authenticated, the command configures `FASTAP
 The workflow runs database migrations and creates the first superuser before deploying. In the repository's **Settings** > **Secrets and variables** > **Actions** page, add these repository variables:
 
 * `PROJECT_NAME`
-* `FIRST_SUPERUSER`
+* `FIRST_SUPERUSER_CODE`
 
 Add these repository secrets:
 
