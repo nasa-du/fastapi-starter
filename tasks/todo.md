@@ -187,19 +187,21 @@
 **描述**：同步前端测试至新账号体系：登录标识、`FIRST_SUPERUSER_CODE`、删除 signup/重置密码/mailpit 用例、新增管理员重置密码全流程 e2e。
 
 **验收标准**：
-- [ ] 删除 `tests/sign-up.spec.ts`、`tests/reset-password.spec.ts`、`tests/utils/mailpit.ts`
-- [ ] `config.ts` 读 `FIRST_SUPERUSER_CODE`；`auth.setup.ts` 用 `getByTestId("identifier-input")` 登录
-- [ ] `utils/random.ts` 提供 `randomUserCode()`；`utils/user.ts`、`utils/privateApi.ts` 去 email
-- [ ] `login.spec.ts`（编码/姓名登录、统一错误信息）、`admin.spec.ts`（建号含 user_code；重置密码弹窗流程）、`user-settings.spec.ts`、`items.spec.ts` 通过
-- [ ] 新增 e2e：管理员重置密码 → 弹窗显示临时密码 → 登出 → 用临时密码登录成功
+- [x] 删除 `tests/sign-up.spec.ts`、`tests/reset-password.spec.ts`、`tests/utils/mailpit.ts`
+- [x] `config.ts` 读 `FIRST_SUPERUSER_CODE`；`auth.setup.ts` 用 `getByTestId("identifier-input")` 登录
+- [x] `utils/random.ts` 提供 `randomUserCode()`；`utils/user.ts`、`utils/privateApi.ts` 去 email（`signUpNewUser` 已删；`randomEmail` 已随最后消费者移除，`grep -rin -e email -e smtp -e mailpit frontend/tests` 零残留）
+- [x] `login.spec.ts`（编码/姓名登录、统一错误信息）、`admin.spec.ts`（建号含 user_code；重置密码弹窗流程）、`user-settings.spec.ts`、`items.spec.ts` 通过（login 11、admin 15、settings+items 21 分别实测）
+- [x] 新增 e2e：管理员重置密码 → 弹窗显示临时密码 → 登出 → 用临时密码登录成功（断言 ≥16 字符、剪贴板与弹窗一致；关弹窗用 Escape——页脚 Close 与 Radix 内置 X 按钮都可访问名相同致 strict mode 冲突）
 
 **验证**：
-- [ ] e2e 通过：`bun run test`（需 backend + db 运行中，无需 Mailpit）
-- [ ] lint 通过：`bun run lint`
+- [x] e2e 通过：`bun run test`（45 passed，真实栈：容器 db + `uv run fastapi dev` :8000 + Playwright 自启 vite；无需 Mailpit；首跑需 `bunx playwright install chromium`）
+- [x] lint 通过：`bun run lint`
 
 **依赖**：Task 5、Task 6
 
 **文件**（~12，多为删除/机械改写）：`tests/{config.ts, auth.setup.ts, login.spec.ts, admin.spec.ts, user-settings.spec.ts, items.spec.ts}`、删 `tests/{sign-up.spec.ts, reset-password.spec.ts, utils/mailpit.ts}`、`tests/utils/{random.ts, user.ts, privateApi.ts}`
+
+**注记**：admin「Edit a user successfully」改用随机唯一姓名并按行断言——e2e 库跨次运行累积用户，固定文案「Updated Name」会命中多行触发 strict mode violation。
 
 **规模**：M
 
