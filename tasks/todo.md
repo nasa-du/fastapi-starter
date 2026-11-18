@@ -208,9 +208,9 @@
 ---
 
 ## ✅ 检查点 C：前端就绪
-- [ ] `bun run lint` 与 `bun run --filter frontend build` 通过
-- [ ] `bun run test` 全绿
-- [ ] 手动冒烟通过，向人工同步进度
+- [x] `bun run lint` 与 `bun run --filter frontend build` 通过（build 于 Task 7 收尾复跑 exit 0；`tsconfig.build.json` 排除 tests，e2e 改写不影响产物）
+- [x] `bun run test` 全绿（45 passed）
+- [x] 手动冒烟通过，向人工同步进度（人工已确认）
 
 ---
 

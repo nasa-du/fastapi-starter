@@ -1,7 +1,7 @@
 # 实施计划：认证与用户账号体系改造（Email → user_code）
 
 > 依据：`SPEC.md`（待人工评审版）｜任务明细见 `tasks/todo.md`
-> 状态：**待人工评审，未开始实施**
+> 状态：**实施中——Phase 1–3 已完成（Task 1–7、检查点 A/B/C 已验证）；剩 Task 8（可与收尾并行）与 Task 9**
 
 ## 概述
 
@@ -47,26 +47,26 @@ Task 2: generate_random_password ── Task 3: reset-password 端点 ── Tas
 ## 任务索引
 
 ### Phase 1：后端地基（每个任务保持代码树绿色）
-- [ ] Task 1：User/Item 主键改用 `uuid.uuid7` + 测试断言（S）
-- [ ] Task 2：`core/security.py` 新增 `generate_random_password()`（XS）
-- [ ] Task 3：管理员重置密码端点 `POST /users/{user_id}/reset-password` + 路由级测试（S）
+- [x] Task 1：User/Item 主键改用 `uuid.uuid7` + 测试断言（S）
+- [x] Task 2：`core/security.py` 新增 `generate_random_password()`（XS）
+- [x] Task 3：管理员重置密码端点 `POST /users/{user_id}/reset-password` + 路由级测试（S）
 
-### ✅ 检查点 A：后端地基
-- [ ] `cd backend && uv run pytest` 全绿；`bash scripts/lint.sh` 通过
+### ✅ 检查点 A：后端地基（已完成）
+- [x] `cd backend && uv run pytest` 全绿；`bash scripts/lint.sh` 通过
 
 ### Phase 2：后端身份置换（原子任务，见决策 1）
-- [ ] Task 4：user_code 替换 email 全链路置换（模型/迁移/config/db/crud/路由/删邮件模块/依赖/测试重写）（L，有意为之）
+- [x] Task 4：user_code 替换 email 全链路置换（模型/迁移/config/db/crud/路由/删邮件模块/依赖/测试重写）（L，有意为之）
 
-### ✅ 检查点 B：后端就绪
-- [ ] 空库与含存量 email 数据的库均可 `alembic upgrade head`；`uv run pytest` 全绿；lint 通过；`POST /api/v1/utils/test-email/`、`password-recovery*`、`users/signup` 均 404
+### ✅ 检查点 B：后端就绪（已完成）
+- [x] 空库与含存量 email 数据的库均可 `alembic upgrade head`；`uv run pytest` 全绿；lint 通过；`POST /api/v1/utils/test-email/`、`password-recovery*`、`users/signup` 均 404
 
 ### Phase 3：前端（依赖 Task 4 的 OpenAPI 契约）— 可与 Phase 4 并行
-- [ ] Task 5：重生成客户端 + 编译级适配（删 signup/recover/reset 路由、useAuth、Admin/UserSettings/Sidebar 字段、登录页 testid 与链接）（L，编译强耦合）
-- [ ] Task 6：管理员「Reset password」弹窗（一次性展示 + 复制）（S）
-- [ ] Task 7：Playwright 用例重写（删 sign-up/reset-password/mailpit；改 identifier-input；新增重置密码 e2e）（M）
+- [x] Task 5：重生成客户端 + 编译级适配（删 signup/recover/reset 路由、useAuth、Admin/UserSettings/Sidebar 字段、登录页 testid 与链接）（L，编译强耦合）
+- [x] Task 6：管理员「Reset password」弹窗（一次性展示 + 复制）（S）
+- [x] Task 7：Playwright 用例重写（删 sign-up/reset-password/mailpit；改 identifier-input；新增重置密码 e2e）（M）
 
-### ✅ 检查点 C：前端就绪
-- [ ] `bun run lint` 与 `bun run --filter frontend build` 通过；手动冒烟：编码登录、管理员建号、重置密码弹窗可见可复制
+### ✅ 检查点 C：前端就绪（已完成）
+- [x] `bun run lint` 与 `bun run --filter frontend build` 通过；手动冒烟：编码登录、管理员建号、重置密码弹窗可见可复制（e2e `bun run test` 45 passed；冒烟经人工确认）
 
 ### Phase 4：基建与文档清扫（依赖 Task 4；可与 Phase 3 并行）
 - [ ] Task 8：compose/CI/依赖工作区/文档中 email·SMTP·Mailpit 全量清除（M）
