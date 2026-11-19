@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -5,7 +6,7 @@ from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlmodel import Session
 
 from app.core.config import settings
-from app.core.security import get_password_hash, verify_password
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.crud import DUMMY_HASH, create_user
 from app.models import User, UserCreate
 from tests.utils.utils import random_lower_string, random_user_code
@@ -192,3 +193,19 @@ def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) 
 
     assert user.hashed_password == original_hash
     assert user.hashed_password.startswith("$argon2")
+
+
+def test_token_for_nonexistent_user_returns_403(client: TestClient) -> None:
+    """A valid-shaped JWT whose subject references a missing user is an
+    authentication failure: it must return 403 (like the invalid-token branch)
+    so the SPA's interceptor logs the user out, not 404 which would leave the
+    client in a broken half-authenticated state (e.g. after a DB rebuild)."""
+    token = create_access_token(
+        "00000000-0000-7000-8000-000000000000", timedelta(minutes=30)
+    )
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 403
+    assert r.json()["detail"] == "User not found"
