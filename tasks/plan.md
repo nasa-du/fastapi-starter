@@ -1,106 +1,116 @@
-# 实施计划：认证与用户账号体系改造（Email → user_code）
+# 实施计划:简体中文支持(i18n 中英双语)
 
-> 依据：`SPEC.md`（待人工评审版）｜任务明细见 `tasks/todo.md`
-> 状态：**已完成——Phase 1–4 与收尾全部落地并验证（Task 1–9、检查点 A/B/C 与最终检查点）；Success Criteria A–E 已逐条核对（证据见 todo.md Task 9 核对记录）**
+> 依据:`SPEC-i18n.md`(待人工评审 → 以调用规划技能作为批准信号)|任务明细见 `tasks/todo.md`
+> 状态:**待人工评审**
+> 前计划(认证改造)已 100% 完成(原 `tasks/{plan,todo}.md` 77/77 勾选),归档至 `tasks/archive/auth-user-code/`,git 可恢复。
 
 ## 概述
 
-把模板的「Email + 密码」账号体系改造为「用户编码（user_code）/姓名（full_name）+ 密码」的内部账号体系，同时收口生命周期：全量移除 Email 功能、删除自注册、新增管理员重置密码、主键改用 UUID v7。共 9 个任务、4 个阶段、4 个检查点。
+按 SPEC-i18n.md 的六个切片(S1–S6)实施中英双语改造:前端 i18next 脚手架 + 全量文案中文化、后端错误码契约(24 处 raise 点 → 17 个 code)、E2E 改造为 testid + 中文冒烟、四份文档中文重写。共 18 个任务、5 个阶段、5 个检查点。
 
-## 已验证的代码库事实（规划依据）
+## 已验证的代码库事实(规划依据)
 
-- Python 3.14.4、`requires-python = ">=3.14"`，`uuid.uuid7` 内置可用 → 无需新依赖（符合 spec 禁令）。
-- `backend/app/api/main.py` 挂载了 `utils` 路由（test-email），删除 `routes/utils.py` 时必须同步摘除挂载（spec 文件清单未列，已补入任务 4）。
-- `login.py` 与 `users.py` 均 `import app.utils`（邮件工具）→ 邮件模块删除与路由改写必须同任务完成。
-- `Settings` 通过 `env_file="../.env"` 加载配置 → `FIRST_SUPERUSER` 改名为 `FIRST_SUPERUSER_CODE` 时 `.env` 必须同步改名，否则所有测试启动即失败。
-- `.github/workflows/deploy.yml` 也透传 `FIRST_SUPERUSER`（spec 仅列出 test-backend / deploy-docker-compose，已补入任务 8）。
-- `conftest.py` → `tests/utils/utils.py::get_superuser_token_headers` 走 OAuth2 表单登录拿超级用户 headers，配置改名后需验证其引用链。
-- 前端 `login.tsx` 的「Sign up / Forgot password?」是 TanStack 类型化 `<Link to="/signup">`，删除路由后 **不删链接则 tsc 报错** → 登录页改动被编译强耦合进任务 5。
-- `scripts/generate-client.sh` 会导出 openapi.json → 重新生成 `frontend/src/client` → 自动跑 `bun run lint`。
+- **错误契约面**:24 处 `raise HTTPException`(`items.py` 6、`deps.py` 4、`login.py` 3、`users.py` 11)→ 17 个去重 code;后端测试 ~20 处英文 `detail` 断言分布在 `test_items.py` / `test_users.py` / `test_login.py`。deps 类断言的归属文件需在 T14 用 grep 定位(可能跨 test_login.py)。
+- **错误漏斗单点**:`frontend/src/utils.ts::extractErrorMessage`(全部 mutation 走 `handleError.bind(showErrorToast)`);`main.tsx` 的 401/403 跳转按 status 判断,不受契约影响;后端成功响应 `Message.message` 不被前端渲染(`DeleteItem.tsx` 等使用自有文案)→ 契约只覆盖 `detail`。
+- **E2E 现状**:`auth.setup.ts` 以 `getByRole("button", { name: "Log In" })` 登录 → **登录按钮文案变更会打断全部 E2E 的 setup**,必须与登录页改造同任务处理;导航一律 `page.goto()`,侧边栏改名不影响导航;text 定位器密度:login 14 / items 33 / admin 36 / user-settings 17 处;user-settings.spec.ts 已有 23 处 `getByTestId` 基础。
+- **登录页可见组件**:`AuthLayout` 渲染 `Appearance`(Light/Dark/System/Appearance 英文)与 `Footer`(产品名+年份)→ 主题切换文案属 S1;Footer 为产品名(品牌词,保留原文,见架构决策 5)。
+- **切换器落点**:`AppSidebar` 的 `SidebarFooter` 已有 `SidebarAppearance` + `User`,语言切换器仿 `SidebarAppearance` 模式并列放入(spec Open Question 1 按建议执行)。
+- **路由标题**:5 处 `head: () => ({ meta: [{ title }] })` 静态定义 → 语言切换需 `router.invalidate()` 重求值(风险 2)。
+- **命令**:`bun run dev/build/lint/test`(根,bun workspace);E2E webServer 自动拉起前端,后端 + db 需先运行;`sh scripts/generate-client.sh` 导出 openapi.json → 再生成 client → 自动 lint。
 
 ## 架构决策
 
-1. **遵守 spec §4：只新增 1 个 Alembic 迁移（4 步：加列 → 占位回填 → 非空+唯一 → 删列）。**
-   后果：迁移删除 `email` 列的瞬间，models/crud/routes/config/db/tests 必须全部就位，因此**任务 4 是一个原子的大任务（约 16 个文件）**。已评估「先加 user_code 再删 email」的两段式迁移方案——每步都能保持代码树绿色、任务更小，但违背 spec「新增 1 个迁移」的明确要求，故不采用，列入开放问题请评审定夺。
-2. **reset-password 端点先于大置换落地（任务 3）。** 它只依赖 `user_id` + 随机密码生成，与 email 无关，可提前以小任务交付并测试。
-3. **契约同步单点化。** `sh scripts/generate-client.sh` 只在任务 5 执行一次（后端全部变更完成后），任务 9 复跑校验零 diff；全程禁止手改 `frontend/src/client/`。
-4. **`.env` 最小改动并入任务 4**（`FIRST_SUPERUSER` → `FIRST_SUPERUSER_CODE`，残留 SMTP 键由 `extra="ignore"` 吸收），compose/CI/文档的全量清扫独立为任务 8，可与前端阶段并行。
-5. **顺序「先加后删」仅用于代码内部**：任务 3 的新端点在任务 4 重写 `users.py` 时原样保留，避免重复劳动与合并冲突。
+1. **字典文件是全局伴随文件**:每个任务都会 append `zh-CN.json` / `en.json`,**不计入单任务 ≤5 文件预算**(预算只数源/测试文件)。
+2. **zod 消息随文件内联翻译**:某文件在本次任务中本来就要改,其 zod message 同任务字典化;不做独立批量任务,改由 T12 做 grep 审计门禁(`message: "` 零字面量)。
+3. **E2E 随域配对改造**:哪个任务改某域文案,该任务同任务更新对应 spec 文件(定位器 testid 化 + 断言中文化)——保证每任务交付时代码树绿色,不出现「全红等 S5」;S5(T16)收口为审计而非批量转换。
+4. **契约试点先行(T13)**:仅 login 单点打通「后端 code → openapi 再生成 → utils.ts 回退链 → 中文 toast → 双测试绿」全链路,T14/T15 纯机械推广;先字典后后端(Always 边界)。
+5. **品牌/产品词保留原文**:Footer「Full Stack FastAPI Template」、社交 aria-label(GitHub/X/LinkedIn)、Logo 不入字典;S1「零英文残留」验收口径排除品牌词。**请评审确认**。
+6. **错误码契约**:`detail = {"code", "message"}`,message 固定英文兜底(语言中立);契约表见 SPEC-i18n.md,评审通过即冻结。
+7. **语言切换响应机制**:切换器 → `setAppLanguage(lang)`(localStorage + `i18n.changeLanguage` + `document.documentElement.lang`)→ 组件内 `router.invalidate()` 触发 `head()` 重求值;具体接线 T3 实现,S1 验收含「标题免硬刷新即时更新」。
+8. **线性执行为默认**:双 lane(前端清扫 ∥ 后端契约)理论可行,但双字典 JSON 会被两条 lane 同时编辑,合并冲突风险高;如需并行,字典编辑必须串行化。
 
 ## 依赖图
 
 ```
-Task 1: UUID v7 ──────────────┐
-Task 2: generate_random_password ── Task 3: reset-password 端点 ── Task 4: 后端身份置换(原子)
+T1: i18n 骨架 ── T2: 登录页双语(含 setup/spec)── T3: 切换器/响应 ── ◆CP-A(S1)
                                                                       │
-                                    ┌─────────────────────────────────┼──────────────┐
-                                    │                                 │              │
-                        Task 5: 客户端重生成+前端编译适配      Task 8: 基建/CI/文档清扫   │
-                                    │                                 │              │
-                        Task 6: 管理员重置密码弹窗                     │              │
-                                    │                                 │              │
-                        Task 7: Playwright e2e 重写                   │              │
-                                    └──────────────┬──────────────────┘              │
-                                                   └── Task 9: 全量验证与标准核对 ◄──┘
+              T4: 侧边栏 ── T5: Dashboard/全局 ── T6: Items 页 ── T7: Items 弹窗 ── ◆CP-B(S2, keys≤400)
+                                                                                      │
+              T8: Admin 页 ── T9: Admin 弹窗 ── T10: Settings ── T11: 清扫 ── T12: zod 审计 ── ◆CP-C(S3)
+                                                                                              │
+              T13: 契约试点(login)── T14: 推广 users+deps ── T15: 推广 items ── ◆CP-D(S4)
+                                                                                │
+              T16: E2E 审计(S5)── T17: 文档中文化(S6)── T18: 全量核对 ── ◆CP-E(完成)
 ```
+
+- 严格线性(T13 依赖 T2 的登录页中文与 T11 的 utils.ts 归属);T17 理论上可与 P4 并行,默认仍线性。
 
 ## 任务索引
 
-### Phase 1：后端地基（每个任务保持代码树绿色）
-- [x] Task 1：User/Item 主键改用 `uuid.uuid7` + 测试断言（S）
-- [x] Task 2：`core/security.py` 新增 `generate_random_password()`（XS）
-- [x] Task 3：管理员重置密码端点 `POST /users/{user_id}/reset-password` + 路由级测试（S）
+### Phase 1:S1 脚手架 + 登录页样板(高风险优先:i18next 集成摩擦在 T1–T3 暴露)
+- [ ] Task 1:i18n 依赖与初始化骨架(i18n.ts + 双字典 + main.tsx 接线)(M)
+- [ ] Task 2:登录页全量双语 + login.spec.ts 中文冒烟 + auth.setup.ts testid 化(M)
+- [ ] Task 3:语言切换器 + `<html lang>`/标题响应 + language.spec.ts 冒烟(M)
 
-### ✅ 检查点 A：后端地基（已完成）
-- [x] `cd backend && uv run pytest` 全绿；`bash scripts/lint.sh` 通过
+### ◆ Checkpoint A(S1 验收)
+- [ ] spec S1 清单逐项核对(双语渲染/持久化/html lang/标题即时更新/一天内跑通)
+- [ ] `bun run lint` + `bun run build` + E2E 全绿;**人工评审后再进入 Phase 2**
 
-### Phase 2：后端身份置换（原子任务，见决策 1）
-- [x] Task 4：user_code 替换 email 全链路置换（模型/迁移/config/db/crud/路由/删邮件模块/依赖/测试重写）（L，有意为之）
+### Phase 2:S2 主框架 + Items
+- [ ] Task 4:侧边栏与用户菜单(Sidebar/Main、User、AppSidebar + login.spec logout 定位器)(M)
+- [ ] Task 5:Dashboard 与全局组件(index.tsx、ErrorComponent、NotFound)(S)
+- [ ] Task 6:Items 页与表格(items.tsx、columns、PendingItems + items.spec 定位器)(M)
+- [ ] Task 7:Items 弹窗与操作(Add/Edit/Delete、ItemActionsMenu,含 zod 内联)(M)
 
-### ✅ 检查点 B：后端就绪（已完成）
-- [x] 空库与含存量 email 数据的库均可 `alembic upgrade head`；`uv run pytest` 全绿；lint 通过；`POST /api/v1/utils/test-email/`、`password-recovery*`、`users/signup` 均 404
+### ◆ Checkpoint B(S2 验收)
+- [ ] Dashboard/Items 域零英文残留(品牌词除外)
+- [ ] **keys 统计 ≤400 检查点**(统计 zh-CN.json key 数;超限停下重估并回报)
+- [ ] E2E 全绿
 
-### Phase 3：前端（依赖 Task 4 的 OpenAPI 契约）— 可与 Phase 4 并行
-- [x] Task 5：重生成客户端 + 编译级适配（删 signup/recover/reset 路由、useAuth、Admin/UserSettings/Sidebar 字段、登录页 testid 与链接）（L，编译强耦合）
-- [x] Task 6：管理员「Reset password」弹窗（一次性展示 + 复制）（S）
-- [x] Task 7：Playwright 用例重写（删 sign-up/reset-password/mailpit；改 identifier-input；新增重置密码 e2e）（M）
+### Phase 3:S3 Admin + Settings + 清扫
+- [ ] Task 8:Admin 页与表格(admin.tsx、columns、PendingUsers + admin.spec 部分)(M)
+- [ ] Task 9:Admin 弹窗与操作(Add/Edit/DeleteUser、UserActionsMenu、ResetPasswordDialog,含 zod 内联)(M)
+- [ ] Task 10:Settings(settings.tsx 三 tab、四个组件 + user-settings.spec)(M,6 文件:测试文件为伴随)
+- [ ] Task 11:隐蔽英文源清扫(useCustomToast、utils.ts 兜底、shadcn aria;处置清单)(S)
+- [ ] Task 12:zod 字面量审计(grep 门禁:src 内 `message: "` 零残留)(S)
 
-### ✅ 检查点 C：前端就绪（已完成）
-- [x] `bun run lint` 与 `bun run --filter frontend build` 通过；手动冒烟：编码登录、管理员建号、重置密码弹窗可见可复制（e2e `bun run test` 45 passed；冒烟经人工确认）
+### ◆ Checkpoint C(S3 验收)
+- [ ] Admin/Settings 零英文;aria 处置清单记录
+- [ ] **双字典 key 集合 diff = 0**(en 缺口清零;en 全量决策复核点)
+- [ ] E2E 全绿
 
-### Phase 4：基建与文档清扫（依赖 Task 4；可与 Phase 3 并行）
-- [x] Task 8：compose/CI/依赖工作区/文档中 email·SMTP·Mailpit 全量清除（M）
+### Phase 4:S4 后端错误码契约
+- [ ] Task 13:login 单点试点(3 处 + test_login + utils.ts 回退链 + client 再生成)(M)
+- [ ] Task 14:推广 users + deps(15 处 + 对应测试 + 字典 12 codes)(M)
+- [ ] Task 15:推广 items(6 处 + test_items)+ 契约表 17 code 全量核对(S)
 
-### 收尾
-- [x] Task 9：全量验证 + Success Criteria A–E 逐条核对（XS）
+### ◆ Checkpoint D(S4 验收)
+- [ ] 契约表逐项核对(24 处 / 17 code,状态码不变);`uv run pytest` + E2E 全绿
+- [ ] `sh scripts/generate-client.sh` 后 `frontend/src/client/` 零手改 diff
 
-### ✅ 检查点：完成
-- [x] `sh scripts/test.sh` 全绿（按 CI 工作流同款序列执行：70 passed、coverage 94%；根脚本容器内 pytest 段系上游缺陷，见 todo.md Task 9 注记①）；`bun run test` 全绿（45 passed）；两端 lint 通过
-- [x] `sh scripts/generate-client.sh` 复跑零 diff
-- [x] Success Criteria A–E 全部勾选
+### Phase 5:S5 + S6 收口
+- [ ] Task 16:E2E 收口审计(英文文案断言清零、抽查「改文案不碎测试」演练)(S)
+- [ ] Task 17:文档中文化(README / development / deployment ×2 + 继承说明)(S)
+- [ ] Task 18:全量验证与 SPEC-i18n.md 总体验收逐条核对(XS)
 
-## 并行化建议
-
-- **串行链**：T1 → T2 → T3 → T4（同文件写入顺序依赖，不建议并行）。
-- **并行窗口**：T4 完成后，T5→T6→T7（前端）与 T8（基建/文档）互不触碰同一文件，可双会话并行。
-- T7 依赖 T5、T6；T9 依赖全部。
+### ◆ Checkpoint E(完成)
+- [ ] SPEC-i18n.md「Success Criteria」总体四项全绿
+- [ ] 人工终审
 
 ## 风险与缓解
 
 | 风险 | 影响 | 缓解 |
 |---|---|---|
-| Task 4 原子任务过大（~16 文件），单会话完不成 | 中 | todo.md 内置严格有序的子步骤清单（模型→迁移→config→db→crud→login→users→private→删模块→依赖→.env→测试），机械执行；若确实过大，见开放问题 3 的两段式迁移备选 |
-| 时序攻击防护回归（ authenticate 无命中时漏跑 DUMMY_HASH） | 高 | 保留 `verify_password(password, DUMMY_HASH)` 路径；新增 monkeypatch spy 测试断言其被调用（spec 测试策略明列） |
-| Argon2 `verify_and_update` 的重哈希更新路径在 authenticate 重写中丢失 | 中 | 重写时保留 `updated_password_hash` 回写逻辑，crud 测试覆盖 |
-| 删除路由后 `routeTree.gen.ts` 过期导致 tsc 报错 | 低 | 路由文件删除后立即 `bun run --filter frontend build` 由插件重生成；禁止手改 gen 文件 |
-| 生成客户端与后端漂移 | 中 | 契约同步单点化（T5 一次 + T9 零 diff 校验） |
-| 测试登录链路断裂（testid `email-input` → `identifier-input`）波及所有 e2e | 中 | `auth.setup.ts` 集中修改；`config.ts` 常量改为 `FIRST_SUPERUSER_CODE` 对应值 |
-| 迁移占位回填 `left(id::text,8)` 理论上可能撞唯一索引 | 低 | spec 指定公式；v4 随机性下概率可忽略，迁移失败时人工处理该行 |
-| `uv.lock` 与 `pyproject.toml` 漂移 | 低 | T4 内执行 `uv lock && uv sync`；T9 校验无新增第三方依赖 |
-| OAuth2 表单字段 `username` 语义被误改 | 高 | Never 边界：路径/方法/表单形状不变，T9 手动验证 Swagger OAuth2 流程 |
+| i18next × React 19/Vite/SWC 集成摩擦 | 高(脚手架重来) | T1–T3 最小面暴露;不通过则回退自研 context 方案需重新评审 |
+| `head:` 静态导致标题不随语言更新 | 中 | T3 用 `router.invalidate()`;S1 验收含免硬刷新断言 |
+| keys 膨胀 >400 | 中 | CP-B 统计检查点,超限停下重估(idea 假设 3) |
+| 契约破坏唯一消费方 | 高 | T13 login 单点先行,双测试全绿再推广(idea 假设 2) |
+| E2E setup 依赖登录 UI 文案 | 高(全 E2E 崩) | T2 同任务改造 auth.setup.ts(testid 化) |
+| 双字典漂移(en 缺 key) | 低 | Always 边界同 PR 双改;CP-C key 集合 diff 门禁 |
+| deps 断言归属文件不明 | 低 | T14 以 grep `detail` 定位后逐条改,不许删断言 |
 
-## 开放问题（请评审时确认）
+## Open Questions(评审时定,不阻塞)
 
-1. **user_code 生成方式**（spec 开放问题 1）：按默认实现——管理员创建时手工填写（必填、唯一），不做自动流水号。
-2. **full_name 是否必填**（spec 开放问题 2）：按默认保持可空（为空仅能以编码登录）。
-3. **（计划层新增）是否接受 Task 4 的原子性**：遵守 spec「单一迁移」则后端置换必须一次落地；若你愿意放宽为 2 个新迁移（先加列后删列），Task 4 可拆成两个绿色小任务。**默认遵守 spec，不放宽。**
+1. Footer 产品名与社交 aria-label 保留原文(架构决策 5)—— 请确认。
+2. T17 文档重写口径:README 是否保留英文 quick-start 摘要?(spec 决策「不维护英文版」,默认纯中文)
+3. 并行 lane(架构决策 8)是否启用?默认线性。
