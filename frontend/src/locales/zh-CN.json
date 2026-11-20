@@ -41,5 +41,13 @@
     "greeting": "你好,{{name}} 👋",
     "welcome": "欢迎回来,很高兴再次见到您!"
   },
+  "error": {
+    "title": "错误",
+    "oops": "糟糕!",
+    "somethingWentWrong": "出错了,请重试。",
+    "goHome": "返回首页",
+    "pageNotFound": "您访问的页面不存在。",
+    "goBack": "返回"
+  },
   "errors": {}
 }

@@ -41,5 +41,13 @@
     "greeting": "Hi, {{name}} 👋",
     "welcome": "Welcome back, nice to see you again!!!"
   },
+  "error": {
+    "title": "Error",
+    "oops": "Oops!",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "goHome": "Go Home",
+    "pageNotFound": "The page you are looking for was not found.",
+    "goBack": "Go Back"
+  },
   "errors": {}
 }
