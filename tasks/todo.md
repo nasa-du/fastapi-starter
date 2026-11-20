@@ -83,9 +83,9 @@
 
 ## ◆ Checkpoint A:S1 验收(人工评审后再进入 Phase 2)
 
-- [ ] SPEC-i18n.md S1 清单逐项核对(双语渲染/切换器/持久化/html lang/标题即时更新)
-- [ ] `bun run lint` + `bun run build` + `bun run test` 全绿
-- [ ] i18next × Vite+SWC+React 19 集成摩擦已排除(idea 假设 1)
+- [x] SPEC-i18n.md S1 清单逐项核对(双语渲染/切换器/持久化/html lang/标题即时更新);2026-11-20 人工检查通过
+- [x] `bun run lint` + `bun run build` + `bun run test` 全绿:lint 75 files、build tsc + vite 通过、E2E **48 passed**(2026-11-20;build 在 `frontend/` 执行)
+- [x] i18next × Vite+SWC+React 19 集成摩擦已排除(idea 假设 1;构建、E2E 与人工验收均通过)
 
 ---
 
