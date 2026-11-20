@@ -150,13 +150,23 @@
 **描述**:routes/_layout/items.tsx(head 标题 + 页面文案)、Items/columns.tsx(表头/单元格)、Pending/PendingItems.tsx t() 化。关键交互(如新增按钮)加 testid;tests/items.spec.ts 定位器改造(testid 优先)与断言中文化。
 
 **验收标准**:
-- [ ] Items 列表页零英文残留;关键交互以 testid 定位
-- [ ] items.spec.ts 无英文文案定位/断言依赖
-- [ ] 字典新增 `items` 组(双字典)
+- [x] Items 列表页零英文残留;关键交互以 testid 定位
+- [x] items.spec.ts 无英文文案定位/断言依赖
+- [x] 字典新增 `items` 组(双字典)
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/items.spec.ts`
-- [ ] build 通过
+- [x] E2E:`bunx playwright test tests/items.spec.ts` — 12/12 绿(页面/表头/加载态/空态中文冒烟 + testid CRUD;RED 先行:改前中文断言 4 处失败)
+- [x] build 通过(`frontend/` 内 `bun run build`,tsc + vite 绿);lint 75 files 绿
+- [x] 回归:`bun run test` 全量 **51 passed**(2026-11-20)
+- [x] 双字典 key 集合 diff = 0(44/44)
+
+**执行备注**(超出原文件预算部分):
+- testid 落点(超出 4 文件清单的伴随改动,均为测试钩子不改行为):`AddItem.tsx`(add-item / item-title-input / item-description-input / save-item / cancel-create-item)、`EditItem.tsx`(edit-item / 同款输入 testid / save-item)、`DeleteItem.tsx`(delete-item 菜单项 / confirm-delete-item 确认钮)、`ItemActionsMenu.tsx`(item-actions)、`columns.tsx`(copy-item-id)
+- `useCustomToast.ts` showSuccessToast 增加可选 `{ testId }`(sonner 原生 testId 透传,标题/文案不动):CRUD 成功 toast 改以 item-{created,updated,deleted}-toast 定位,替代英文文案断言,提前兑现「改文案不碎测试」;toast 标题/文案中文化仍归 Task 7/11
+- 弹窗可见文案(Add/Edit/Delete 对话框)与 zod message 保留英文,属 Task 7;「Title is required」文案断言改为输入框 `aria-invalid` 属性断言;CRUD 行为断言(成功 toast、列表行出现/消失)全部保留
+- 新增 2 条非 CRUD 冒烟:表头/暂无描述/复制 ID 中→英即时切换断言(经侧边栏语言切换器),Pending 加载态表头断言(拦截 items 接口,不依赖真实延迟)
+- `DataTable.tsx` 的分页/「No results found.」文案属共享组件,不在本任务文件清单,未动(记录给全局清扫)
+- items.spec.ts 不再经 `logInUser`(其「Log In」/「Welcome back」文案依赖见 Task 4 备注,T16 收口)
 
 **依赖**:Task 5
 
