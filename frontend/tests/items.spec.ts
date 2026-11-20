@@ -99,11 +99,31 @@ test.describe("Items management", () => {
     const description = randomItemDescription()
 
     await page.getByTestId("add-item").click()
+    const dialog = page.getByRole("dialog")
+    await expect(
+      dialog.getByRole("heading", { name: "添加项目" }),
+    ).toBeVisible()
+    await expect(dialog.getByText("填写信息以添加新项目。")).toBeVisible()
+    await expect(dialog.getByText("标题", { exact: true })).toBeVisible()
+    await expect(dialog.getByText("描述", { exact: true })).toBeVisible()
+    await expect(page.getByTestId("item-title-input")).toHaveAttribute(
+      "placeholder",
+      "标题",
+    )
+    await expect(page.getByTestId("item-description-input")).toHaveAttribute(
+      "placeholder",
+      "描述",
+    )
+    await expect(page.getByTestId("cancel-create-item")).toHaveText("取消")
+    await expect(page.getByTestId("save-item")).toHaveText("保存")
+
     await page.getByTestId("item-title-input").fill(title)
     await page.getByTestId("item-description-input").fill(description)
     await page.getByTestId("save-item").click()
 
-    await expect(page.getByTestId("item-created-toast")).toBeVisible()
+    await expect(page.getByTestId("item-created-toast")).toContainText(
+      "项目创建成功",
+    )
     await expect(page.getByText(title, { exact: true })).toBeVisible()
   })
 
@@ -135,6 +155,7 @@ test.describe("Items management", () => {
       "aria-invalid",
       "true",
     )
+    await expect(page.getByText("请输入标题")).toBeVisible()
   })
 
   test.describe("Edit and Delete", () => {
@@ -152,11 +173,19 @@ test.describe("Items management", () => {
       await page.getByTestId("item-actions").last().click()
       await page.getByTestId("edit-item").click()
 
+      const dialog = page.getByRole("dialog")
+      await expect(
+        dialog.getByRole("heading", { name: "编辑项目" }),
+      ).toBeVisible()
+      await expect(dialog.getByText("在下方更新项目信息。")).toBeVisible()
+
       const updatedTitle = randomItemTitle()
       await page.getByTestId("item-title-input").fill(updatedTitle)
       await page.getByTestId("save-item").click()
 
-      await expect(page.getByTestId("item-updated-toast")).toBeVisible()
+      await expect(page.getByTestId("item-updated-toast")).toContainText(
+        "项目更新成功",
+      )
       await expect(page.getByText(updatedTitle, { exact: true })).toBeVisible()
     })
 
@@ -164,9 +193,18 @@ test.describe("Items management", () => {
       await page.getByTestId("item-actions").last().click()
       await page.getByTestId("delete-item").click()
 
+      const dialog = page.getByRole("dialog")
+      await expect(
+        dialog.getByRole("heading", { name: "删除项目" }),
+      ).toBeVisible()
+      await expect(dialog.getByText("该项目将被永久删除")).toBeVisible()
+      await expect(page.getByTestId("confirm-delete-item")).toHaveText("删除")
+
       await page.getByTestId("confirm-delete-item").click()
 
-      await expect(page.getByTestId("item-deleted-toast")).toBeVisible()
+      await expect(page.getByTestId("item-deleted-toast")).toContainText(
+        "项目删除成功",
+      )
       await expect(page.getByText(itemTitle, { exact: true })).not.toBeVisible()
     })
   })
