@@ -1,5 +1,6 @@
 import { EllipsisVertical } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import type { ItemPublic } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -17,12 +18,13 @@ interface ItemActionsMenuProps {
 
 export const ItemActionsMenu = ({ item }: ItemActionsMenuProps) => {
   const [open, setOpen] = useState(false)
+  const { t } = useTranslation()
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
-          aria-label="Item actions"
+          aria-label={t("items.menuLabel")}
           data-testid="item-actions"
           variant="ghost"
           size="icon"

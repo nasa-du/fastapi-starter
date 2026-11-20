@@ -78,7 +78,14 @@
       "title": "Edit Item",
       "description": "Update the item details below.",
       "toast": "Item updated successfully"
-    }
+    },
+    "delete": {
+      "title": "Delete Item",
+      "description": "This item will be permanently deleted. Are you sure? You will not be able to undo this action.",
+      "confirm": "Delete",
+      "toast": "The item was deleted successfully"
+    },
+    "menuLabel": "Item actions"
   },
   "errors": {}
 }

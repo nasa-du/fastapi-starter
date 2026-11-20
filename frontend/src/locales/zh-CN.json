@@ -78,7 +78,14 @@
       "title": "编辑项目",
       "description": "在下方更新项目信息。",
       "toast": "项目更新成功"
-    }
+    },
+    "delete": {
+      "title": "删除项目",
+      "description": "该项目将被永久删除,确定要删除吗?此操作将无法撤销。",
+      "confirm": "删除",
+      "toast": "项目删除成功"
+    },
+    "menuLabel": "项目操作"
   },
   "errors": {}
 }
