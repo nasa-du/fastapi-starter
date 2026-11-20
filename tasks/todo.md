@@ -122,12 +122,20 @@
 **描述**:routes/_layout/index.tsx(Dashboard 标题 + 页内文案)、Common/ErrorComponent.tsx、Common/NotFound.tsx 全部 t() 化。
 
 **验收标准**:
-- [ ] Dashboard 页、错误组件、404 页零英文残留(品牌词除外)
-- [ ] 字典新增 `dashboard` / `error` 组(双字典)
+- [x] Dashboard 页、错误组件、404 页零英文残留(品牌词除外)
+- [x] 字典新增 `dashboard` / `error` 组(双字典)
 
 **验证**:
-- [ ] 手动检查:访问不存在路由看 404 文案
-- [ ] build + lint 通过
+- [x] 手动检查:访问不存在路由看 404 文案(headless chromium 脚本 16/16:zh 浏览器 404 三文案 + `<html lang>` + console 零报错;存储偏好 en → 404 英文文案;zh 登录 Dashboard 文案/head 标题/问候插值、切 en 后标题**即时更新**、刷新保持)
+- [x] build + lint 通过(biome 75 files;tsc + vite 绿;双字典 key 集合 diff = 0,34/34)
+
+**执行备注**(超出原文件预算部分):
+- `head()` 接线沿用 login.tsx 先例(`i18next.t`):Task 3 遗留「Dashboard 页面标题即时更新待 Task 5」已生效(`router.invalidate()` 重求值 `head()`),切 en 冒烟实证
+- 问候语改插值 `dashboard.greeting`(`{{name}}`),替代原 JSX 字符串拼接;en 字面量与原文逐字一致
+- `error` 组双组件共享(`error.oops`);404 数字大字保留字面量(语言中性)
+- 404 页为根级 `notFoundComponent`,无侧边栏/语言切换器,切语言验证经 localStorage 预置实现
+- en 侧文案未变 → `tests/utils/user.ts` 的 `logInUser` "Welcome back" 断言不受影响(回归 49 passed 实证;文案 testid 化归 Task 16)
+- ErrorComponent 与 NotFound 同构(useTranslation 在根级组件树可用性已经 404 页实证),本任务无 E2E 断言依赖其文案
 
 **依赖**:Task 4
 
