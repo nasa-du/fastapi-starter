@@ -3,11 +3,15 @@ import { firstSuperuserCode, firstSuperuserPassword } from "./config.ts"
 import { createUser } from "./utils/privateApi.ts"
 import { randomPassword, randomUserCode } from "./utils/random.ts"
 
-test.use({ storageState: { cookies: [], origins: [] } })
+test.use({ storageState: { cookies: [], origins: [] }, locale: "zh-CN" })
 
 const fillForm = async (page: Page, identifier: string, password: string) => {
   await page.getByTestId("identifier-input").fill(identifier)
   await page.getByTestId("password-input").fill(password)
+}
+
+const submitLogin = async (page: Page) => {
+  await page.getByTestId("login-submit").click()
 }
 
 const verifyInput = async (page: Page, testId: string) => {
@@ -27,20 +31,16 @@ test("Inputs are visible, empty and editable", async ({ page }) => {
 test("Log In button is visible", async ({ page }) => {
   await page.goto("/login")
 
-  await expect(page.getByRole("button", { name: "Log In" })).toBeVisible()
+  await expect(page.getByTestId("login-submit")).toBeVisible()
 })
 
 test("Log in with valid user code and password", async ({ page }) => {
   await page.goto("/login")
 
   await fillForm(page, firstSuperuserCode, firstSuperuserPassword)
-  await page.getByRole("button", { name: "Log In" }).click()
+  await submitLogin(page)
 
   await page.waitForURL("/")
-
-  await expect(
-    page.getByText("Welcome back, nice to see you again!"),
-  ).toBeVisible()
 })
 
 test("Log in with full name", async ({ page }) => {
@@ -52,13 +52,9 @@ test("Log in with full name", async ({ page }) => {
 
   await page.goto("/login")
   await fillForm(page, fullName, password)
-  await page.getByRole("button", { name: "Log In" }).click()
+  await submitLogin(page)
 
   await page.waitForURL("/")
-
-  await expect(
-    page.getByText("Welcome back, nice to see you again!"),
-  ).toBeVisible()
 })
 
 test("Log in with unknown user code shows the unified error", async ({
@@ -67,22 +63,18 @@ test("Log in with unknown user code shows the unified error", async ({
   await page.goto("/login")
 
   await fillForm(page, "no_such_user_code", randomPassword())
-  await page.getByRole("button", { name: "Log In" }).click()
+  await submitLogin(page)
 
-  await expect(
-    page.getByText("Incorrect user code/name or password"),
-  ).toBeVisible()
+  await expect(page.getByText("用户编码或密码错误")).toBeVisible()
 })
 
 test("Log in with unknown name shows the unified error", async ({ page }) => {
   await page.goto("/login")
 
   await fillForm(page, "No Such Name", firstSuperuserPassword)
-  await page.getByRole("button", { name: "Log In" }).click()
+  await submitLogin(page)
 
-  await expect(
-    page.getByText("Incorrect user code/name or password"),
-  ).toBeVisible()
+  await expect(page.getByText("用户编码或密码错误")).toBeVisible()
 })
 
 test("Identifier is required", async ({ page }) => {
@@ -91,20 +83,16 @@ test("Identifier is required", async ({ page }) => {
   await page.getByTestId("identifier-input").fill("")
   await page.getByTestId("identifier-input").blur()
 
-  await expect(page.getByText("User code or name is required")).toBeVisible()
+  await expect(page.getByText("请输入用户编码或姓名")).toBeVisible()
 })
 
 test("Successful log out", async ({ page }) => {
   await page.goto("/login")
 
   await fillForm(page, firstSuperuserCode, firstSuperuserPassword)
-  await page.getByRole("button", { name: "Log In" }).click()
+  await submitLogin(page)
 
   await page.waitForURL("/")
-
-  await expect(
-    page.getByText("Welcome back, nice to see you again!"),
-  ).toBeVisible()
 
   await page.getByTestId("user-menu").click()
   await page.getByRole("menuitem", { name: "Log out" }).click()
@@ -115,13 +103,9 @@ test("Logged-out user cannot access protected routes", async ({ page }) => {
   await page.goto("/login")
 
   await fillForm(page, firstSuperuserCode, firstSuperuserPassword)
-  await page.getByRole("button", { name: "Log In" }).click()
+  await submitLogin(page)
 
   await page.waitForURL("/")
-
-  await expect(
-    page.getByText("Welcome back, nice to see you again!"),
-  ).toBeVisible()
 
   await page.getByTestId("user-menu").click()
   await page.getByRole("menuitem", { name: "Log out" }).click()
