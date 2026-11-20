@@ -86,6 +86,33 @@ test("Identifier is required", async ({ page }) => {
   await expect(page.getByText("请输入用户编码或姓名")).toBeVisible()
 })
 
+test("Sidebar and user menu use localized labels", async ({ page }) => {
+  await page.goto("/login")
+
+  await fillForm(page, firstSuperuserCode, firstSuperuserPassword)
+  await submitLogin(page)
+
+  await page.waitForURL("/")
+
+  const dashboardLink = page.getByRole("link", { name: "仪表盘", exact: true })
+  await expect(dashboardLink).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: "项目", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: "管理", exact: true }),
+  ).toBeVisible()
+
+  await page.getByTestId("user-menu").click()
+  await expect(page.getByRole("menuitem", { name: "用户设置" })).toBeVisible()
+  await expect(page.getByTestId("logout")).toHaveText("退出登录")
+  await page.keyboard.press("Escape")
+
+  await page.locator('[data-sidebar="trigger"]').click()
+  await dashboardLink.hover()
+  await expect(page.getByRole("tooltip")).toHaveText("仪表盘")
+})
+
 test("Successful log out", async ({ page }) => {
   await page.goto("/login")
 
@@ -95,7 +122,7 @@ test("Successful log out", async ({ page }) => {
   await page.waitForURL("/")
 
   await page.getByTestId("user-menu").click()
-  await page.getByRole("menuitem", { name: "Log out" }).click()
+  await page.getByTestId("logout").click()
   await page.waitForURL("/login")
 })
 
@@ -108,7 +135,7 @@ test("Logged-out user cannot access protected routes", async ({ page }) => {
   await page.waitForURL("/")
 
   await page.getByTestId("user-menu").click()
-  await page.getByRole("menuitem", { name: "Log out" }).click()
+  await page.getByTestId("logout").click()
   await page.waitForURL("/login")
 
   await page.goto("/settings")

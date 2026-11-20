@@ -27,5 +27,14 @@
     "label": "语言",
     "toggleLanguage": "切换语言"
   },
+  "nav": {
+    "dashboard": "仪表盘",
+    "items": "项目",
+    "admin": "管理"
+  },
+  "menu": {
+    "userSettings": "用户设置",
+    "logout": "退出登录"
+  },
   "errors": {}
 }

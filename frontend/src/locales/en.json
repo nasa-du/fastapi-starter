@@ -27,5 +27,14 @@
     "label": "Language",
     "toggleLanguage": "Switch language"
   },
+  "nav": {
+    "dashboard": "Dashboard",
+    "items": "Items",
+    "admin": "Admin"
+  },
+  "menu": {
+    "userSettings": "User Settings",
+    "logout": "Log Out"
+  },
   "errors": {}
 }
