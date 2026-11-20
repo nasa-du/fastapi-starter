@@ -7,8 +7,6 @@ import {
   type UserPublic,
   UsersService,
 } from "@/client"
-import { handleError } from "@/utils"
-import useCustomToast from "./useCustomToast"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -16,7 +14,6 @@ const isLoggedIn = () => {
 
 const useAuth = () => {
   const navigate = useNavigate()
-  const { showErrorToast } = useCustomToast()
 
   const { data: user } = useQuery<UserPublic | null, Error>({
     queryKey: ["currentUser"],
@@ -31,12 +28,13 @@ const useAuth = () => {
     localStorage.setItem("access_token", response.data.access_token)
   }
 
+  // 错误 toast 由调用方(登录页)负责本地化展示;Task 13 错误码契约落地后
+  // 统一恢复 handleError 漏斗(extractErrorMessage 的 code 分支)。
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
       navigate({ to: "/" })
     },
-    onError: handleError.bind(showErrorToast),
   })
 
   const logout = () => {
