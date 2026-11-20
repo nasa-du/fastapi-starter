@@ -55,7 +55,9 @@ const AddItem = () => {
   const mutation = useMutation({
     mutationFn: (data: ItemCreate) => ItemsService.createItem({ body: data }),
     onSuccess: () => {
-      showSuccessToast("Item created successfully")
+      showSuccessToast("Item created successfully", {
+        testId: "item-created-toast",
+      })
       form.reset()
       setIsOpen(false)
     },
@@ -72,7 +74,7 @@ const AddItem = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="my-4">
+        <Button className="my-4" data-testid="add-item">
           <Plus className="mr-2" />
           Add Item
         </Button>
@@ -97,6 +99,8 @@ const AddItem = () => {
                     </FormLabel>
                     <FormControl>
                       <Input
+                        data-testid="item-title-input"
+                        aria-label="Title"
                         placeholder="Title"
                         type="text"
                         {...field}
@@ -115,7 +119,13 @@ const AddItem = () => {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input placeholder="Description" type="text" {...field} />
+                      <Input
+                        data-testid="item-description-input"
+                        aria-label="Description"
+                        placeholder="Description"
+                        type="text"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -125,11 +135,19 @@ const AddItem = () => {
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
+                <Button
+                  data-testid="cancel-create-item"
+                  variant="outline"
+                  disabled={mutation.isPending}
+                >
                   Cancel
                 </Button>
               </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
+              <LoadingButton
+                data-testid="save-item"
+                type="submit"
+                loading={mutation.isPending}
+              >
                 Save
               </LoadingButton>
             </DialogFooter>

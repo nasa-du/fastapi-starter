@@ -1,5 +1,7 @@
 import type { ColumnDef } from "@tanstack/react-table"
+import i18next from "i18next"
 import { Check, Copy } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import type { ItemPublic } from "@/client"
 import type { DataTableFeatures } from "@/components/Common/DataTable"
@@ -11,6 +13,7 @@ import { ItemActionsMenu } from "./ItemActionsMenu"
 function CopyId({ id }: { id: string }) {
   const [copiedText, copy] = useCopyToClipboard()
   const isCopied = copiedText === id
+  const { t } = useTranslation()
 
   return (
     <div className="flex items-center gap-1.5 group">
@@ -19,6 +22,7 @@ function CopyId({ id }: { id: string }) {
         variant="ghost"
         size="icon"
         className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
+        data-testid="copy-item-id"
         onClick={() => copy(id)}
       >
         {isCopied ? (
@@ -26,7 +30,7 @@ function CopyId({ id }: { id: string }) {
         ) : (
           <Copy className="size-3" />
         )}
-        <span className="sr-only">Copy ID</span>
+        <span className="sr-only">{t("items.copyId")}</span>
       </Button>
     </div>
   )
@@ -40,14 +44,14 @@ export const columns: ColumnDef<DataTableFeatures, ItemPublic>[] = [
   },
   {
     accessorKey: "title",
-    header: "Title",
+    header: () => i18next.t("items.columnTitle"),
     cell: ({ row }) => (
       <span className="font-medium">{row.original.title}</span>
     ),
   },
   {
     accessorKey: "description",
-    header: "Description",
+    header: () => i18next.t("items.columnDescription"),
     cell: ({ row }) => {
       const description = row.original.description
       return (
@@ -57,14 +61,14 @@ export const columns: ColumnDef<DataTableFeatures, ItemPublic>[] = [
             !description && "italic",
           )}
         >
-          {description || "No description"}
+          {description || i18next.t("items.noDescription")}
         </span>
       )
     },
   },
   {
     id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">{i18next.t("items.actions")}</span>,
     cell: ({ row }) => (
       <div className="flex justify-end">
         <ItemActionsMenu item={row.original} />

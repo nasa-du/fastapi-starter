@@ -6,17 +6,73 @@ import {
   randomPassword,
   randomUserCode,
 } from "./utils/random"
-import { logInUser } from "./utils/user"
+
+test.use({ locale: "zh-CN" })
 
 test("Items page is accessible and shows correct title", async ({ page }) => {
   await page.goto("/items")
-  await expect(page.getByRole("heading", { name: "Items" })).toBeVisible()
-  await expect(page.getByText("Create and manage your items")).toBeVisible()
+  await expect(page).toHaveTitle("项目 - FastAPI Template")
+  await expect(page.getByRole("heading", { name: "项目" })).toBeVisible()
+  await expect(page.getByText("创建和管理您的项目")).toBeVisible()
 })
 
 test("Add Item button is visible", async ({ page }) => {
   await page.goto("/items")
-  await expect(page.getByRole("button", { name: "Add Item" })).toBeVisible()
+  await expect(page.getByTestId("add-item")).toBeVisible()
+})
+
+test("Items table localizes headings and missing descriptions", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/items/?**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: [
+          {
+            id: "missing-description-item",
+            title: "Missing description smoke",
+            description: null,
+            owner_id: "test-owner",
+          },
+        ],
+        count: 1,
+      }),
+    }),
+  )
+  await page.goto("/items")
+  await expect(page.getByRole("columnheader", { name: "标题" })).toBeVisible()
+  await expect(page.getByRole("columnheader", { name: "描述" })).toBeVisible()
+  await expect(page.getByText("暂无描述")).toBeVisible()
+  await expect(page.getByText("操作")).toBeAttached()
+  await expect(page.getByTestId("copy-item-id")).toHaveText("复制 ID")
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+
+  await expect(page.getByRole("columnheader", { name: "Title" })).toBeVisible()
+  await expect(
+    page.getByRole("columnheader", { name: "Description" }),
+  ).toBeVisible()
+  await expect(page.getByText("No description")).toBeVisible()
+  await expect(page.getByText("Actions")).toBeAttached()
+  await expect(page.getByTestId("copy-item-id")).toHaveText("Copy ID")
+})
+
+test("Pending Items uses localized table headings", async ({ page }) => {
+  await page.route("**/api/v1/items/?**", () => {})
+  await page.goto("/items")
+  await expect(page.getByRole("table")).toBeVisible()
+  const pendingTable = page.locator("table").filter({
+    has: page.locator("[data-slot='skeleton']"),
+  })
+  await expect(
+    pendingTable.getByRole("columnheader", { name: "标题" }),
+  ).toBeVisible()
+  await expect(
+    pendingTable.getByRole("columnheader", { name: "描述" }),
+  ).toBeVisible()
+  await expect(pendingTable.getByText("操作")).toBeAttached()
 })
 
 test.describe("Items management", () => {
@@ -30,7 +86,11 @@ test.describe("Items management", () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    await logInUser(page, userCode, password)
+    await page.goto("/login")
+    await page.getByTestId("identifier-input").fill(userCode)
+    await page.getByTestId("password-input").fill(password)
+    await page.getByTestId("login-submit").click()
+    await page.waitForURL("/")
     await page.goto("/items")
   })
 
@@ -38,79 +98,76 @@ test.describe("Items management", () => {
     const title = randomItemTitle()
     const description = randomItemDescription()
 
-    await page.getByRole("button", { name: "Add Item" }).click()
-    await page.getByLabel("Title").fill(title)
-    await page.getByLabel("Description").fill(description)
-    await page.getByRole("button", { name: "Save" }).click()
+    await page.getByTestId("add-item").click()
+    await page.getByTestId("item-title-input").fill(title)
+    await page.getByTestId("item-description-input").fill(description)
+    await page.getByTestId("save-item").click()
 
-    await expect(page.getByText("Item created successfully")).toBeVisible()
-    await expect(page.getByText(title)).toBeVisible()
+    await expect(page.getByTestId("item-created-toast")).toBeVisible()
+    await expect(page.getByText(title, { exact: true })).toBeVisible()
   })
 
   test("Create item with only required fields", async ({ page }) => {
     const title = randomItemTitle()
 
-    await page.getByRole("button", { name: "Add Item" }).click()
-    await page.getByLabel("Title").fill(title)
-    await page.getByRole("button", { name: "Save" }).click()
+    await page.getByTestId("add-item").click()
+    await page.getByTestId("item-title-input").fill(title)
+    await page.getByTestId("save-item").click()
 
-    await expect(page.getByText("Item created successfully")).toBeVisible()
-    await expect(page.getByText(title)).toBeVisible()
+    await expect(page.getByTestId("item-created-toast")).toBeVisible()
+    await expect(page.getByText(title, { exact: true })).toBeVisible()
   })
 
   test("Cancel item creation", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Item" }).click()
-    await page.getByLabel("Title").fill("Test Item")
-    await page.getByRole("button", { name: "Cancel" }).click()
+    await page.getByTestId("add-item").click()
+    await page.getByTestId("item-title-input").fill("Test Item")
+    await page.getByTestId("cancel-create-item").click()
 
     await expect(page.getByRole("dialog")).not.toBeVisible()
   })
 
   test("Title is required", async ({ page }) => {
-    await page.getByRole("button", { name: "Add Item" }).click()
-    await page.getByLabel("Title").fill("")
-    await page.getByLabel("Title").blur()
+    await page.getByTestId("add-item").click()
+    await page.getByTestId("item-title-input").focus()
+    await page.getByTestId("item-title-input").blur()
 
-    await expect(page.getByText("Title is required")).toBeVisible()
+    await expect(page.getByTestId("item-title-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
   })
 
   test.describe("Edit and Delete", () => {
-    let itemTitle: string
+    const itemTitle = randomItemTitle()
 
     test.beforeEach(async ({ page }) => {
-      itemTitle = randomItemTitle()
-
-      await page.getByRole("button", { name: "Add Item" }).click()
-      await page.getByLabel("Title").fill(itemTitle)
-      await page.getByRole("button", { name: "Save" }).click()
-      await expect(page.getByText("Item created successfully")).toBeVisible()
+      await page.getByTestId("add-item").click()
+      await page.getByTestId("item-title-input").fill(itemTitle)
+      await page.getByTestId("save-item").click()
+      await expect(page.getByTestId("item-created-toast")).toBeVisible()
       await expect(page.getByRole("dialog")).not.toBeVisible()
     })
 
     test("Edit an item successfully", async ({ page }) => {
-      const itemRow = page.getByRole("row").filter({ hasText: itemTitle })
-      await itemRow.getByRole("button").last().click()
-      await page.getByRole("menuitem", { name: "Edit Item" }).click()
+      await page.getByTestId("item-actions").last().click()
+      await page.getByTestId("edit-item").click()
 
       const updatedTitle = randomItemTitle()
-      await page.getByLabel("Title").fill(updatedTitle)
-      await page.getByRole("button", { name: "Save" }).click()
+      await page.getByTestId("item-title-input").fill(updatedTitle)
+      await page.getByTestId("save-item").click()
 
-      await expect(page.getByText("Item updated successfully")).toBeVisible()
-      await expect(page.getByText(updatedTitle)).toBeVisible()
+      await expect(page.getByTestId("item-updated-toast")).toBeVisible()
+      await expect(page.getByText(updatedTitle, { exact: true })).toBeVisible()
     })
 
     test("Delete an item successfully", async ({ page }) => {
-      const itemRow = page.getByRole("row").filter({ hasText: itemTitle })
-      await itemRow.getByRole("button").last().click()
-      await page.getByRole("menuitem", { name: "Delete Item" }).click()
+      await page.getByTestId("item-actions").last().click()
+      await page.getByTestId("delete-item").click()
 
-      await page.getByRole("button", { name: "Delete" }).click()
+      await page.getByTestId("confirm-delete-item").click()
 
-      await expect(
-        page.getByText("The item was deleted successfully"),
-      ).toBeVisible()
-      await expect(page.getByText(itemTitle)).not.toBeVisible()
+      await expect(page.getByTestId("item-deleted-toast")).toBeVisible()
+      await expect(page.getByText(itemTitle, { exact: true })).not.toBeVisible()
     })
   })
 })
@@ -122,11 +179,15 @@ test.describe("Items empty state", () => {
     const userCode = randomUserCode()
     const password = randomPassword()
     await createUser({ user_code: userCode, password })
-    await logInUser(page, userCode, password)
+    await page.goto("/login")
+    await page.getByTestId("identifier-input").fill(userCode)
+    await page.getByTestId("password-input").fill(password)
+    await page.getByTestId("login-submit").click()
+    await page.waitForURL("/")
 
     await page.goto("/items")
 
-    await expect(page.getByText("You don't have any items yet")).toBeVisible()
-    await expect(page.getByText("Add a new item to get started")).toBeVisible()
+    await expect(page.getByText("您还没有任何项目")).toBeVisible()
+    await expect(page.getByText("添加一个新项目开始使用")).toBeVisible()
   })
 })

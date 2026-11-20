@@ -1,9 +1,13 @@
 import { toast } from "sonner"
 
 const useCustomToast = () => {
-  const showSuccessToast = (description: string) => {
+  const showSuccessToast = (
+    description: string,
+    options: { testId?: string } = {},
+  ) => {
     toast.success("Success!", {
       description,
+      testId: options.testId,
     })
   }
 

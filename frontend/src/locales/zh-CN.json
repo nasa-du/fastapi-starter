@@ -49,5 +49,17 @@
     "pageNotFound": "您访问的页面不存在。",
     "goBack": "返回"
   },
+  "items": {
+    "headTitle": "项目 - FastAPI Template",
+    "title": "项目",
+    "description": "创建和管理您的项目",
+    "empty": "您还没有任何项目",
+    "emptyHint": "添加一个新项目开始使用",
+    "copyId": "复制 ID",
+    "columnTitle": "标题",
+    "columnDescription": "描述",
+    "noDescription": "暂无描述",
+    "actions": "操作"
+  },
   "errors": {}
 }

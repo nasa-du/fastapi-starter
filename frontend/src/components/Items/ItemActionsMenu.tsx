@@ -21,7 +21,12 @@ export const ItemActionsMenu = ({ item }: ItemActionsMenuProps) => {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button
+          aria-label="Item actions"
+          data-testid="item-actions"
+          variant="ghost"
+          size="icon"
+        >
           <EllipsisVertical />
         </Button>
       </DropdownMenuTrigger>

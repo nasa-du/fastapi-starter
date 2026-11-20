@@ -61,7 +61,9 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
     mutationFn: (data: FormData) =>
       ItemsService.updateItem({ path: { id: item.id }, body: data }),
     onSuccess: () => {
-      showSuccessToast("Item updated successfully")
+      showSuccessToast("Item updated successfully", {
+        testId: "item-updated-toast",
+      })
       setIsOpen(false)
       onSuccess()
     },
@@ -78,6 +80,7 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuItem
+        data-testid="edit-item"
         onSelect={(e) => e.preventDefault()}
         onClick={() => setIsOpen(true)}
       >
@@ -103,7 +106,13 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
                       Title <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Title" type="text" {...field} />
+                      <Input
+                        data-testid="item-title-input"
+                        aria-label="Title"
+                        placeholder="Title"
+                        type="text"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -117,7 +126,13 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
                   <FormItem>
                     <FormLabel>Description</FormLabel>
                     <FormControl>
-                      <Input placeholder="Description" type="text" {...field} />
+                      <Input
+                        data-testid="item-description-input"
+                        aria-label="Description"
+                        placeholder="Description"
+                        type="text"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -131,7 +146,11 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
                   Cancel
                 </Button>
               </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
+              <LoadingButton
+                data-testid="save-item"
+                type="submit"
+                loading={mutation.isPending}
+              >
                 Save
               </LoadingButton>
             </DialogFooter>

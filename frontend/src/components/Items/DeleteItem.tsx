@@ -37,7 +37,9 @@ const DeleteItem = ({ id, onSuccess }: DeleteItemProps) => {
   const mutation = useMutation({
     mutationFn: deleteItem,
     onSuccess: () => {
-      showSuccessToast("The item was deleted successfully")
+      showSuccessToast("The item was deleted successfully", {
+        testId: "item-deleted-toast",
+      })
       setIsOpen(false)
       onSuccess()
     },
@@ -55,6 +57,7 @@ const DeleteItem = ({ id, onSuccess }: DeleteItemProps) => {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuItem
         variant="destructive"
+        data-testid="delete-item"
         onSelect={(e) => e.preventDefault()}
         onClick={() => setIsOpen(true)}
       >
@@ -78,6 +81,7 @@ const DeleteItem = ({ id, onSuccess }: DeleteItemProps) => {
               </Button>
             </DialogClose>
             <LoadingButton
+              data-testid="confirm-delete-item"
               variant="destructive"
               type="submit"
               loading={mutation.isPending}

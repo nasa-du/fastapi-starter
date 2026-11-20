@@ -49,5 +49,17 @@
     "pageNotFound": "The page you are looking for was not found.",
     "goBack": "Go Back"
   },
+  "items": {
+    "headTitle": "Items - FastAPI Template",
+    "title": "Items",
+    "description": "Create and manage your items",
+    "empty": "You don't have any items yet",
+    "emptyHint": "Add a new item to get started",
+    "copyId": "Copy ID",
+    "columnTitle": "Title",
+    "columnDescription": "Description",
+    "noDescription": "No description",
+    "actions": "Actions"
+  },
   "errors": {}
 }
