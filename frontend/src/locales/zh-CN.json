@@ -23,5 +23,9 @@
     "dark": "深色",
     "system": "跟随系统"
   },
+  "language": {
+    "label": "语言",
+    "toggleLanguage": "切换语言"
+  },
   "errors": {}
 }

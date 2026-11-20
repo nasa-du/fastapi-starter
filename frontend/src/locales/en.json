@@ -23,5 +23,9 @@
     "dark": "Dark",
     "system": "System"
   },
+  "language": {
+    "label": "Language",
+    "toggleLanguage": "Switch language"
+  },
   "errors": {}
 }
