@@ -59,7 +59,21 @@
     "columnTitle": "Title",
     "columnDescription": "Description",
     "noDescription": "No description",
-    "actions": "Actions"
+    "actions": "Actions",
+    "form": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "Title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Description",
+      "titleRequired": "Title is required",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "add": {
+      "title": "Add Item",
+      "description": "Fill in the details to add a new item.",
+      "toast": "Item created successfully"
+    }
   },
   "errors": {}
 }

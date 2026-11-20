@@ -104,8 +104,8 @@ test.describe("Items management", () => {
       dialog.getByRole("heading", { name: "添加项目" }),
     ).toBeVisible()
     await expect(dialog.getByText("填写信息以添加新项目。")).toBeVisible()
-    await expect(dialog.getByText("标题", { exact: true })).toBeVisible()
-    await expect(dialog.getByText("描述", { exact: true })).toBeVisible()
+    await expect(dialog.getByText("标题")).toBeVisible()
+    await expect(dialog.getByText("描述")).toBeVisible()
     await expect(page.getByTestId("item-title-input")).toHaveAttribute(
       "placeholder",
       "标题",

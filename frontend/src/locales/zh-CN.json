@@ -59,7 +59,21 @@
     "columnTitle": "标题",
     "columnDescription": "描述",
     "noDescription": "暂无描述",
-    "actions": "操作"
+    "actions": "操作",
+    "form": {
+      "titleLabel": "标题",
+      "titlePlaceholder": "标题",
+      "descriptionLabel": "描述",
+      "descriptionPlaceholder": "描述",
+      "titleRequired": "请输入标题",
+      "cancel": "取消",
+      "save": "保存"
+    },
+    "add": {
+      "title": "添加项目",
+      "description": "填写信息以添加新项目。",
+      "toast": "项目创建成功"
+    }
   },
   "errors": {}
 }
