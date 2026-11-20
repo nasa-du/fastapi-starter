@@ -33,14 +33,19 @@
 **描述**:登录页可见文案全部 t() 化:login.tsx(zod ×3、「Login to your account」、两个 label、两个 placeholder、「Log In」按钮、head 标题)+ Appearance.tsx(Appearance/Light/Dark/System/sr-only,登录页经 AuthLayout 可见)。提交按钮加 `data-testid="login-submit"`。login.spec.ts 英文文案断言改为中文冒烟(testid 优先);auth.setup.ts 的 `name: "Log In"` 改 `getByTestId("login-submit")`。Footer 产品名保留(决策 5)。
 
 **验收标准**:
-- [ ] 登录页(含主题下拉)中英文可切换、zod 校验消息来自字典;head 标题来自字典
-- [ ] login.spec.ts 无英文文案断言(中文冒烟 + testid);auth.setup.ts 不再依赖按钮文案
-- [ ] 字典新增 `login` 组与主题组(双字典同步)
+- [x] 登录页(含主题下拉)中英文可切换、zod 校验消息来自字典;head 标题来自字典
+- [x] login.spec.ts 无英文文案断言(中文冒烟 + testid);auth.setup.ts 不再依赖按钮文案
+- [x] 字典新增 `login` 组与主题组(双字典同步)
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/login.spec.ts`(需后端+db)
-- [ ] 构建通过:`bun run build`
-- [ ] 手动检查:错误登录 → 中文提示 toast;切 en 后登录页变英文
+- [x] E2E:`bunx playwright test tests/login.spec.ts`(需后端+db)— 11/11 绿
+- [x] 构建通过:`bun run build`
+- [x] 手动检查:错误登录 → 中文提示 toast(单 toast,描述「用户编码或密码错误」;toast 标题 "Something went wrong!" 属 Task 11 useCustomToast 清扫);切 en 后登录页变英文(head 标题/h1/按钮/`<html lang>` 冒烟证据齐)
+
+**执行备注**(超出原文件预算部分):
+- `useAuth.ts` 移除 loginMutation 的 mutation 级 onError(唯一调用方为登录页):`mutate()` 的 per-call 回调与 mutation 级回调**叠加触发**,原方案会双 toast(一英一中);现错误展示归调用方,Task 13 恢复 handleError 漏斗
+- 错误登录中文为 login.tsx 本地映射过渡(按后端 detail 字符串 → 字典),Task 13 迁入 extractErrorMessage 后移除
+- login.spec.ts 的 `Log out` menuitem 定位器按计划归 Task 4 改造
 
 **依赖**:Task 1
 
@@ -279,7 +284,7 @@
 
 ## Task 13:错误码契约 login 单点试点
 
-**描述**:打通全链路样板。先字典后后端:双字典 `errors` 组新增 `AUTH_LOGIN_NAME_CONFLICT` / `AUTH_LOGIN_INVALID` / `AUTH_LOGIN_INACTIVE`(中文译文);login.py 3 处 `detail` 改 `{"code", "message"}`(message 固定英文,契约表);test_login.py 对应断言改 `detail["code"]`;utils.ts `extractErrorMessage` 增加 `detail?.code` 分支(`t("errors."+code, { defaultValue: detail.message })`);`sh scripts/generate-client.sh` 再生成。
+**描述**:打通全链路样板。先字典后后端:双字典 `errors` 组新增 `AUTH_LOGIN_NAME_CONFLICT` / `AUTH_LOGIN_INVALID` / `AUTH_LOGIN_INACTIVE`(中文译文,与 Task 2 的 `login.errors.{invalid,nameConflict,inactive}` 译文一致);login.py 3 处 `detail` 改 `{"code", "message"}`(message 固定英文,契约表);test_login.py 对应断言改 `detail["code"]`;utils.ts `extractErrorMessage` 增加 `detail?.code` 分支(`t("errors."+code, { defaultValue: detail.message })`);`sh scripts/generate-client.sh` 再生成。**收尾迁移**:移除 Task 2 在 login.tsx 的本地错误映射(`LOGIN_ERROR_KEYS` + per-call onError),恢复 useAuth loginMutation 的 `onError: handleError.bind(showErrorToast)`。
 
 **验收标准**:
 - [ ] 登录接口错误返回 `{"code","message"}`,状态码不变;test_login.py 以 code 断言
