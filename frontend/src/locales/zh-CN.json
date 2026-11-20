@@ -36,5 +36,10 @@
     "userSettings": "用户设置",
     "logout": "退出登录"
   },
+  "dashboard": {
+    "headTitle": "仪表盘 - FastAPI Template",
+    "greeting": "你好,{{name}} 👋",
+    "welcome": "欢迎回来,很高兴再次见到您!"
+  },
   "errors": {}
 }

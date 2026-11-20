@@ -36,5 +36,10 @@
     "userSettings": "User Settings",
     "logout": "Log Out"
   },
+  "dashboard": {
+    "headTitle": "Dashboard - FastAPI Template",
+    "greeting": "Hi, {{name}} 👋",
+    "welcome": "Welcome back, nice to see you again!!!"
+  },
   "errors": {}
 }
