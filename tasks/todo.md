@@ -60,13 +60,18 @@
 **描述**:新建 `LanguageSwitcher.tsx`(仿 SidebarAppearance 的 dropdown:中文 / English + tooltip),放入 AppSidebar 的 SidebarFooter(Appearance 旁)。`setAppLanguage` 完成持久化 + `<html lang>` 同步;切换后 `router.invalidate()` 触发 `head()` 重求值(接线方式实现时定)。新增 tests/language.spec.ts 冒烟:切 en → 登录页英文 → 刷新保持 → `<html lang>` 断言。
 
 **验收标准**:
-- [ ] 侧边栏底部出现语言切换器,与主题切换并列;切换即时生效且免硬刷新(路由标题、`<html lang>`)
-- [ ] 刷新后语言保持(localStorage)
-- [ ] language.spec.ts 通过
+- [x] 侧边栏底部出现语言切换器,与主题切换并列;切换即时生效且免硬刷新(路由标题、`<html lang>`)
+- [x] 刷新后语言保持(localStorage)
+- [x] language.spec.ts 通过
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/language.spec.ts`
-- [ ] 手动检查:切换后 Dashboard 标题即时更新
+- [x] E2E:`bunx playwright test tests/language.spec.ts` — 4 passed(3 冒烟 + setup)
+- [x] 手动检查:登录页切 en → 标题「登录 - …」→「Log In - …」、`<html lang>`、按钮文案即时更新,URL 不变(免硬刷新,E2E 断言覆盖);Dashboard 侧边栏切换即时生效;Dashboard **页面标题**即时更新待 Task 5(`dashboard.headTitle` 入字典后生效,当前为静态英文字面量)
+
+**执行备注**(超出原文件预算部分):
+- 新增 `AuthLayout.tsx` 接线(第 5 文件):S1 验收要求「登录路由标题随语言切换即时更新」,而当前唯一 i18n 化的 head 是登录路由标题;切换器必须登录页可达才能免导航观察到标题即时更新。仿 Appearance 先例(登录页已有主题按钮),语言按钮并列其右
+- `i18n.ts` 零改动:Task 1 的 `setAppLanguage` 已含持久化 + `<html lang>` 同步;接线定为组件内共享 `useChangeAppLanguage`(`setAppLanguage().then(router.invalidate())`),`invalidate()` 末尾 `load()` 重投影 lane → `head()` 重求值(已对 router-core 源码核实,并经 E2E 标题断言实证)
+- 菜单项「中文 / English」为语言自助名,不随当前语言翻译(故意字面量);按钮 label/sr-only 走 `language.{label,toggleLanguage}` 字典组(双字典同步)
 
 **依赖**:Task 2
 
