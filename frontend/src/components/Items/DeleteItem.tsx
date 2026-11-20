@@ -70,7 +70,9 @@ const DeleteItem = ({ id, onSuccess }: DeleteItemProps) => {
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>{t("items.delete.title")}</DialogTitle>
-            <DialogDescription>{t("items.delete.description")}</DialogDescription>
+            <DialogDescription>
+              {t("items.delete.description")}
+            </DialogDescription>
           </DialogHeader>
 
           <DialogFooter className="mt-4">

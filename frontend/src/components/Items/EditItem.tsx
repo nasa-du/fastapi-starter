@@ -94,7 +94,9 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
               <DialogTitle>{t("items.edit.title")}</DialogTitle>
-              <DialogDescription>{t("items.edit.description")}</DialogDescription>
+              <DialogDescription>
+                {t("items.edit.description")}
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <FormField
