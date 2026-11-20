@@ -94,13 +94,20 @@
 **描述**:Sidebar/Main.tsx(导航项 title → 字典)、Sidebar/User.tsx(用户菜单各项)、AppSidebar.tsx(baseItems 的 title 改为 key 映射)。User 菜单登出项加 `data-testid="logout"`,login.spec.ts 的 `"Log out"` 定位器同步改 testid。
 
 **验收标准**:
-- [ ] 侧边栏与用户菜单(含 collapse tooltip)文案来自字典
-- [ ] login.spec.ts 无 `"Log out"` 文本依赖
-- [ ] 字典新增 `nav` / `menu` 组(双字典)
+- [x] 侧边栏与用户菜单(含 collapse tooltip)文案来自字典
+- [x] login.spec.ts 无 `"Log out"` 文本依赖
+- [x] 字典新增 `nav` / `menu` 组(双字典)
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/login.spec.ts`
-- [ ] lint + build 通过
+- [x] E2E:`bunx playwright test tests/login.spec.ts` — 12/12 绿(新增冒烟先行 RED:改前 3 处失败 → 实现后全绿)
+- [x] lint + build 通过(biome 75 files;tsc + vite 绿);回归 `bun run test` 全量 **49 passed**(48 + 新增冒烟)
+
+**执行备注**(超出原文件预算部分):
+- 新增测试用例「Sidebar and user menu use localized labels」(login.spec.ts 伴随,RED→GREEN):断言侧边栏三链接(仪表盘/项目/管理)、用户菜单两项、collapse tooltip(收起侧边栏后 hover 断言)及 `data-testid="logout"`;原两处 `"Log out"` 文案定位同步改 testid
+- `Item.title` → `Item.titleKey`(`NavItemKey` 联合类型):key 映射在 `Main.tsx` 渲染层解析,可见文案与 tooltip 同源单次 `t()`;`AppSidebar.tsx` baseItems 只存 key
+- zh 译名口径:Dashboard→仪表盘、Items→项目、Admin→管理;en 侧文案与原字面量一致("Dashboard"/"Items"/"Admin"/"User Settings"/"Log Out"),E2E 默认 en locale 不受影响
+- **发现未动**(记录给 Task 16):`tests/utils/user.ts` 的 `logInUser`("Log In" 按钮文案)与 `logOutUser`("Log out" menuitem 文案)仍依赖默认 en locale 文案;当前 en 文案未变 + role name 匹配大小写不敏感,套件仍绿,建议 T16 收口时一并 testid 化
+- `ui/sidebar.tsx` 内置 "Collapse/Open Sidebar" sr-only 与 "Toggle Sidebar" aria/title 属 Task 11 shadcn 清扫范围(不在本任务文件列表,未动)
 
 **依赖**:Task 3
 
