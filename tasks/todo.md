@@ -181,13 +181,21 @@
 **描述**:Items/AddItem.tsx、EditItem.tsx、DeleteItem.tsx(弹窗文案 + zod message 内联字典化)、ItemActionsMenu.tsx(菜单项 + 成功 toast 文案如 "The item was deleted successfully")。items.spec.ts 弹窗断言同步。
 
 **验收标准**:
-- [ ] Items CRUD 全链路(弹窗、菜单、成功/失败 toast)零英文残留
-- [ ] 该 4 文件内 zod message 零字面量
-- [ ] items.spec.ts 全绿
+- [x] Items CRUD 全链路(弹窗、菜单、成功/失败 toast)零英文残留
+- [x] 该 4 文件内 zod message 零字面量
+- [x] items.spec.ts 全绿
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/items.spec.ts`
-- [ ] 手动检查:新增/编辑/删除流程中文提示
+- [x] E2E:`bunx playwright test tests/items.spec.ts` — **12/12 绿**(RED 先行:改前中文断言 4 处失败 → 实现后全绿;2026-11-21)
+- [x] 手动检查:新增/编辑/删除流程中文提示(E2E zh-CN locale 全链路断言即证据:弹窗标题/描述、表单标签/placeholder、取消/保存/确认删除、成功 toast 均中文)
+
+**执行备注**(超出原文件预算部分):
+- 字典新增 `items.form.*`(7,双弹窗共享:标签/placeholder/必填校验/取消/保存)+ `items.add.*`(3)+ `items.edit.*`(3)+ `items.delete.*`(4)+ `items.menuLabel`;双字典 key 集合 diff = 0(62/62)
+- zod schema 移入组件内(沿 login.tsx Task 2 先例)使 message 走 `t("items.form.titleRequired")`;grep 门禁:4 文件 `message: "` 零命中
+- 同字面量合并 key:AddItem 触发钮与弹窗标题共用 `items.add.title`,EditItem 菜单项与标题共用 `items.edit.title`(en/zh 两侧字面量一致)
+- items.spec.ts 断言微调:弹窗 label 去 `exact: true`(标签含必填标记「标题 *」);删除弹窗补中文冒烟(标题/警告描述/确认钮「删除」/toast「项目删除成功」),RED 提交 82b5a49 先行
+- **发现未动**(记录给 Task 11):`ui/dialog.tsx:73` 内置 `sr-only Close`(弹窗右上关闭钮)为共享组件英文,不在本任务文件清单
+- E2E 执行方式注记:在 `frontend/` 内前台运行并显式传 `PLAYWRIGHT_BASE_URL`/`VITE_API_URL`(后台任务 shell 从仓库根起跑会丢失 workdir 与 dotenv 上下文,导致 baseURL 为空——已踩坑记录);lint 75 files 绿、`bun run build` 绿、回归 `bun run test` 全量 **51 passed**(2026-11-21)
 
 **依赖**:Task 6
 
