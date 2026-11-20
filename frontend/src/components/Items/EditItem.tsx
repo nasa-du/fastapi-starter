@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Pencil } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { type ItemPublic, ItemsService } from "@/client"
@@ -30,13 +31,6 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const formSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
-  description: z.string().optional(),
-})
-
-type FormData = z.infer<typeof formSchema>
-
 interface EditItemProps {
   item: ItemPublic
   onSuccess: () => void
@@ -46,6 +40,14 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { t } = useTranslation()
+
+  const formSchema = z.object({
+    title: z.string().min(1, { message: t("items.form.titleRequired") }),
+    description: z.string().optional(),
+  })
+
+  type FormData = z.infer<typeof formSchema>
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -61,7 +63,7 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
     mutationFn: (data: FormData) =>
       ItemsService.updateItem({ path: { id: item.id }, body: data }),
     onSuccess: () => {
-      showSuccessToast("Item updated successfully", {
+      showSuccessToast(t("items.edit.toast"), {
         testId: "item-updated-toast",
       })
       setIsOpen(false)
@@ -85,16 +87,14 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
         onClick={() => setIsOpen(true)}
       >
         <Pencil />
-        Edit Item
+        {t("items.edit.title")}
       </DropdownMenuItem>
       <DialogContent className="sm:max-w-md">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>Edit Item</DialogTitle>
-              <DialogDescription>
-                Update the item details below.
-              </DialogDescription>
+              <DialogTitle>{t("items.edit.title")}</DialogTitle>
+              <DialogDescription>{t("items.edit.description")}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <FormField
@@ -103,13 +103,14 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Title <span className="text-destructive">*</span>
+                      {t("items.form.titleLabel")}{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
                         data-testid="item-title-input"
-                        aria-label="Title"
-                        placeholder="Title"
+                        aria-label={t("items.form.titleLabel")}
+                        placeholder={t("items.form.titlePlaceholder")}
                         type="text"
                         {...field}
                       />
@@ -124,12 +125,12 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Description</FormLabel>
+                    <FormLabel>{t("items.form.descriptionLabel")}</FormLabel>
                     <FormControl>
                       <Input
                         data-testid="item-description-input"
-                        aria-label="Description"
-                        placeholder="Description"
+                        aria-label={t("items.form.descriptionLabel")}
+                        placeholder={t("items.form.descriptionPlaceholder")}
                         type="text"
                         {...field}
                       />
@@ -143,7 +144,7 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
             <DialogFooter>
               <DialogClose asChild>
                 <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
+                  {t("items.form.cancel")}
                 </Button>
               </DialogClose>
               <LoadingButton
@@ -151,7 +152,7 @@ const EditItem = ({ item, onSuccess }: EditItemProps) => {
                 type="submit"
                 loading={mutation.isPending}
               >
-                Save
+                {t("items.form.save")}
               </LoadingButton>
             </DialogFooter>
           </form>

@@ -73,6 +73,11 @@
       "title": "Add Item",
       "description": "Fill in the details to add a new item.",
       "toast": "Item created successfully"
+    },
+    "edit": {
+      "title": "Edit Item",
+      "description": "Update the item details below.",
+      "toast": "Item updated successfully"
     }
   },
   "errors": {}
