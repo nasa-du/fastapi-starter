@@ -1,3 +1,27 @@
 {
+  "login": {
+    "title": "Login to your account",
+    "identifierLabel": "User Code or Name",
+    "identifierPlaceholder": "User code or name",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Password",
+    "submit": "Log In",
+    "headTitle": "Log In - FastAPI Template",
+    "errors": {
+      "identifierRequired": "User code or name is required",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "invalid": "Incorrect user code/name or password",
+      "nameConflict": "Multiple users share this name, please log in with your user code",
+      "inactive": "Inactive user"
+    }
+  },
+  "appearance": {
+    "label": "Appearance",
+    "toggleTheme": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
   "errors": {}
 }
