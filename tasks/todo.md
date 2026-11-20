@@ -11,14 +11,14 @@
 **描述**:安装 `i18next` + `react-i18next`,新建 `src/i18n.ts`(~40 行:资源内联、localStorage("app-language") → navigator.language(zh* → zh-CN,否则 en)→ fallbackLng zh-CN 的检测链、`setAppLanguage` 助手同步 `document.documentElement.lang`),`main.tsx` 在渲染前 import 初始化。不引入 languagedetector 等插件。
 
 **验收标准**:
-- [ ] `frontend/package.json` 仅新增 i18next、react-i18next 两个依赖
-- [ ] `src/i18n.ts` 实现检测链与 setAppLanguage;`src/locales/zh-CN.json`、`en.json` 存在(骨架 + `errors: {}` 组)
-- [ ] `bun run build` 通过;dev 启动 console 无 i18n 报错
+- [x] `frontend/package.json` 仅新增 i18next、react-i18next 两个依赖
+- [x] `src/i18n.ts` 实现检测链与 setAppLanguage;`src/locales/zh-CN.json`、`en.json` 存在(骨架 + `errors: {}` 组)
+- [x] `bun run build` 通过;dev 启动 console 无 i18n 报错
 
 **验证**:
-- [ ] 构建通过:`bun run build`
-- [ ] lint 通过:`bun run lint`
-- [ ] 手动检查:dev 起服务,`<html lang>` 为检测结果,无 console 报错
+- [x] 构建通过:`bun run build`(根目录无 build 脚本,实际执行 `frontend/` 内 `bun run build`,tsc + vite 绿)
+- [x] lint 通过:`bun run lint`(根目录转发至 frontend,biome 绿)
+- [x] 手动检查:dev 起服务,`<html lang>` 为检测结果,无 console 报错(headless chromium 冒烟 4 场景:zh 浏览器→zh-CN、en 浏览器→en、存储 en 覆盖 zh 浏览器→en、存储 zh-CN→zh-CN;console 零报错)
 
 **依赖**:无
 
