@@ -33,6 +33,18 @@ test.describe("Admin page and table", () => {
   test("Users table localizes headings, roles, status, and identity", async ({
     page,
   }) => {
+    await page.route("**/api/v1/users/me", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "active-admin",
+          user_code: "active_admin",
+          full_name: null,
+          is_active: true,
+          is_superuser: true,
+        }),
+      }),
+    )
     await page.route("**/api/v1/users/?**", (route) =>
       route.fulfill({
         contentType: "application/json",
@@ -86,9 +98,9 @@ test.describe("Admin page and table", () => {
     await expect(adminRow.getByText("N/A")).toBeVisible()
     await expect(adminRow.getByText("You", { exact: true })).toBeVisible()
     await expect(adminRow.getByText("Superuser")).toBeVisible()
-    await expect(adminRow.getByText("Active")).toBeVisible()
-    await expect(userRow.getByText("User")).toBeVisible()
-    await expect(userRow.getByText("Inactive")).toBeVisible()
+    await expect(adminRow.getByText("Active", { exact: true })).toBeVisible()
+    await expect(userRow.getByText("User", { exact: true })).toBeVisible()
+    await expect(userRow.getByText("Inactive", { exact: true })).toBeVisible()
   })
 
   test("Pending Users uses localized table headings", async ({ page }) => {
@@ -339,7 +351,7 @@ test.describe("Admin page access control", () => {
 
     await page.goto("/admin")
 
-    await expect(page.getByRole("heading", { name: "用户" })).not.toBeVisible()
+    await expect(page.getByRole("heading", { name: "Users" })).not.toBeVisible()
     await expect(page).not.toHaveURL(/\/admin/)
   })
 
@@ -348,6 +360,6 @@ test.describe("Admin page access control", () => {
 
     await page.goto("/admin")
 
-    await expect(page.getByRole("heading", { name: "用户" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
   })
 })

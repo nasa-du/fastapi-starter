@@ -87,5 +87,21 @@
     },
     "menuLabel": "Item actions"
   },
-  "errors": {}
+  "errors": {},
+  "admin": {
+    "headTitle": "Users - FastAPI Template",
+    "title": "Users",
+    "description": "Manage user accounts and permissions",
+    "columnFullName": "Full Name",
+    "columnUserCode": "User Code",
+    "columnRole": "Role",
+    "columnStatus": "Status",
+    "noFullName": "N/A",
+    "you": "You",
+    "superuser": "Superuser",
+    "user": "User",
+    "active": "Active",
+    "inactive": "Inactive",
+    "actions": "Actions"
+  }
 }

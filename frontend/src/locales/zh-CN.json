@@ -87,5 +87,21 @@
     },
     "menuLabel": "项目操作"
   },
-  "errors": {}
+  "errors": {},
+  "admin": {
+    "headTitle": "用户管理 - FastAPI Template",
+    "title": "用户",
+    "description": "管理用户账户和权限",
+    "columnFullName": "姓名",
+    "columnUserCode": "用户编码",
+    "columnRole": "角色",
+    "columnStatus": "状态",
+    "noFullName": "暂无姓名",
+    "you": "你",
+    "superuser": "超级管理员",
+    "user": "普通用户",
+    "active": "启用",
+    "inactive": "停用",
+    "actions": "操作"
+  }
 }

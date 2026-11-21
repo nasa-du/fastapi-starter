@@ -1,4 +1,5 @@
 import type { ColumnDef } from "@tanstack/react-table"
+import i18next from "i18next"
 
 import type { UserPublic } from "@/client"
 import type { DataTableFeatures } from "@/components/Common/DataTable"
@@ -13,7 +14,7 @@ export type UserTableData = UserPublic & {
 export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
   {
     accessorKey: "full_name",
-    header: "Full Name",
+    header: () => i18next.t("admin.columnFullName"),
     cell: ({ row }) => {
       const fullName = row.original.full_name
       return (
@@ -21,11 +22,11 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
           <span
             className={cn("font-medium", !fullName && "text-muted-foreground")}
           >
-            {fullName || "N/A"}
+            {fullName || i18next.t("admin.noFullName")}
           </span>
           {row.original.isCurrentUser && (
             <Badge variant="outline" className="text-xs">
-              You
+              {i18next.t("admin.you")}
             </Badge>
           )}
         </div>
@@ -34,23 +35,25 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
   },
   {
     accessorKey: "user_code",
-    header: "User Code",
+    header: () => i18next.t("admin.columnUserCode"),
     cell: ({ row }) => (
       <span className="text-muted-foreground">{row.original.user_code}</span>
     ),
   },
   {
     accessorKey: "is_superuser",
-    header: "Role",
+    header: () => i18next.t("admin.columnRole"),
     cell: ({ row }) => (
       <Badge variant={row.original.is_superuser ? "default" : "secondary"}>
-        {row.original.is_superuser ? "Superuser" : "User"}
+        {row.original.is_superuser
+          ? i18next.t("admin.superuser")
+          : i18next.t("admin.user")}
       </Badge>
     ),
   },
   {
     accessorKey: "is_active",
-    header: "Status",
+    header: () => i18next.t("admin.columnStatus"),
     cell: ({ row }) => (
       <div className="flex items-center gap-2">
         <span
@@ -60,14 +63,16 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
           )}
         />
         <span className={row.original.is_active ? "" : "text-muted-foreground"}>
-          {row.original.is_active ? "Active" : "Inactive"}
+          {row.original.is_active
+            ? i18next.t("admin.active")
+            : i18next.t("admin.inactive")}
         </span>
       </div>
     ),
   },
   {
     id: "actions",
-    header: () => <span className="sr-only">Actions</span>,
+    header: () => <span className="sr-only">{i18next.t("admin.actions")}</span>,
     cell: ({ row }) => (
       <div className="flex justify-end">
         <UserActionsMenu user={row.original} />
