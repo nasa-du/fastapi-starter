@@ -207,8 +207,8 @@
 
 ## ◆ Checkpoint B:S2 验收
 
-- [ ] Dashboard/Items 域零英文残留(品牌词除外);E2E 全绿
-- [ ] **keys 统计 ≤400**(统计 zh-CN.json key 总数;>400 停下重估并回报,idea 假设 3)
+- [x] Dashboard/Items 域零英文残留(品牌词除外);E2E 全绿(2026-11-21 人工检查通过;E2E 51 passed 见 Task 7 验证记录,HEAD 未变)
+- [x] **keys 统计 ≤400**:zh-CN.json key 总数 **62/400**(2026-11-21 统计;idea 假设 3 成立,无需重估)
 
 ---
 
