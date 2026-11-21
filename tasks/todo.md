@@ -217,12 +217,22 @@
 **描述**:routes/_layout/admin.tsx(head 标题 + 页面文案)、Admin/columns.tsx、Pending/PendingUsers.tsx t() 化;admin.spec.ts 定位器/断言随域改造(本任务先改页面级,弹窗级留给 T9)。
 
 **验收标准**:
-- [ ] Admin 列表页零英文残留
-- [ ] admin.spec.ts 页面级断言中文化/testid 化,测试绿
-- [ ] 字典新增 `admin` 组(双字典)
+- [x] Admin 列表页零英文残留(弹窗、操作菜单与共享 DataTable 分页不在 T8 范围,分别归 T9/T11)
+- [x] admin.spec.ts 页面级断言中文化/testid 化,测试绿
+- [x] 字典新增 `admin` 组(双字典)
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/admin.spec.ts`
+- [x] E2E:`bunx playwright test tests/admin.spec.ts` — **17 passed**(16 spec tests + setup;RED 先行 4 处预期失败,实现后全绿;2026-11-21)
+- [x] lint + build:`bun run lint`(biome 75 files)+ `frontend/` 内 `bun run build`(tsc + vite)绿
+- [x] 手动检查:E2E 中英切换覆盖页面标题/head、四个表头、姓名缺失/当前用户徽标、角色/状态单元格;Pending 拦截态表头独立断言
+- [x] 双字典 key 集合 diff = 0(76/76,新增 admin 14 keys)
+
+**执行备注**:
+- `admin.headTitle` 沿用既有 `i18next.t()` 接线,验证中→英切换免硬刷新;columns 沿用 Items 表格的 `i18next.t` 运行时取值,支持表头/单元格即时切换;PendingUsers 用 `useTranslation`
+- en 标题用 "Users - FastAPI Template"(区别于侧边栏 "Admin"),其余 en 文案与原字面量一致;zh 用户角色译作「超级管理员 / 普通用户」、状态「启用 / 停用」、缺失姓名「暂无姓名」
+- 表格 fixture 额外拦截 `/users/me` 使当前用户徽标成为可达断言;用精确文本匹配区分用户编码 `active_admin` 与状态 `Active`。页面级 `describe` 限定 zh-CN,避免覆盖依赖 `logInUser` 英文环境的后续 dialogs(T16 收口)
+- `AddUser` 按钮与创建/编辑/删除/重置密码弹窗均保持英文原行为,留 Task 9;共享 DataTable 分页留 Task 11
+- **发现未动**:全量回归 `bun run test` **52 passed / 1 failed**(2026-11-21);既有 `user-settings.spec.ts`「Selected mode is preserved across sessions」在打开深色主题菜单时超时(非 T8 文件/行为)。等待菜单退出/主题类名的两次测试性修正均未消除孤立复现,已还原,需独立调试;不计入 T8 验收结果
 
 **依赖**:Task 7
 
