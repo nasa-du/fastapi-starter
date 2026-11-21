@@ -4,17 +4,107 @@ import { createUser } from "./utils/privateApi"
 import { randomPassword, randomUserCode } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
 
-test("Admin page is accessible and shows correct title", async ({ page }) => {
-  await page.goto("/admin")
-  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
-  await expect(
-    page.getByText("Manage user accounts and permissions"),
-  ).toBeVisible()
-})
+test.describe("Admin page and table", () => {
+  test.use({ locale: "zh-CN" })
 
-test("Add User button is visible", async ({ page }) => {
-  await page.goto("/admin")
-  await expect(page.getByRole("button", { name: "Add User" })).toBeVisible()
+  test("Admin page is accessible and shows the localized title", async ({
+    page,
+  }) => {
+    await page.goto("/admin")
+    await expect(page).toHaveTitle("用户管理 - FastAPI Template")
+    await expect(page.getByRole("heading", { name: "用户" })).toBeVisible()
+    await expect(page.getByText("管理用户账户和权限")).toBeVisible()
+
+    await page.getByTestId("language-button").click()
+    await page.getByTestId("language-en").click()
+
+    await expect(page).toHaveTitle("Users - FastAPI Template")
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+    await expect(
+      page.getByText("Manage user accounts and permissions"),
+    ).toBeVisible()
+  })
+
+  test("Add User button is visible", async ({ page }) => {
+    await page.goto("/admin")
+    await expect(page.getByRole("button", { name: "Add User" })).toBeVisible()
+  })
+
+  test("Users table localizes headings, roles, status, and identity", async ({
+    page,
+  }) => {
+    await page.route("**/api/v1/users/?**", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          data: [
+            {
+              id: "active-admin",
+              user_code: "active_admin",
+              full_name: null,
+              is_active: true,
+              is_superuser: true,
+            },
+            {
+              id: "inactive-user",
+              user_code: "inactive_user",
+              full_name: "Inactive Test User",
+              is_active: false,
+              is_superuser: false,
+            },
+          ],
+          count: 2,
+        }),
+      }),
+    )
+    await page.goto("/admin")
+
+    for (const heading of ["姓名", "用户编码", "角色", "状态"]) {
+      await expect(
+        page.getByRole("columnheader", { name: heading }),
+      ).toBeVisible()
+    }
+    await expect(page.getByText("操作")).toBeAttached()
+    const adminRow = page.getByRole("row").filter({ hasText: "active_admin" })
+    await expect(adminRow.getByText("暂无姓名")).toBeVisible()
+    await expect(adminRow.getByText("你", { exact: true })).toBeVisible()
+    await expect(adminRow.getByText("超级管理员")).toBeVisible()
+    await expect(adminRow.getByText("启用")).toBeVisible()
+    const userRow = page.getByRole("row").filter({ hasText: "inactive_user" })
+    await expect(userRow.getByText("普通用户")).toBeVisible()
+    await expect(userRow.getByText("停用")).toBeVisible()
+
+    await page.getByTestId("language-button").click()
+    await page.getByTestId("language-en").click()
+
+    for (const heading of ["Full Name", "User Code", "Role", "Status"]) {
+      await expect(
+        page.getByRole("columnheader", { name: heading }),
+      ).toBeVisible()
+    }
+    await expect(page.getByText("Actions")).toBeAttached()
+    await expect(adminRow.getByText("N/A")).toBeVisible()
+    await expect(adminRow.getByText("You", { exact: true })).toBeVisible()
+    await expect(adminRow.getByText("Superuser")).toBeVisible()
+    await expect(adminRow.getByText("Active")).toBeVisible()
+    await expect(userRow.getByText("User")).toBeVisible()
+    await expect(userRow.getByText("Inactive")).toBeVisible()
+  })
+
+  test("Pending Users uses localized table headings", async ({ page }) => {
+    await page.route("**/api/v1/users/?**", () => {})
+    await page.goto("/admin")
+    await expect(page.getByRole("table")).toBeVisible()
+    const pendingTable = page.locator("table").filter({
+      has: page.locator("[data-slot='skeleton']"),
+    })
+    for (const heading of ["姓名", "用户编码", "角色", "状态"]) {
+      await expect(
+        pendingTable.getByRole("columnheader", { name: heading }),
+      ).toBeVisible()
+    }
+    await expect(pendingTable.getByText("操作")).toBeAttached()
+  })
 })
 
 test.describe("Admin user management", () => {
@@ -249,7 +339,7 @@ test.describe("Admin page access control", () => {
 
     await page.goto("/admin")
 
-    await expect(page.getByRole("heading", { name: "Users" })).not.toBeVisible()
+    await expect(page.getByRole("heading", { name: "用户" })).not.toBeVisible()
     await expect(page).not.toHaveURL(/\/admin/)
   })
 
@@ -258,6 +348,6 @@ test.describe("Admin page access control", () => {
 
     await page.goto("/admin")
 
-    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "用户" })).toBeVisible()
   })
 })
