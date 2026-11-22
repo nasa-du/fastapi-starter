@@ -177,7 +177,9 @@
     "USERS_FORBIDDEN": "The user doesn't have enough privileges",
     "USERS_NOT_FOUND": "User not found",
     "USERS_ID_NOT_FOUND": "The user with this id does not exist in the system",
-    "USERS_CODE_CONFLICT": "User with this user_code already exists"
+    "USERS_CODE_CONFLICT": "User with this user_code already exists",
+    "ITEMS_NOT_FOUND": "Item not found",
+    "ITEMS_FORBIDDEN": "Not enough permissions"
   },
   "admin": {
     "headTitle": "Users - FastAPI Template",
