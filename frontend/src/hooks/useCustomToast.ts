@@ -17,6 +17,7 @@ const useCustomToast = () => {
   const showErrorToast = (description: string) => {
     toast.error(t("toast.error"), {
       description,
+      testId: "error-toast",
     })
   }
 

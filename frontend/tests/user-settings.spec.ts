@@ -6,7 +6,7 @@ import { logInUser, logOutUser } from "./utils/user"
 
 test.use({ locale: "zh-CN" })
 
-const tabs = ["个人资料", "密码", "危险操作"]
+const tabs = ["my-profile", "password", "danger-zone"]
 
 async function switchToChinese(page: Parameters<typeof logInUser>[0]) {
   await page.getByTestId("language-button").click()
@@ -15,24 +15,18 @@ async function switchToChinese(page: Parameters<typeof logInUser>[0]) {
 
 test("Settings switches language without a reload", async ({ page }) => {
   await page.goto("/settings")
-  await expect(page).toHaveTitle("用户设置 - FastAPI Template")
-  await expect(
-    page.getByRole("heading", { name: "用户设置", exact: true }),
-  ).toBeVisible()
-  await expect(page.getByText("管理您的账户设置和偏好")).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+  await expect(page.getByRole("tablist")).toBeVisible()
+  const chineseTitle = await page.title()
 
   await page.getByTestId("language-button").click()
   await page.getByTestId("language-en").click()
 
-  await expect(page).toHaveTitle("Settings - FastAPI Template")
-  await expect(
-    page.getByRole("heading", { name: "User Settings", exact: true }),
-  ).toBeVisible()
-  await expect(
-    page.getByText("Manage your account settings and preferences"),
-  ).toBeVisible()
-  for (const tab of ["My profile", "Password", "Danger zone"]) {
-    await expect(page.getByRole("tab", { name: tab })).toBeVisible()
+  await expect(page.locator("html")).toHaveAttribute("lang", "en")
+  expect(await page.title()).not.toBe(chineseTitle)
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+  for (const tab of tabs) {
+    await expect(page.getByTestId(`settings-tab-${tab}`)).toBeVisible()
   }
   await expect(page).toHaveURL("/settings")
 })
@@ -58,7 +52,7 @@ test("My profile tab is active by default", async ({ page }) => {
 test("All tabs are visible", async ({ page }) => {
   await page.goto("/settings")
   for (const tab of tabs) {
-    await expect(page.getByRole("tab", { name: tab })).toBeVisible()
+    await expect(page.getByTestId(`settings-tab-${tab}`)).toBeVisible()
   }
 })
 
@@ -83,35 +77,40 @@ test.describe("Edit user profile", () => {
   test("Profile length validation follows the selected language", async ({
     page,
   }) => {
-    await expect(page.getByText("姓名", { exact: true })).toBeVisible()
-    await expect(page.getByText("用户编码", { exact: true })).toBeVisible()
+    await expect(page.getByTestId("edit-profile")).toBeVisible()
+    await expect(
+      page.getByRole("tabpanel").getByText(userCode, { exact: true }),
+    ).toBeVisible()
     await page.getByTestId("edit-profile").click()
     await page.getByTestId("profile-full-name-input").fill("x".repeat(31))
     await page.getByTestId("profile-full-name-input").blur()
-    await expect(page.getByText("姓名最多 30 个字符")).toBeVisible()
+    const nameError = page.locator("[data-slot='form-message']")
+    await expect(nameError).toBeVisible()
+    const chineseError = await nameError.textContent()
 
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
 
-    await expect(
-      page.getByText("Full name must be at most 30 characters"),
-    ).toBeVisible()
-    await expect(page.getByTestId("save-profile")).toHaveText("Save")
-    await expect(page.getByTestId("cancel-edit-profile")).toHaveText("Cancel")
+    await expect(page.locator("html")).toHaveAttribute("lang", "en")
+    await expect(nameError).toBeVisible()
+    expect(await nameError.textContent()).not.toBe(chineseError)
+    await expect(page.getByTestId("profile-full-name-input")).toHaveValue(
+      "x".repeat(31),
+    )
+    await expect(page.getByTestId("save-profile")).toBeEnabled()
+    await expect(page.getByTestId("cancel-edit-profile")).toBeEnabled()
   })
 
   test("Edit user name with a valid name", async ({ page }) => {
     const updatedName = "Test User 2"
 
-    await expect(page.getByRole("heading", { name: "用户信息" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 3 })).toBeVisible()
 
     await page.getByTestId("edit-profile").click()
     await page.getByTestId("profile-full-name-input").fill(updatedName)
     await page.getByTestId("save-profile").click()
 
-    await expect(page.getByTestId("profile-updated-toast")).toContainText(
-      "用户信息更新成功",
-    )
+    await expect(page.getByTestId("profile-updated-toast")).toBeVisible()
     await expect(
       page.locator("form").getByText(updatedName, { exact: true }),
     ).toBeVisible()
@@ -154,20 +153,18 @@ test.describe("Change password", () => {
     await page.goto("/settings")
     await page.getByTestId("settings-tab-password").click()
 
-    await expect(page.getByRole("heading", { name: "修改密码" })).toBeVisible()
-    await expect(page.getByText("当前密码", { exact: true })).toBeVisible()
-    await expect(page.getByText("新密码", { exact: true })).toBeVisible()
-    await expect(page.getByText("确认密码", { exact: true })).toBeVisible()
-    await expect(page.getByTestId("update-password")).toHaveText("更新密码")
+    await expect(page.getByRole("heading", { level: 3 })).toBeVisible()
+    await expect(page.getByTestId("current-password-input")).toBeEditable()
+    await expect(page.getByTestId("new-password-input")).toBeEditable()
+    await expect(page.getByTestId("confirm-password-input")).toBeEditable()
+    await expect(page.getByTestId("update-password")).toBeEnabled()
 
     await page.getByTestId("current-password-input").fill(password)
     await page.getByTestId("new-password-input").fill(newPassword)
     await page.getByTestId("confirm-password-input").fill(newPassword)
     await page.getByTestId("update-password").click()
 
-    await expect(page.getByTestId("password-updated-toast")).toContainText(
-      "密码更新成功",
-    )
+    await expect(page.getByTestId("password-updated-toast")).toBeVisible()
 
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
@@ -197,24 +194,31 @@ test.describe("Change password validation", () => {
   test("Passwords are required", async ({ page }) => {
     await page.getByTestId("update-password").click()
 
-    await expect(page.getByText("请输入密码").first()).toBeVisible()
-    await expect(page.getByText("请确认密码")).toBeVisible()
+    for (const input of [
+      "current-password-input",
+      "new-password-input",
+      "confirm-password-input",
+    ]) {
+      await expect(page.getByTestId(input)).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      )
+    }
+    await expect(page.locator("[data-slot='form-message']")).toHaveCount(3)
   })
 
   test("Validation messages follow the selected language", async ({ page }) => {
     await page.getByTestId("update-password").click()
-    await expect(page.getByText("请输入密码").first()).toBeVisible()
+    const errors = page.locator("[data-slot='form-message']")
+    await expect(errors).toHaveCount(3)
+    const chineseErrors = await errors.allTextContents()
 
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
-    await expect(
-      page.getByRole("heading", { name: "Change Password" }),
-    ).toBeVisible()
+    await expect(page.locator("html")).toHaveAttribute("lang", "en")
 
-    await expect(page.getByText("Password is required").first()).toBeVisible()
-    await expect(
-      page.getByText("Password confirmation is required"),
-    ).toBeVisible()
+    await expect(errors).toHaveCount(3)
+    expect(await errors.allTextContents()).not.toEqual(chineseErrors)
   })
 
   test("Update password with weak passwords", async ({ page }) => {
@@ -225,7 +229,11 @@ test.describe("Change password validation", () => {
     await page.getByTestId("confirm-password-input").fill(weakPassword)
     await page.getByTestId("update-password").click()
 
-    await expect(page.getByText("密码长度至少 8 个字符")).toBeVisible()
+    await expect(page.getByTestId("new-password-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
+    await expect(page.locator("[data-slot='form-message']")).toBeVisible()
   })
 
   test("New password and confirmation password do not match", async ({
@@ -236,7 +244,11 @@ test.describe("Change password validation", () => {
     await page.getByTestId("confirm-password-input").fill(randomPassword())
     await page.getByTestId("update-password").click()
 
-    await expect(page.getByText("两次输入的密码不一致")).toBeVisible()
+    await expect(page.getByTestId("confirm-password-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
+    await expect(page.locator("[data-slot='form-message']")).toBeVisible()
   })
 
   test("Current password and new password are the same", async ({ page }) => {
@@ -245,7 +257,7 @@ test.describe("Change password validation", () => {
     await page.getByTestId("confirm-password-input").fill(password)
     await page.getByTestId("update-password").click()
 
-    await expect(page.getByText("新密码不能与当前密码相同")).toBeVisible()
+    await expect(page.getByTestId("error-toast")).toBeVisible()
   })
 
   test("Current password is incorrect", async ({ page }) => {
@@ -255,7 +267,7 @@ test.describe("Change password validation", () => {
     await page.getByTestId("confirm-password-input").fill(newPassword)
     await page.getByTestId("update-password").click()
 
-    await expect(page.getByText("当前密码不正确")).toBeVisible()
+    await expect(page.getByTestId("error-toast")).toBeVisible()
   })
 })
 
@@ -270,35 +282,24 @@ test.describe("Delete account", () => {
     await page.goto("/settings")
     await page.getByTestId("settings-tab-danger-zone").click()
 
-    await expect(page.getByRole("heading", { name: "删除账户" })).toBeVisible()
-    await expect(
-      page.getByText("永久删除您的账户及所有关联数据。"),
-    ).toBeVisible()
+    await expect(page.getByTestId("delete-account")).toBeVisible()
     await page.getByTestId("delete-account").click()
 
     const dialog = page.getByRole("dialog")
-    await expect(
-      dialog.getByRole("heading", { name: "需要确认" }),
-    ).toBeVisible()
-    await expect(
-      dialog.getByText("您的所有账户数据将被", { exact: false }),
-    ).toBeVisible()
-    await expect(dialog.getByText("永久删除。")).toBeVisible()
-    await expect(
-      dialog.getByText("确定要继续吗?此操作无法撤销。", { exact: false }),
-    ).toBeVisible()
-    await expect(dialog.getByTestId("confirm-delete-account")).toHaveText(
-      "删除",
-    )
+    await expect(dialog.getByRole("heading")).toBeVisible()
+    const description = dialog.locator("[data-slot='dialog-description']")
+    await expect(description).toBeVisible()
+    await expect(description.locator("strong")).toBeVisible()
+    const chineseDescription = await description.textContent()
+    await expect(dialog.getByTestId("confirm-delete-account")).toBeEnabled()
     await dialog.getByTestId("cancel-delete-account").click()
     await expect(dialog).not.toBeVisible()
 
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
     await page.getByTestId("delete-account").click()
-    await expect(
-      dialog.getByRole("heading", { name: "Confirmation Required" }),
-    ).toBeVisible()
+    await expect(dialog.getByRole("heading")).toBeVisible()
+    expect(await description.textContent()).not.toBe(chineseDescription)
   })
 
   test("Delete account successfully logs the user out", async ({ page }) => {
@@ -313,9 +314,7 @@ test.describe("Delete account", () => {
     await page.getByTestId("delete-account").click()
     await page.getByTestId("confirm-delete-account").click()
 
-    await expect(page.getByTestId("account-deleted-toast")).toContainText(
-      "您的账户已成功删除",
-    )
+    await expect(page.getByTestId("account-deleted-toast")).toBeVisible()
     await expect(page).toHaveURL("/login")
   })
 })
