@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 
 import { UsersService } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -23,11 +24,14 @@ const DeleteConfirmation = () => {
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const { handleSubmit } = useForm()
   const { logout } = useAuth()
+  const { t } = useTranslation()
 
   const mutation = useMutation({
     mutationFn: () => UsersService.deleteUserMe(),
     onSuccess: () => {
-      showSuccessToast("Your account has been successfully deleted")
+      showSuccessToast(t("settings.deleteAccount.toast"), {
+        testId: "account-deleted-toast",
+      })
       logout()
     },
     onError: handleError.bind(showErrorToast),
@@ -43,34 +47,44 @@ const DeleteConfirmation = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="destructive" className="mt-3">
-          Delete Account
+        <Button
+          data-testid="delete-account"
+          variant="destructive"
+          className="mt-3"
+        >
+          {t("settings.deleteAccount.title")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
-            <DialogTitle>Confirmation Required</DialogTitle>
+            <DialogTitle>{t("settings.deleteConfirmation.title")}</DialogTitle>
             <DialogDescription>
-              All your account data will be{" "}
-              <strong>permanently deleted.</strong> If you are sure, please
-              click <strong>"Confirm"</strong> to proceed. This action cannot be
-              undone.
+              {t("settings.deleteConfirmation.descriptionStart")}{" "}
+              <strong>
+                {t("settings.deleteConfirmation.descriptionEmphasis")}
+              </strong>{" "}
+              {t("settings.deleteConfirmation.descriptionEnd")}
             </DialogDescription>
           </DialogHeader>
 
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button variant="outline" disabled={mutation.isPending}>
-                Cancel
+              <Button
+                data-testid="cancel-delete-account"
+                variant="outline"
+                disabled={mutation.isPending}
+              >
+                {t("settings.deleteConfirmation.cancel")}
               </Button>
             </DialogClose>
             <LoadingButton
+              data-testid="confirm-delete-account"
               variant="destructive"
               type="submit"
               loading={mutation.isPending}
             >
-              Delete
+              {t("settings.deleteConfirmation.confirm")}
             </LoadingButton>
           </DialogFooter>
         </form>
