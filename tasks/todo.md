@@ -440,17 +440,50 @@
 **描述**:双字典新增 `ITEMS_NOT_FOUND` / `ITEMS_FORBIDDEN`;items.py 6 处 detail 改造;test_items.py 断言改 code;再生成 client。收尾:以 grep 脚本核对 24 处 raise 全部契约化、17 code 与 SPEC-i18n.md 契约表一一对应。
 
 **验收标准**:
-- [ ] items 6 处契约化;test_items.py code 断言
-- [ ] **契约表逐项核对记录**:24 处 / 17 code / 状态码不变,写入本文件
-- [ ] `sh scripts/generate-client.sh` 后 `git diff frontend/src/client` 无手改痕迹
+- [x] items 6 处契约化;test_items.py code 断言
+- [x] **契约表逐项核对记录**:24 处 / 17 code / 状态码不变,写入本文件
+- [x] `sh scripts/generate-client.sh` 后 `git diff frontend/src/client` 无手改痕迹
 
 **验证**:
-- [ ] `cd backend && uv run pytest`(全量)
-- [ ] `bun run test`(全量 E2E)
+- [x] `cd backend && uv run pytest`(全量)— **74 passed**(2026-11-22);items 定向 RED 6 failed / 5 passed → GREEN 11/11
+- [x] `bun run test`(全量 E2E)— **73 passed**(2026-11-22;`PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test`)
+
+**契约表逐项核对(2026-11-22)**:
+
+| Code | HTTP | 处数 | 核对后位置 |
+|---|---:|---:|---|
+| `AUTH_LOGIN_NAME_CONFLICT` | 400 | 1 | login.py:32 |
+| `AUTH_LOGIN_INVALID` | 400 | 1 | login.py:40 |
+| `AUTH_LOGIN_INACTIVE` | 400 | 1 | login.py:48 |
+| `AUTH_CREDENTIALS_INVALID` | 403 | 1 | deps.py:37 |
+| `AUTH_USER_NOT_FOUND` | 403 | 1 | deps.py:49 |
+| `AUTH_USER_INACTIVE` | 400 | 1 | deps.py:54 |
+| `AUTH_FORBIDDEN` | 403 | 1 | deps.py:66 |
+| `USERS_CODE_ALREADY_EXISTS` | 400 | 1 | users.py:65 |
+| `USERS_PASSWORD_INCORRECT` | 400 | 1 | users.py:102 |
+| `USERS_PASSWORD_UNCHANGED` | 400 | 1 | users.py:110 |
+| `USERS_SUPERUSER_DELETE_SELF` | 403 | 2 | users.py:138,231 |
+| `USERS_FORBIDDEN` | 403 | 1 | users.py:161 |
+| `USERS_NOT_FOUND` | 404 | 3 | users.py:169,226,256 |
+| `USERS_ID_NOT_FOUND` | 404 | 1 | users.py:193 |
+| `USERS_CODE_CONFLICT` | 409 | 1 | users.py:205 |
+| `ITEMS_NOT_FOUND` | 404 | 3 | items.py:55,94,120 |
+| `ITEMS_FORBIDDEN` | 403 | 3 | items.py:60,99,125 |
+
+**合计**:login 3 + deps 4 + users 11 + items 6 = **24 处 / 17 code**;逐行 code / HTTP / message 与 SPEC-i18n.md 契约表一致。
+
+**执行备注**:
+- TDD:先提交契约断言 `c3e1a26`,六条失败路径全部断言 `detail == {"code", "message"}`(保留原 404/403 状态断言及固定英文 message);实现提交 `9fa2006`,六处错误均契约化,成功响应不变
+- 临时 Python AST 脚本遍历 `backend/app` 的 24 处 `raise HTTPException`,逐项比对 SPEC-i18n.md 表内 code、状态码、message 与重复 code 处数;items 状态码另与 Task 14 HEAD `4f42389` 对比,逐项未变
+- 双字典新增 ITEMS 两个 code,中文分别为「项目不存在」/「您没有执行此操作的权限」;全量 key 集合 diff = 0(**192/192**),`errors` 组与 17 code 契约表完全一致
+- `sh scripts/generate-client.sh` 成功,脚本自动执行生成与 lint;`git diff frontend/openapi.json frontend/src/client` 无输出,零手改
+- 验证命令:前端 `bun run lint` + `bun run --filter frontend build` 绿;后端 `uv run mypy app`、`uv run ty check app`、`uv run ruff check app`、`uv run ruff format app --check` 全绿
+- 浏览器回归前按 Task 14 既有备注以 `uv run python app/initial_data.py` 重建后端测试清理的开发管理员;无服务配置或测试隔离行为修改
+- 独立审查(2026-11-22):无 findings,判定 Approve;六处 status/message、鉴权与 CRUD 行为保持,既有共享错误漏斗消费新字典,无需额外接线或抽象;item 专属浏览器错误 toast 断言不在本任务范围,完整 E2E 回归已绿。Checkpoint D 的 S4 勾选与 Task 16 文案审计不在本任务范围,保持未动
 
 **依赖**:Task 14
 
-**文件**:`backend/app/api/routes/items.py`、`backend/tests/api/routes/test_items.py`、生成物
+**文件**:`backend/app/api/routes/items.py`、`backend/tests/api/routes/test_items.py`、生成物(再生成无 diff)
 
 **规模**:S(2 文件 + 生成物)
 
