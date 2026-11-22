@@ -369,9 +369,9 @@
 
 ## ◆ Checkpoint C:S3 验收
 
-- [ ] Admin/Settings 零英文;aria 处置清单已记录
-- [ ] **双字典 key 集合 diff = 0**(脚本对比 zh-CN 与 en 的 key 集合;en 全量决策复核点)
-- [ ] E2E 全绿
+- [x] Admin/Settings 零英文;aria 处置清单已记录(见 Task 11 全部本地化清单);2026-11-22 人工检查通过(Admin 表格/操作/增删改/重置密码、Settings 三 tab/资料/密码/删除确认、toast/分页/控件辅助文案、双语切换与刷新保持)
+- [x] **双字典 key 集合 diff = 0**:递归脚本比对 zh-CN 与 en 的扁平 key 集合,**175/175**,两侧独有 key 均为 0;维持 en 全量覆盖决策(2026-11-22)
+- [x] E2E 全绿:Task 12 回归 `PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test` **70 passed**(2026-11-22,源码未变,HEAD `cec28de`)
 
 ---
 
