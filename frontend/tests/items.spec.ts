@@ -105,16 +105,35 @@ test("Data table localizes pagination and navigation controls", async ({
 
   await expect(page.getByText("显示第 1 至 10 条，共 11 条")).toBeVisible()
   await expect(page.getByText("每页行数")).toBeVisible()
-  await expect(page.getByText("第 1 / 2 页")).toBeVisible()
+  const pageSummary = page.getByTestId("table-page-summary")
+  await expect(pageSummary).toHaveText("第 1 / 2 页")
+  await expect(page.getByTestId("table-page-current")).toHaveClass(
+    /font-medium/,
+  )
+  await expect(page.getByTestId("table-page-count")).toHaveClass(/font-medium/)
+  await expect(page.getByTestId("table-total-count")).toHaveClass(/font-medium/)
+  await page.getByRole("button", { name: "前往最后一页" }).click()
+  await expect(page.getByText("显示第 11 至 11 条，共 11 条")).toBeVisible()
+  await page.getByRole("button", { name: "前往上一页" }).click()
+  await expect(page.getByText("显示第 1 至 10 条，共 11 条")).toBeVisible()
   await page.getByRole("button", { name: "前往下一页" }).click()
   await expect(page.getByText("显示第 11 至 11 条，共 11 条")).toBeVisible()
-  await expect(page.getByRole("button", { name: "前往上一页" })).toBeEnabled()
+  await page.getByRole("button", { name: "前往第一页" }).click()
+  await expect(page.getByText("显示第 1 至 10 条，共 11 条")).toBeVisible()
 
   await page.getByTestId("language-button").click()
   await page.getByTestId("language-en").click()
-  await expect(page.getByText("Showing 11 to 11 of 11 entries")).toBeVisible()
+  await expect(page.getByText("Showing 1 to 10 of 11 entries")).toBeVisible()
   await expect(page.getByText("Rows per page")).toBeVisible()
-  await expect(page.getByText("Page 2 of 2")).toBeVisible()
+  await expect(pageSummary).toHaveText("Page 1 of 2")
+  for (const name of [
+    "Go to first page",
+    "Go to previous page",
+    "Go to next page",
+    "Go to last page",
+  ]) {
+    await expect(page.getByRole("button", { name })).toBeAttached()
+  }
 })
 
 test.describe("Items management", () => {

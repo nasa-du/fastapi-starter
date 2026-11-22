@@ -320,7 +320,7 @@
 - [x] 手动检查:成功/失败 toast 标题为中文(新增 E2E 全链路断言:登录失败「出错了」、Items 创建成功「操作成功」;非 Axios 兜底中英文均已断言)
 - [x] lint + build 通过(biome 75 files;`frontend/` 内 `bun run build`,tsc + vite 绿)
 - [x] 回归:`PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test` 全量 **70 passed**(2026-11-22);RED 先行提交 `b34d8da`,实现分片 `e5980c4` / `c32f904`
-- [x] 双字典 key 集合 diff = 0(**172/172**,新增 toast 2 + common 20)
+- [x] 双字典 key 集合 diff = 0(**175/175**,toast 2 + common 23;审查后为保留数字强调拆分 3 个分页 key,净增 3)
 
 **执行备注**(超出原文件预算部分):
 - `useCustomToast` 经 `useTranslation` 取 `toast.{success,error}`;`utils.ts` 兜底复用既有 `error.somethingWentWrong`,不另建同义 key。422 数组、字符串 detail、Axios message 和 Task 13 错误码契约分支均保持原状
@@ -329,7 +329,7 @@
   - SidebarTrigger 展开/收起:E2E 断言 zh-CN 与切 en 后名称,并保留原 collapse tooltip 用例
   - Sidebar 移动端 Sheet 标题/描述及关闭按钮:375×812 视口 E2E 验证标题/描述;关闭按钮被既有 CSS `[&>button]:hidden` 隐藏且不提供可达路径,已字典化但未声称浏览器断言。桌面 Dialog 关闭按钮由 Items 弹窗用例覆盖
   - PasswordInput 显隐按钮:中文点击后断言密码输入 type 切为 text,切 en 后名称同步更新
-  - DataTable 首/上/下/末页、统计/每页行数:11 行 fixture 跨页 + 切 en 用例
+  - DataTable 首/上/下/末页、统计/每页行数:11 行 fixture 依次点击末页、上一页、下一页、首页并断言双语控制名称与汇总;独立审查发现的原数字强调样式丢失已修复并断言 `font-medium`,任务说明同步收敛
   - SidebarRail `aria-label`/`title` 及 PaginationPrevious/Next/Ellipsis(独立 ui/pagination.tsx 导航/页码/省略文案):已入 `common.*`;当前路由未挂载这些封装组件,无对应浏览器路径,仅源审计 + tsc 构建覆盖,未新增人工挂载脚手架
 - 测试中既有非 Axios 兜底单独经已初始化浏览器 i18n 运行验证;登录错误仍走 Task 2 已知 detail 映射,未提前迁移 Task 13 契约
 - **发现未动**:本次只覆盖 Task 11 隐蔽共享源,Task 12 zod 门禁与 Checkpoint C 验收不在本任务范围,保持未勾选。测试扩展 Sidebar 语言切换时发现连续两次菜单切换会偶发关闭,与本次文案替换无直接关系,未在 T11 扩展修改菜单行为

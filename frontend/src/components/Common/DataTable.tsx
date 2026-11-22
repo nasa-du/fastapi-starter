@@ -104,7 +104,7 @@ export function DataTable<TData extends RowData>({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-t bg-muted/20">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              {t("common.tableSummary", {
+              {t("common.tableSummaryStart", {
                 start:
                   table.state.pagination.pageIndex *
                     table.state.pagination.pageSize +
@@ -114,8 +114,14 @@ export function DataTable<TData extends RowData>({
                     table.state.pagination.pageSize,
                   data.length,
                 ),
-                total: data.length,
               })}
+              <span
+                data-testid="table-total-count"
+                className="font-medium text-foreground"
+              >
+                {data.length}
+              </span>
+              {t("common.tableSummaryEnd")}
             </div>
             <div className="flex items-center gap-x-2">
               <p className="text-sm text-muted-foreground">
@@ -142,11 +148,25 @@ export function DataTable<TData extends RowData>({
           </div>
 
           <div className="flex items-center gap-x-6">
-            <div className="flex items-center gap-x-1 text-sm text-muted-foreground">
-              {t("common.pageSummary", {
-                page: table.state.pagination.pageIndex + 1,
-                pageCount: table.getPageCount(),
-              })}
+            <div
+              className="flex items-center gap-x-1 text-sm text-muted-foreground"
+              data-testid="table-page-summary"
+            >
+              {t("common.pageSummaryStart")}
+              <span
+                data-testid="table-page-current"
+                className="font-medium text-foreground"
+              >
+                {table.state.pagination.pageIndex + 1}
+              </span>
+              {t("common.pageSummaryMiddle")}
+              <span
+                data-testid="table-page-count"
+                className="font-medium text-foreground"
+              >
+                {table.getPageCount()}
+              </span>
+              {t("common.pageSummaryEnd")}
             </div>
 
             <div className="flex items-center gap-x-1">
