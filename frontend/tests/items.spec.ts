@@ -234,7 +234,8 @@ test.describe("Items management", () => {
     })
 
     test("Edit an item successfully", async ({ page }) => {
-      await page.getByTestId("item-actions").last().click()
+      const itemRow = page.getByRole("row").filter({ hasText: itemTitle })
+      await itemRow.getByTestId("item-actions").click()
       await page.getByTestId("edit-item").click()
 
       const dialog = page.getByRole("dialog")
@@ -253,7 +254,8 @@ test.describe("Items management", () => {
     })
 
     test("Delete an item successfully", async ({ page }) => {
-      await page.getByTestId("item-actions").last().click()
+      const itemRow = page.getByRole("row").filter({ hasText: itemTitle })
+      await itemRow.getByTestId("item-actions").click()
       await page.getByTestId("delete-item").click()
 
       const dialog = page.getByRole("dialog")

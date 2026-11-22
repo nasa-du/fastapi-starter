@@ -255,8 +255,12 @@ test.describe("Change password validation", () => {
     await page.getByTestId("current-password-input").fill(password)
     await page.getByTestId("new-password-input").fill(password)
     await page.getByTestId("confirm-password-input").fill(password)
+    const responsePromise = page.waitForResponse("**/api/v1/users/me/password")
     await page.getByTestId("update-password").click()
 
+    const response = await responsePromise
+    expect(response.status()).toBe(400)
+    expect((await response.json()).detail.code).toBe("USERS_PASSWORD_UNCHANGED")
     await expect(page.getByTestId("error-toast")).toBeVisible()
   })
 
@@ -265,8 +269,12 @@ test.describe("Change password validation", () => {
     await page.getByTestId("current-password-input").fill(randomPassword())
     await page.getByTestId("new-password-input").fill(newPassword)
     await page.getByTestId("confirm-password-input").fill(newPassword)
+    const responsePromise = page.waitForResponse("**/api/v1/users/me/password")
     await page.getByTestId("update-password").click()
 
+    const response = await responsePromise
+    expect(response.status()).toBe(400)
+    expect((await response.json()).detail.code).toBe("USERS_PASSWORD_INCORRECT")
     await expect(page.getByTestId("error-toast")).toBeVisible()
   })
 })

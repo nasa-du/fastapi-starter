@@ -81,6 +81,7 @@ test.describe("Admin page and table", () => {
     const adminRole = adminRow.getByTestId("user-role-cell")
     const adminStatus = adminRow.getByTestId("user-status-cell")
     await expect(adminName).toBeVisible()
+    await expect(adminName).toHaveClass(/text-muted-foreground/)
     await expect(adminRow.getByTestId("current-user-badge")).toBeVisible()
     await expect(adminRow.getByTestId("user-actions")).toHaveCount(0)
     await expect(adminRole).toHaveAttribute("data-superuser", "true")
