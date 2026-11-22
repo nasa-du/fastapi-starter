@@ -27,6 +27,7 @@ function detectAppLanguage(): AppLanguage {
 export function setAppLanguage(language: AppLanguage) {
   localStorage.setItem(APP_LANGUAGE_STORAGE_KEY, language)
   document.documentElement.lang = language
+  document.title = i18next.t("documentTitle")
   return i18next.changeLanguage(language)
 }
 
@@ -38,3 +39,4 @@ void i18next.use(initReactI18next).init({
 })
 
 document.documentElement.lang = i18next.language
+document.title = i18next.t("documentTitle")

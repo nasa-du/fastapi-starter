@@ -1,4 +1,5 @@
 {
+  "documentTitle": "Full Stack FastAPI Template",
   "login": {
     "title": "Login to your account",
     "identifierLabel": "User Code or Name",

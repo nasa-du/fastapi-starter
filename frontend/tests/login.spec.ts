@@ -88,6 +88,43 @@ test("Identifier is required", async ({ page }) => {
   await expect(page.getByText("请输入用户编码或姓名")).toBeVisible()
 })
 
+test("Existing Chinese validation errors follow English", async ({ page }) => {
+  await page.goto("/login")
+
+  const identifierInput = page.getByTestId("identifier-input")
+  await identifierInput.focus()
+  await identifierInput.blur()
+  const identifierError = page.locator("[data-slot='form-message']").first()
+  const chineseError = await identifierError.textContent()
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+
+  await expect(identifierError).toBeVisible()
+  expect(await identifierError.textContent()).not.toBe(chineseError)
+  await expect(identifierInput).toHaveAttribute("aria-invalid", "true")
+})
+
+test("Existing English validation errors follow Chinese", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("app-language", "en")
+  })
+  await page.goto("/login")
+
+  const identifierInput = page.getByTestId("identifier-input")
+  await identifierInput.focus()
+  await identifierInput.blur()
+  const identifierError = page.locator("[data-slot='form-message']").first()
+  const englishError = await identifierError.textContent()
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-zh").click()
+
+  await expect(identifierError).toBeVisible()
+  expect(await identifierError.textContent()).not.toBe(englishError)
+  await expect(identifierInput).toHaveAttribute("aria-invalid", "true")
+})
+
 test("Password visibility controls use localized accessible names", async ({
   page,
 }) => {

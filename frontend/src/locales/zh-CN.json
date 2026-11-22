@@ -1,4 +1,5 @@
 {
+  "documentTitle": "全栈 FastAPI 模板",
   "login": {
     "title": "登录您的账户",
     "identifierLabel": "用户编码或姓名",

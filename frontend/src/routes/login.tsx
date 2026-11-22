@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import i18next from "i18next"
-import { useForm } from "react-hook-form"
+import { useEffect, useRef } from "react"
+import { type FieldPath, useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/login")({
 })
 
 function Login() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { loginMutation } = useAuth()
 
   const formSchema = z.object({
@@ -63,6 +64,22 @@ function Login() {
       password: "",
     },
   })
+
+  const language = i18n.language
+  const previousLanguage = useRef(language)
+  const errorFields = Object.keys(
+    form.formState.errors,
+  ) as FieldPath<FormData>[]
+
+  useEffect(() => {
+    if (previousLanguage.current === language) {
+      return
+    }
+    previousLanguage.current = language
+    if (errorFields.length) {
+      void form.trigger(errorFields)
+    }
+  }, [form.trigger, language, errorFields])
 
   const onSubmit = (data: FormData) => {
     if (loginMutation.isPending) return
