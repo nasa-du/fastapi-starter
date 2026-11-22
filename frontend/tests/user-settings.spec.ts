@@ -37,6 +37,16 @@ test("Settings switches language without a reload", async ({ page }) => {
   await expect(page).toHaveURL("/settings")
 })
 
+test.describe("Shared authentication helpers", () => {
+  test.use({ storageState: { cookies: [], origins: [] } })
+
+  test("work independently of UI text", async ({ page }) => {
+    await logInUser(page, firstSuperuserCode, firstSuperuserPassword)
+    await logOutUser(page)
+    await expect(page).toHaveURL("/login")
+  })
+})
+
 test("My profile tab is active by default", async ({ page }) => {
   await page.goto("/settings")
   await expect(page.getByTestId("settings-tab-my-profile")).toHaveAttribute(
