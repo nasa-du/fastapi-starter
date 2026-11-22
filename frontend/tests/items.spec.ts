@@ -75,6 +75,42 @@ test("Pending Items uses localized table headings", async ({ page }) => {
   await expect(pendingTable.getByText("操作")).toBeAttached()
 })
 
+test("Add Item button uses localized dialog controls", async ({ page }) => {
+  await page.goto("/items")
+  await page.getByTestId("add-item").click()
+
+  await expect(
+    page.getByRole("dialog").getByRole("button", { name: "关闭" }),
+  ).toBeVisible()
+})
+
+test("Data table localizes pagination and navigation controls", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/items/?**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        data: Array.from({ length: 11 }, (_, index) => ({
+          id: `item-${index}`,
+          title: `Item ${index}`,
+          description: null,
+          owner_id: "test-owner",
+        })),
+        count: 11,
+      }),
+    }),
+  )
+  await page.goto("/items")
+
+  await expect(page.getByText("显示第 1 至 10 条，共 11 条")).toBeVisible()
+  await expect(page.getByText("每页行数")).toBeVisible()
+  await expect(page.getByText("第 1 / 2 页")).toBeVisible()
+  await page.getByRole("button", { name: "前往下一页" }).click()
+  await expect(page.getByText("显示第 11 至 11 条，共 11 条")).toBeVisible()
+  await expect(page.getByRole("button", { name: "前往上一页" })).toBeEnabled()
+})
+
 test.describe("Items management", () => {
   test.use({ storageState: { cookies: [], origins: [] } })
   let userCode: string
@@ -124,6 +160,7 @@ test.describe("Items management", () => {
     await expect(page.getByTestId("item-created-toast")).toContainText(
       "项目创建成功",
     )
+    await expect(page.getByText("操作成功", { exact: true })).toBeVisible()
     await expect(page.getByText(title, { exact: true })).toBeVisible()
   })
 
