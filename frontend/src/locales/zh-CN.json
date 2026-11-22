@@ -137,6 +137,28 @@
     "success": "操作成功",
     "error": "出错了"
   },
+  "common": {
+    "close": "关闭",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码",
+    "sidebar": "侧边栏",
+    "mobileSidebarDescription": "显示移动端侧边栏。",
+    "collapseSidebar": "收起侧边栏",
+    "openSidebar": "展开侧边栏",
+    "toggleSidebar": "切换侧边栏",
+    "noResults": "暂无结果",
+    "tableSummary": "显示第 {{start}} 至 {{end}} 条，共 {{total}} 条",
+    "rowsPerPage": "每页行数",
+    "pageSummary": "第 {{page}} / {{pageCount}} 页",
+    "goToFirstPage": "前往第一页",
+    "goToPreviousPage": "前往上一页",
+    "goToNextPage": "前往下一页",
+    "goToLastPage": "前往最后一页",
+    "pagination": "分页",
+    "previous": "上一页",
+    "next": "下一页",
+    "morePages": "更多页面"
+  },
   "errors": {},
   "admin": {
     "headTitle": "用户管理 - FastAPI Template",

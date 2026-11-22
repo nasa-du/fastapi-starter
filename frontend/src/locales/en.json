@@ -137,6 +137,28 @@
     "success": "Success!",
     "error": "Something went wrong!"
   },
+  "common": {
+    "close": "Close",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "sidebar": "Sidebar",
+    "mobileSidebarDescription": "Displays the mobile sidebar.",
+    "collapseSidebar": "Collapse Sidebar",
+    "openSidebar": "Open Sidebar",
+    "toggleSidebar": "Toggle Sidebar",
+    "noResults": "No results found.",
+    "tableSummary": "Showing {{start}} to {{end}} of {{total}} entries",
+    "rowsPerPage": "Rows per page",
+    "pageSummary": "Page {{page}} of {{pageCount}}",
+    "goToFirstPage": "Go to first page",
+    "goToPreviousPage": "Go to previous page",
+    "goToNextPage": "Go to next page",
+    "goToLastPage": "Go to last page",
+    "pagination": "pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "morePages": "More pages"
+  },
   "errors": {},
   "admin": {
     "headTitle": "Users - FastAPI Template",

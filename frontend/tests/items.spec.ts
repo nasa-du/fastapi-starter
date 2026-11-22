@@ -109,6 +109,12 @@ test("Data table localizes pagination and navigation controls", async ({
   await page.getByRole("button", { name: "前往下一页" }).click()
   await expect(page.getByText("显示第 11 至 11 条，共 11 条")).toBeVisible()
   await expect(page.getByRole("button", { name: "前往上一页" })).toBeEnabled()
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+  await expect(page.getByText("Showing 11 to 11 of 11 entries")).toBeVisible()
+  await expect(page.getByText("Rows per page")).toBeVisible()
+  await expect(page.getByText("Page 2 of 2")).toBeVisible()
 })
 
 test.describe("Items management", () => {

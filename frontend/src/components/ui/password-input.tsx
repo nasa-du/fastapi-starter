@@ -1,5 +1,6 @@
-import * as React from "react"
 import { Eye, EyeOff } from "lucide-react"
+import * as React from "react"
+import { useTranslation } from "react-i18next"
 
 import { cn } from "@/lib/utils"
 import { Button } from "./button"
@@ -11,6 +12,7 @@ interface PasswordInputProps extends React.ComponentProps<"input"> {
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, error, ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false)
+    const { t } = useTranslation()
 
     return (
       <div className="relative">
@@ -33,7 +35,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           size="icon-sm"
           className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
           onClick={() => setShowPassword(!showPassword)}
-          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-label={t(showPassword ? "common.hidePassword" : "common.showPassword")}
         >
           {showPassword ? (
             <EyeOff className="h-4 w-4 text-muted-foreground" />

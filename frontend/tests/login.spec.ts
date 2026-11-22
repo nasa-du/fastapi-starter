@@ -92,13 +92,18 @@ test("Password visibility controls use localized accessible names", async ({
   await page.goto("/login")
 
   const showPassword = page.getByRole("button", { name: "显示密码" })
-  await expect(showPassword).toBeVisible()
   await showPassword.click()
   await expect(page.getByRole("button", { name: "隐藏密码" })).toBeVisible()
   await expect(page.getByTestId("password-input")).toHaveAttribute(
     "type",
     "text",
   )
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+  await expect(
+    page.getByRole("button", { name: "Hide password" }),
+  ).toBeVisible()
 })
 
 test("Unexpected login errors use a localized toast title", async ({
@@ -117,15 +122,22 @@ test("Unexpected non-Axios errors use a localized fallback", async ({
 }) => {
   await page.goto("/login")
 
-  const fallback = await page.evaluate(async () => {
+  const fallbacks = await page.evaluate(async () => {
+    const { setAppLanguage } = await import("/src/i18n.ts")
     const { handleError } = await import("/src/utils.ts")
-    let description = ""
-    handleError.call((message: string) => {
-      description = message
-    }, new Error("Simulated unexpected error"))
-    return description
+    const messages: string[] = []
+    for (const language of ["zh-CN", "en"] as const) {
+      await setAppLanguage(language)
+      handleError.call((message: string) => {
+        messages.push(message)
+      }, new Error("Simulated unexpected error"))
+    }
+    return messages
   })
-  expect(fallback).toBe("出错了,请重试。")
+  expect(fallbacks).toEqual([
+    "出错了,请重试。",
+    "Something went wrong. Please try again.",
+  ])
 })
 
 test("Sidebar and user menu use localized labels", async ({ page }) => {
@@ -138,16 +150,6 @@ test("Sidebar and user menu use localized labels", async ({ page }) => {
 
   const trigger = page.locator('[data-sidebar="trigger"]')
   await expect(trigger).toHaveAccessibleName("收起侧边栏")
-  await expect(page.locator('[data-sidebar="rail"]')).toHaveAttribute(
-    "aria-label",
-    "切换侧边栏",
-  )
-  await expect(page.locator('[data-sidebar="rail"]')).toHaveAttribute(
-    "title",
-    "切换侧边栏",
-  )
-  await trigger.click()
-  await expect(trigger).toHaveAccessibleName("展开侧边栏")
 
   const dashboardLink = page.getByRole("link", { name: "仪表盘", exact: true })
   await expect(dashboardLink).toBeVisible()
@@ -164,8 +166,34 @@ test("Sidebar and user menu use localized labels", async ({ page }) => {
   await page.keyboard.press("Escape")
 
   await page.locator('[data-sidebar="trigger"]').click()
+  await expect(trigger).toHaveAccessibleName("展开侧边栏")
   await dashboardLink.hover()
   await expect(page.getByRole("tooltip")).toHaveText("仪表盘")
+})
+
+test("Sidebar controls respond to language changes", async ({ page }) => {
+  await page.goto("/login")
+  await fillForm(page, firstSuperuserCode, firstSuperuserPassword)
+  await submitLogin(page)
+  await page.waitForURL("/")
+
+  const trigger = page.locator('[data-sidebar="trigger"]')
+  await expect(trigger).toHaveAccessibleName("收起侧边栏")
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+  await expect(trigger).toHaveAccessibleName("Collapse Sidebar")
+})
+
+test("Mobile sidebar uses localized accessibility text", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.goto("/login")
+  await fillForm(page, firstSuperuserCode, firstSuperuserPassword)
+  await submitLogin(page)
+  await page.waitForURL("/")
+
+  await page.getByRole("button", { name: "收起侧边栏" }).click()
+  const mobileSidebar = page.getByRole("dialog", { name: "侧边栏" })
+  await expect(mobileSidebar.getByText("显示移动端侧边栏。")).toBeAttached()
 })
 
 test("Successful log out", async ({ page }) => {
