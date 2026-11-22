@@ -534,12 +534,20 @@
 **描述**:README.md、development.md、deployment.md、deployment-docker-compose.md 中文重写,与 SPEC.md 口径一致;根 README 增加「i18n 脚手架 + 错误码契约」模板继承说明(派生项目零成本继承的差异化价值)。
 
 **验收标准**:
-- [ ] 四份文档全中文,命令/路径与实际一致
-- [ ] 继承说明章节就位;prek(typos)通过
+- [x] 四份文档全中文,命令/路径与实际一致
+- [x] 继承说明章节就位;prek(typos)通过
 
 **验证**:
-- [ ] `uv run prek run --all-files`(或 typos 单项)
-- [ ] 人工通读与 SPEC.md 口径比对
+- [x] `uv run prek run typos --files README.md development.md deployment.md deployment-docker-compose.md` — 通过(2026-11-22;任务允许的 typos 单项)
+- [x] 逐文档通读并与 SPEC.md / SPEC-i18n.md 口径比对(2026-11-22):登录标识、管理员建号、临时密码、UUID v7、语言检测/持久化、错误码及英文兜底、422 边界均一致;部署事实与 workflow/compose 配置一致
+
+**执行备注**:
+- 四份文档分两次翻译提交 `1aa6a6d` / `d231962`,README 模板创建入口补充提交 `785e3c7`;普通叙述全部中文,仅保留品牌、产品/技术名、GitHub UI 名称、命令、路径及配置标识符
+- 根 README 新增「模板继承:i18n 脚手架与错误码契约」:说明 localStorage → navigator.language → zh-CN 检测/回退、双字典、语言切换、错误码新增步骤、固定英文 message、未知 code 回退及客户端生成边界
+- development.md 按 SPEC.md / SPEC-i18n.md 补测试、构建、lint 和客户端同步命令;命令行比对确认原命令全部保留,新增命令均有 spec 依据。四份文档本地相对链接与图片目标均存在
+- `uv run prek run --all-files` 已执行(2026-11-22):mypy、ty、biome、生成客户端及 zizmor 等通过;既有全仓问题导致非零退出:SPEC.md / `tasks/archive/auth-user-code/todo.md` 的 grep 组合短选项被 typos 判为拼写错误(4 处),`test_login.py` 两个未用 `db` 参数及 `scripts/` 三处 DTZ011(5 项),SVG EOF/尾随空格及 ruff format 修复
+- 全量 prek 自动修改的 24 个范围外文件已逐项核对 diff 并全部恢复(含不得修改的 SPEC.md),工作树无其残留;未修复或提交这些独立问题。四文档另经 prek trailing-whitespace / end-of-file-fixer 单项通过。本任务未改应用源码,Task 18 的四命令全量验证留待后续执行
+- 独立审查(2026-11-22):发现原英文文档已有两处事实问题,已修复:后端测试/lint 脚本补 `uv run` 以匹配实际工具调用;Compose 本地源码同步改为实际的 `develop.watch` 描述,不再误称源码 bind mount。其余认证、i18n、错误契约、部署命令与变量均通过审查
 
 **依赖**:Task 16(可与 P4 并行,默认线性)
 

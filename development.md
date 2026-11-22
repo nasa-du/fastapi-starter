@@ -55,11 +55,11 @@ bun run build
 
 ```bash
 uv run pytest
-bash scripts/test.sh
-bash scripts/lint.sh
+uv run bash scripts/test.sh
+uv run bash scripts/lint.sh
 ```
 
-其中 `uv run pytest` 用于快速测试，`bash scripts/test.sh` 运行带覆盖率报告的 CI 同款测试，`bash scripts/lint.sh` 执行 mypy、ty、ruff 检查及格式检查。
+其中 `uv run pytest` 用于快速测试，`uv run bash scripts/test.sh` 运行带覆盖率报告的 CI 同款测试，`uv run bash scripts/lint.sh` 执行 mypy、ty、ruff 检查及格式检查。
 
 前端命令在项目根目录执行：
 
@@ -104,7 +104,7 @@ docker compose watch
 
 主配置文件 `compose.yml` 包含整个技术栈共享的配置，Docker Compose 会自动加载。
 
-`compose.override.yml` 添加本地开发配置，例如将源码挂载为卷。Docker Compose 也会自动加载该文件，并将其叠加到 `compose.yml` 之上。
+`compose.override.yml` 添加本地开发配置，例如通过 `develop.watch` 将后端源码同步到容器，并在前端或依赖文件变化时重建镜像。Docker Compose 也会自动加载该文件，并将其叠加到 `compose.yml` 之上。
 
 `compose.deploy.yml` 包含部署专用配置，包括 HTTPS 和自动证书处理。部署时需显式将它与 `compose.yml` 组合使用。
 
