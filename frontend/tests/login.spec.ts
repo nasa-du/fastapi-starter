@@ -94,24 +94,38 @@ test("Password visibility controls use localized accessible names", async ({
   const showPassword = page.getByRole("button", { name: "显示密码" })
   await expect(showPassword).toBeVisible()
   await showPassword.click()
-  await expect(
-    page.getByRole("button", { name: "隐藏密码" }),
-  ).toBeVisible()
+  await expect(page.getByRole("button", { name: "隐藏密码" })).toBeVisible()
   await expect(page.getByTestId("password-input")).toHaveAttribute(
     "type",
     "text",
   )
 })
 
-test("Unexpected login errors use a localized title and fallback", async ({
+test("Unexpected login errors use a localized toast title", async ({
   page,
 }) => {
   await page.goto("/login")
   await fillForm(page, "no_such_user_code", randomPassword())
   await submitLogin(page)
 
+  await expect(page.getByText("用户编码或密码错误")).toBeVisible()
   await expect(page.getByText("出错了", { exact: true })).toBeVisible()
-  await expect(page.getByText("出错了,请重试。")).toBeVisible()
+})
+
+test("Unexpected non-Axios errors use a localized fallback", async ({
+  page,
+}) => {
+  await page.goto("/login")
+
+  const fallback = await page.evaluate(async () => {
+    const { handleError } = await import("/src/utils.ts")
+    let description = ""
+    handleError.call((message: string) => {
+      description = message
+    }, new Error("Simulated unexpected error"))
+    return description
+  })
+  expect(fallback).toBe("出错了,请重试。")
 })
 
 test("Sidebar and user menu use localized labels", async ({ page }) => {

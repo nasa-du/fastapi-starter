@@ -133,6 +133,10 @@
     },
     "menuLabel": "项目操作"
   },
+  "toast": {
+    "success": "操作成功",
+    "error": "出错了"
+  },
   "errors": {},
   "admin": {
     "headTitle": "用户管理 - FastAPI Template",

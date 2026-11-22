@@ -133,6 +133,10 @@
     },
     "menuLabel": "Item actions"
   },
+  "toast": {
+    "success": "Success!",
+    "error": "Something went wrong!"
+  },
   "errors": {},
   "admin": {
     "headTitle": "Users - FastAPI Template",
