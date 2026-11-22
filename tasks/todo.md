@@ -411,12 +411,21 @@
 **描述**:先字典后后端:双字典 `errors` 组新增 USERS 组 8 个 code + `AUTH_CREDENTIALS_INVALID` / `AUTH_USER_NOT_FOUND` / `AUTH_USER_INACTIVE` / `AUTH_FORBIDDEN`(契约表);users.py 11 处、deps.py 4 处 detail 改造;grep 定位 deps 断言归属文件(可能跨 test_login.py)并逐条改 code 断言(不许删断言);再生成 client。
 
 **验收标准**:
-- [ ] users/deps 15 处全部契约化,状态码不变
-- [ ] 相关测试以 code 断言,`uv run pytest` 全绿
+- [x] users/deps 15 处全部契约化,状态码不变
+- [x] 相关测试以 code 断言,`uv run pytest` 全绿
 
 **验证**:
-- [ ] `cd backend && uv run pytest`
-- [ ] E2E 全绿(admin/settings 涉及 403/404 流程)
+- [x] `cd backend && uv run pytest` — **74 passed**(2026-11-22;含新增无效 token 与已认证停用用户回归)
+- [x] E2E 全绿(admin/settings 涉及 403/404 流程):`PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test` — **73 passed**(2026-11-22)
+- [x] `sh scripts/generate-client.sh` 成功;`frontend/openapi.json` 与 `frontend/src/client/` 无 diff、零手改;`frontend/` 内 `bun run build` 通过
+- [x] `uv run mypy app`、`uv run ty check app`、`uv run ruff check app`、`uv run ruff format app --check` 全绿(等效 `bash scripts/lint.sh` 的 uv 环境调用;直接脚本未激活 venv,`mypy: command not found`)
+
+**执行备注**(超出原文件预算部分):
+- `frontend/tests/user-settings.spec.ts` 更新「新密码与当前密码相同」的真实后端错误断言,由旧英文 detail 改为中文「新密码不能与当前密码相同」;新增错误当前密码冒烟「当前密码不正确」。中文验证先 RED:后端契约化前浏览器环境准备失败(共享数据库的开发管理员缺失,已定位);实现并初始化管理员后定向 3 passed(含 setup),全量回归 73 passed
+- `backend/tests/api/routes/test_login.py` 补无效 token(`AUTH_CREDENTIALS_INVALID`,403)与已认证停用用户(`AUTH_USER_INACTIVE`,400)契约测试;deps 断言确跨此文件。users 重复创建 400 与普通用户创建 403 原先仅查状态/辅助字段,本次补 code/message 断言,未删除既有断言
+- 独立审查确认 `USERS_FORBIDDEN`(直接按 id 读他人用户)与 `AUTH_FORBIDDEN`(管理员依赖)不得混用;测试逐条保留原状态码与固定英文 message。AST 门禁核对 users.py 11 处 + deps.py 4 处全部 `{code,message}`;双字典 key 集合 diff = 0(**190/190**,新增 12 codes)
+- 浏览器验证环境备注:完整后端套件 session 结束会清空 User 表,随后执行 E2E 前须以 `init_db` 重建开发管理员;首次 E2E 因该共享数据库状态登录超时,恢复管理员并串行执行后全绿,无源码测试行为修改
+- **发现未动**:items.py 6 处及契约表 17 code/24 处总核对归 Task 15;Checkpoint D 的 S4 验收不在本任务勾选范围
 
 **依赖**:Task 13
 
