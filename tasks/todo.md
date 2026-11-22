@@ -281,11 +281,23 @@
 **描述**:routes/_layout/settings.tsx(三个 tab 标题 + head 标题)、UserSettings/{UserInformation,ChangePassword,DeleteAccount,DeleteConfirmation}.tsx(zod 内联)t() 化;user-settings.spec.ts 文案定位器改造(已有 23 处 testid 基础,剩 tab 名/按钮名/断言)。
 
 **验收标准**:
-- [ ] Settings 三 tab 及全部弹窗零英文残留;zod 零字面量
-- [ ] user-settings.spec.ts 全绿
+- [x] Settings 三 tab 及全部弹窗零英文残留;zod 零字面量
+- [x] user-settings.spec.ts 全绿
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/user-settings.spec.ts`
+- [x] E2E:`bunx playwright test tests/user-settings.spec.ts` — **18 passed**(17 spec tests + setup;页面/表单先 RED,密码/删除 8 项改前失败,实现后全绿;2026-11-22)
+- [x] lint + build 通过(biome 75 files;`frontend/` 内 `bun run build`,tsc + vite 绿)
+- [x] 回归:`bun run test` 全量 **63 passed**(2026-11-22)
+- [x] 双字典 key 集合 diff = 0(150/150,新增 settings 34 keys);Settings 组件 `message: "` / `message: '` 零命中
+
+**执行备注**:
+- `settings.headTitle` 沿用 `i18next.t()` 接线,E2E 断言中→英标题/页面 tabs 免硬刷新更新;tabs 新增 `settings-tab-{my-profile,password,danger-zone}` testid
+- 字典新增 `settings.{tabs,profile,password,deleteAccount,deleteConfirmation}` 34 keys(双字典同步);profile 原 zod max(30) 默认错误改为显式字典消息,无英文残留;Password 必需/长度/确认/不一致 5 条消息随 schema 内联 `t()`
+- UserInformation 与 ChangePassword 沿用 Task 9 防御性语言重验:仅在实际语言变化时对现有错误字段 `trigger()`,不 reset 表单;已显示的中文校验错误切英后更新,E2E 覆盖姓名/密码错误与用户输入保留
+- testid 落点:profile-{full-name-input,updated-toast}、edit-profile / save-profile / cancel-edit-profile、update-password / password-updated-toast、delete-account / cancel-delete-account / confirm-delete-account / account-deleted-toast;成功 toast 描述走字典,标题仍属 Task 11
+- 删除确认描述为保持 `<strong>` 拆为 `descriptionStart` / `descriptionEmphasis` / `descriptionEnd`;英文压缩原段落但删除含义不变。新增 cancel 与实际删除(后登出返 login)测试,真实删除只作用于随机临时用户,绝不以管理员账户做破坏性用例
+- 本 spec 默认 zh-CN,依赖 `logInUser` 英文环境的操作块显式 `locale: "en-US"` 再切 zh;theme 用例登录/登出前切回 en。共享 helper 的 testid 化与后端错误契约仍归 Task 16 / Task 14,未扩范围修改;Radix 内置 `Close` 归 Task 11
+- 独立审查(2026-11-22):无 findings;本地化完整性、旧语言 zod 错误重验、行为保持、测试数据完整性及任务范围均通过
 
 **依赖**:Task 9
 
