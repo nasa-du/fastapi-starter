@@ -41,6 +41,52 @@
     "greeting": "你好,{{name}} 👋",
     "welcome": "欢迎回来,很高兴再次见到您!"
   },
+  "settings": {
+    "headTitle": "用户设置 - FastAPI Template",
+    "title": "用户设置",
+    "description": "管理您的账户设置和偏好",
+    "tabs": {
+      "profile": "个人资料",
+      "password": "密码",
+      "danger": "危险操作"
+    },
+    "profile": {
+      "title": "用户信息",
+      "fullNameLabel": "姓名",
+      "fullNameMaxLength": "姓名最多 30 个字符",
+      "noFullName": "暂无姓名",
+      "userCodeLabel": "用户编码",
+      "edit": "编辑",
+      "cancel": "取消",
+      "save": "保存",
+      "updatedToast": "用户信息更新成功"
+    },
+    "password": {
+      "title": "修改密码",
+      "currentLabel": "当前密码",
+      "newLabel": "新密码",
+      "confirmLabel": "确认密码",
+      "required": "请输入密码",
+      "minLength": "密码长度至少 8 个字符",
+      "confirmRequired": "请确认密码",
+      "doNotMatch": "两次输入的密码不一致",
+      "submit": "更新密码",
+      "updatedToast": "密码更新成功"
+    },
+    "deleteAccount": {
+      "title": "删除账户",
+      "description": "永久删除您的账户及所有关联数据。",
+      "toast": "您的账户已成功删除"
+    },
+    "deleteConfirmation": {
+      "title": "需要确认",
+      "descriptionStart": "您的所有账户数据将被",
+      "descriptionEmphasis": "永久删除。",
+      "descriptionEnd": "确定要继续吗?此操作无法撤销。",
+      "cancel": "取消",
+      "confirm": "删除"
+    }
+  },
   "error": {
     "title": "错误",
     "oops": "糟糕!",

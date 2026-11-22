@@ -4,11 +4,42 @@ import { createUser } from "./utils/privateApi.ts"
 import { randomPassword, randomUserCode } from "./utils/random"
 import { logInUser, logOutUser } from "./utils/user"
 
-const tabs = ["My profile", "Password", "Danger zone"]
+test.use({ locale: "zh-CN" })
+
+const tabs = ["个人资料", "密码", "危险操作"]
+
+async function switchToChinese(page: Parameters<typeof logInUser>[0]) {
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-zh").click()
+}
+
+test("Settings switches language without a reload", async ({ page }) => {
+  await page.goto("/settings")
+  await expect(page).toHaveTitle("用户设置 - FastAPI Template")
+  await expect(
+    page.getByRole("heading", { name: "用户设置", exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText("管理您的账户设置和偏好")).toBeVisible()
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+
+  await expect(page).toHaveTitle("Settings - FastAPI Template")
+  await expect(
+    page.getByRole("heading", { name: "User Settings", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText("Manage your account settings and preferences"),
+  ).toBeVisible()
+  for (const tab of ["My profile", "Password", "Danger zone"]) {
+    await expect(page.getByRole("tab", { name: tab })).toBeVisible()
+  }
+  await expect(page).toHaveURL("/settings")
+})
 
 test("My profile tab is active by default", async ({ page }) => {
   await page.goto("/settings")
-  await expect(page.getByRole("tab", { name: "My profile" })).toHaveAttribute(
+  await expect(page.getByTestId("settings-tab-my-profile")).toHaveAttribute(
     "aria-selected",
     "true",
   )
@@ -22,7 +53,7 @@ test("All tabs are visible", async ({ page }) => {
 })
 
 test.describe("Edit user profile", () => {
-  test.use({ storageState: { cookies: [], origins: [] } })
+  test.use({ locale: "en-US", storageState: { cookies: [], origins: [] } })
   let userCode: string
   let password: string
 
@@ -34,18 +65,23 @@ test.describe("Edit user profile", () => {
 
   test.beforeEach(async ({ page }) => {
     await logInUser(page, userCode, password)
+    await switchToChinese(page)
     await page.goto("/settings")
-    await page.getByRole("tab", { name: "My profile" }).click()
+    await page.getByTestId("settings-tab-my-profile").click()
   })
 
   test("Edit user name with a valid name", async ({ page }) => {
     const updatedName = "Test User 2"
 
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Full name").fill(updatedName)
-    await page.getByRole("button", { name: "Save" }).click()
+    await expect(page.getByRole("heading", { name: "用户信息" })).toBeVisible()
 
-    await expect(page.getByText("User updated successfully")).toBeVisible()
+    await page.getByTestId("edit-profile").click()
+    await page.getByTestId("profile-full-name-input").fill(updatedName)
+    await page.getByTestId("save-profile").click()
+
+    await expect(page.getByTestId("profile-updated-toast")).toContainText(
+      "用户信息更新成功",
+    )
     await expect(
       page.locator("form").getByText(updatedName, { exact: true }),
     ).toBeVisible()
@@ -53,7 +89,7 @@ test.describe("Edit user profile", () => {
 })
 
 test.describe("Cancel edit actions", () => {
-  test.use({ storageState: { cookies: [], origins: [] } })
+  test.use({ locale: "en-US", storageState: { cookies: [], origins: [] } })
 
   test("Cancel edit action restores original name", async ({ page }) => {
     const userCode = randomUserCode()
@@ -61,11 +97,12 @@ test.describe("Cancel edit actions", () => {
     const user = await createUser({ user_code: userCode, password })
 
     await logInUser(page, userCode, password)
+    await switchToChinese(page)
     await page.goto("/settings")
-    await page.getByRole("tab", { name: "My profile" }).click()
-    await page.getByRole("button", { name: "Edit" }).click()
-    await page.getByLabel("Full name").fill("Test User")
-    await page.getByRole("button", { name: "Cancel" }).first().click()
+    await page.getByTestId("settings-tab-my-profile").click()
+    await page.getByTestId("edit-profile").click()
+    await page.getByTestId("profile-full-name-input").fill("Test User")
+    await page.getByTestId("cancel-edit-profile").click()
 
     await expect(
       page.locator("form").getByText(user.full_name as string, { exact: true }),

@@ -1,7 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useEffect, useRef, useState } from "react"
+import { type FieldPath, useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { UsersService, type UserUpdateMe } from "@/client"
@@ -22,15 +23,20 @@ import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
 
-const formSchema = z.object({
-  full_name: z.string().max(30).optional(),
-})
-
-type FormData = z.infer<typeof formSchema>
-
 const UserInformation = () => {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { t, i18n } = useTranslation()
+
+  const formSchema = z.object({
+    full_name: z
+      .string()
+      .max(30, { message: t("settings.profile.fullNameMaxLength") })
+      .optional(),
+  })
+
+  type FormData = z.infer<typeof formSchema>
+
   const [editMode, setEditMode] = useState(false)
   const { user: currentUser } = useAuth()
 
@@ -43,6 +49,22 @@ const UserInformation = () => {
     },
   })
 
+  const language = i18n.language
+  const previousLanguage = useRef(i18n.language)
+  const errorFields = Object.keys(
+    form.formState.errors,
+  ) as FieldPath<FormData>[]
+
+  useEffect(() => {
+    if (previousLanguage.current === language) {
+      return
+    }
+    previousLanguage.current = language
+    if (errorFields.length) {
+      void form.trigger(errorFields)
+    }
+  }, [form.trigger, language, errorFields])
+
   const toggleEditMode = () => {
     setEditMode(!editMode)
   }
@@ -51,7 +73,9 @@ const UserInformation = () => {
     mutationFn: (data: UserUpdateMe) =>
       UsersService.updateUserMe({ body: data }),
     onSuccess: () => {
-      showSuccessToast("User updated successfully")
+      showSuccessToast(t("settings.profile.updatedToast"), {
+        testId: "profile-updated-toast",
+      })
       toggleEditMode()
     },
     onError: handleError.bind(showErrorToast),
@@ -78,7 +102,9 @@ const UserInformation = () => {
 
   return (
     <div className="max-w-md">
-      <h3 className="text-lg font-semibold py-4">User Information</h3>
+      <h3 className="text-lg font-semibold py-4">
+        {t("settings.profile.title")}
+      </h3>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -90,22 +116,26 @@ const UserInformation = () => {
             render={({ field }) =>
               editMode ? (
                 <FormItem>
-                  <FormLabel>Full name</FormLabel>
+                  <FormLabel>{t("settings.profile.fullNameLabel")}</FormLabel>
                   <FormControl>
-                    <Input type="text" {...field} />
+                    <Input
+                      data-testid="profile-full-name-input"
+                      type="text"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               ) : (
                 <FormItem>
-                  <FormLabel>Full name</FormLabel>
+                  <FormLabel>{t("settings.profile.fullNameLabel")}</FormLabel>
                   <p
                     className={cn(
                       "py-2 truncate max-w-sm",
                       !field.value && "text-muted-foreground",
                     )}
                   >
-                    {field.value || "N/A"}
+                    {field.value || t("settings.profile.noFullName")}
                   </p>
                 </FormItem>
               )
@@ -113,7 +143,7 @@ const UserInformation = () => {
           />
 
           <FormItem>
-            <Label>User Code</Label>
+            <Label>{t("settings.profile.userCodeLabel")}</Label>
             <p className="py-2 truncate max-w-sm">{currentUser?.user_code}</p>
           </FormItem>
 
@@ -121,24 +151,30 @@ const UserInformation = () => {
             {editMode ? (
               <>
                 <LoadingButton
+                  data-testid="save-profile"
                   type="submit"
                   loading={mutation.isPending}
                   disabled={!form.formState.isDirty}
                 >
-                  Save
+                  {t("settings.profile.save")}
                 </LoadingButton>
                 <Button
+                  data-testid="cancel-edit-profile"
                   type="button"
                   variant="outline"
                   onClick={onCancel}
                   disabled={mutation.isPending}
                 >
-                  Cancel
+                  {t("settings.profile.cancel")}
                 </Button>
               </>
             ) : (
-              <Button type="button" onClick={toggleEditMode}>
-                Edit
+              <Button
+                data-testid="edit-profile"
+                type="button"
+                onClick={toggleEditMode}
+              >
+                {t("settings.profile.edit")}
               </Button>
             )}
           </div>
