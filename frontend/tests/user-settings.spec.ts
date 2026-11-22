@@ -235,9 +235,17 @@ test.describe("Change password validation", () => {
     await page.getByTestId("confirm-password-input").fill(password)
     await page.getByTestId("update-password").click()
 
-    await expect(
-      page.getByText("New password cannot be the same as the current one"),
-    ).toBeVisible()
+    await expect(page.getByText("新密码不能与当前密码相同")).toBeVisible()
+  })
+
+  test("Current password is incorrect", async ({ page }) => {
+    const newPassword = randomPassword()
+    await page.getByTestId("current-password-input").fill(randomPassword())
+    await page.getByTestId("new-password-input").fill(newPassword)
+    await page.getByTestId("confirm-password-input").fill(newPassword)
+    await page.getByTestId("update-password").click()
+
+    await expect(page.getByText("当前密码不正确")).toBeVisible()
   })
 })
 
