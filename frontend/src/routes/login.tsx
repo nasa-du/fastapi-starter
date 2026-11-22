@@ -1,6 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createFileRoute, redirect } from "@tanstack/react-router"
-import type { AxiosError } from "axios"
 import i18next from "i18next"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
@@ -20,17 +19,6 @@ import { Input } from "@/components/ui/input"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
-
-// 过渡方案:错误码契约(Task 13)落地前,按后端 detail 文案映射字典;
-// Task 13 起统一走 utils.ts::extractErrorMessage 的 code 分支,届时移除本映射。
-const LOGIN_ERROR_KEYS: Record<string, string> = {
-  "Incorrect user code/name or password": "login.errors.invalid",
-  "Multiple users share this name, please log in with your user code":
-    "login.errors.nameConflict",
-  "Inactive user": "login.errors.inactive",
-}
 
 export const Route = createFileRoute("/login")({
   component: Login,
@@ -53,7 +41,6 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { t } = useTranslation()
   const { loginMutation } = useAuth()
-  const { showErrorToast } = useCustomToast()
 
   const formSchema = z.object({
     username: z
@@ -77,21 +64,9 @@ function Login() {
     },
   })
 
-  const showLoginError = (error: Error) => {
-    const detail = (error as AxiosError<{ detail?: unknown }>).response?.data
-      ?.detail
-    const key =
-      typeof detail === "string" ? LOGIN_ERROR_KEYS[detail] : undefined
-    if (key) {
-      showErrorToast(t(key))
-    } else {
-      handleError.call(showErrorToast, error)
-    }
-  }
-
   const onSubmit = (data: FormData) => {
     if (loginMutation.isPending) return
-    loginMutation.mutate(data, { onError: showLoginError })
+    loginMutation.mutate(data)
   }
 
   return (

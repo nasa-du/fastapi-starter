@@ -63,8 +63,10 @@ test("Log in with unknown user code shows the unified error", async ({
   await page.goto("/login")
 
   await fillForm(page, "no_such_user_code", randomPassword())
+  const loginResponse = page.waitForResponse("**/api/v1/login/access-token")
   await submitLogin(page)
 
+  expect((await loginResponse).status()).toBe(400)
   await expect(page.getByText("用户编码或密码错误")).toBeVisible()
 })
 
@@ -106,6 +108,31 @@ test("Password visibility controls use localized accessible names", async ({
   ).toBeVisible()
 })
 
+test("Unknown error codes fall back to the English server message", async ({
+  page,
+}) => {
+  await page.goto("/login")
+  await page.route("**/api/v1/login/access-token", async (route) => {
+    await route.fulfill({
+      status: 400,
+      contentType: "application/json",
+      body: JSON.stringify({
+        detail: {
+          code: "AUTH_LOGIN_UNKNOWN",
+          message: "The login service could not authenticate you",
+        },
+      }),
+    })
+  })
+
+  await fillForm(page, "no_such_user_code", randomPassword())
+  await submitLogin(page)
+
+  await expect(
+    page.getByText("The login service could not authenticate you"),
+  ).toBeVisible()
+})
+
 test("Unexpected login errors use a localized toast title", async ({
   page,
 }) => {
@@ -113,7 +140,7 @@ test("Unexpected login errors use a localized toast title", async ({
   await fillForm(page, "no_such_user_code", randomPassword())
   await submitLogin(page)
 
-  await expect(page.getByText("用户编码或密码错误")).toBeVisible()
+  await expect(page.getByText("用户编码或密码错误")).toHaveCount(1)
   await expect(page.getByText("出错了", { exact: true })).toBeVisible()
 })
 

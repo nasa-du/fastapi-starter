@@ -7,6 +7,11 @@ function extractErrorMessage(err: Error): string {
     if (Array.isArray(errDetail) && errDetail.length > 0) {
       return errDetail[0].msg
     }
+    if (errDetail?.code) {
+      return i18next.t(`errors.${errDetail.code}`, {
+        defaultValue: errDetail.message ?? "",
+      })
+    }
     if (typeof errDetail === "string") {
       return errDetail
     }
