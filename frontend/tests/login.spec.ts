@@ -1,4 +1,6 @@
 import { expect, type Page, test } from "@playwright/test"
+import en from "../src/locales/en.json" with { type: "json" }
+import zhCN from "../src/locales/zh-CN.json" with { type: "json" }
 import { firstSuperuserCode, firstSuperuserPassword } from "./config.ts"
 import { createUser } from "./utils/privateApi.ts"
 import { randomPassword, randomUserCode } from "./utils/random.ts"
@@ -95,13 +97,12 @@ test("Existing Chinese validation errors follow English", async ({ page }) => {
   await identifierInput.focus()
   await identifierInput.blur()
   const identifierError = page.locator("[data-slot='form-message']").first()
-  const chineseError = await identifierError.textContent()
+  await expect(identifierError).toHaveText(zhCN.login.errors.identifierRequired)
 
   await page.getByTestId("language-button").click()
   await page.getByTestId("language-en").click()
 
-  await expect(identifierError).toBeVisible()
-  expect(await identifierError.textContent()).not.toBe(chineseError)
+  await expect(identifierError).toHaveText(en.login.errors.identifierRequired)
   await expect(identifierInput).toHaveAttribute("aria-invalid", "true")
 })
 
@@ -115,14 +116,48 @@ test("Existing English validation errors follow Chinese", async ({ page }) => {
   await identifierInput.focus()
   await identifierInput.blur()
   const identifierError = page.locator("[data-slot='form-message']").first()
-  const englishError = await identifierError.textContent()
+  await expect(identifierError).toHaveText(en.login.errors.identifierRequired)
 
   await page.getByTestId("language-button").click()
   await page.getByTestId("language-zh").click()
 
-  await expect(identifierError).toBeVisible()
-  expect(await identifierError.textContent()).not.toBe(englishError)
+  await expect(identifierError).toHaveText(zhCN.login.errors.identifierRequired)
   await expect(identifierInput).toHaveAttribute("aria-invalid", "true")
+})
+
+test("Existing errors on both fields revalidate after language changes", async ({
+  page,
+}) => {
+  await page.goto("/login")
+
+  const identifierInput = page.getByTestId("identifier-input")
+  const passwordInput = page.getByTestId("password-input")
+  await identifierInput.focus()
+  await identifierInput.blur()
+  await expect(page.locator("[data-slot='form-message']").first()).toHaveText(
+    zhCN.login.errors.identifierRequired,
+  )
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+  await expect(page.locator("[data-slot='form-message']").first()).toHaveText(
+    en.login.errors.identifierRequired,
+  )
+
+  await passwordInput.fill("short")
+  await passwordInput.blur()
+  await expect(page.locator("[data-slot='form-message']").nth(1)).toHaveText(
+    en.login.errors.passwordMinLength,
+  )
+
+  await passwordInput.fill("")
+  await passwordInput.blur()
+  await expect(page.locator("[data-slot='form-message']").nth(1)).toHaveText(
+    en.login.errors.passwordRequired,
+  )
+  await expect(page.locator("[data-slot='form-message']").first()).toHaveText(
+    en.login.errors.identifierRequired,
+  )
 })
 
 test("Password visibility controls use localized accessible names", async ({

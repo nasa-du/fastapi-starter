@@ -559,20 +559,42 @@
 
 ## Task 18:全量验证与 spec 核对
 
-**描述**:按 SPEC-i18n.md「Success Criteria」总体四项 + S1–S6 清单逐条核对,证据记录到本文件;四条命令最终全绿。
+**描述**:按 SPEC-i18n.md「Success Criteria」总体验收两项 + S1–S6 清单逐条核对,证据记录到本文件;四条命令最终全绿。SPEC-i18n.md 实际为**总体两项**(原「四项」为笔误,本任务据实核对)。
 
 **验收标准**:
-- [ ] 总体验收四项逐条勾选并附证据
-- [ ] `bun run lint` / `bun run build` / `bun run test` / `uv run pytest` 全绿
+- [x] 总体验收两项逐条勾选并附证据
+- [x] `bun run lint` / `bun run build` / `bun run test` / `uv run pytest` 全绿
 
 **验证**:
-- [ ] 上述四命令最终运行记录
+- [x] 根目录 `bun run lint` — 通过(biome 75 files;2026-11-22 最终运行,测试源自动格式化已复核)
+- [x] 根目录无 `build` script,实际执行 `bun run --filter frontend build` — tsc + Vite 通过(2527 modules;同任务前端目录 `bun run build` 亦通过)
+- [x] `PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test` — **80 passed**(含 setup;2026-11-22 最终完整回归)
+- [x] `cd backend && uv run pytest` — **74 passed**(63 条既有开发配置/依赖 deprecation 警告,无失败;2026-11-22)
+
+**总体验收(SPEC-i18n.md 实际共两项)**:
+- [x] **全站中文为主,英文可切换,未知错误有英文兜底**:S1–S3 中文文案/表单/toast/aria 字典化;`language.spec.ts` 覆盖切换、刷新持久化、`<html lang>` 和全部 5 个路由标题即时双语;`login.spec.ts` 覆盖真实后端中文错误、未知 code 固定英文 message、旧字符串/422 数组及非 Axios 兜底。最终 E2E 80 passed。
+- [x] **模板继承资产成立**:`frontend/src/i18n.ts` 本地双字典/检测链/持久化/html lang 及文档标题回退;`utils.ts` 单一错误漏斗;后端 24 处 / 17 code 契约;README「模板继承:i18n 脚手架与错误码契约」列出扩展步骤。前端仅新增 i18next、react-i18next 两依赖,无语言检测插件或额外后端依赖。
+
+**S1–S6 逐项核对(2026-11-22)**:
+- [x] **S1 脚手架 + 登录页样板**:登录标题/label/placeholder/按钮/zod/错误 toast 全部双语;语言切换器在登录页与侧边栏可达,localStorage 刷新保持;`<html lang>` 与登录路由标题免硬刷新更新。独立审查发现已显示 zod 错误保留旧语言,已按既有表单模式仅对错误字段 `trigger()` 重验,新增中→英、英→中及双字段精确字典消息 E2E。集成于 2026-11-20 当日完成,Task 1–3 及本次最终 lint/build/E2E 均绿。
+- [x] **S2 主框架 + Items**:侧边栏/Dashboard/Items 表格/CRUD 弹窗/actions/toast 入字典(品牌、语言自助名和用户动态数据除外);ErrorComponent/NotFound 入字典。5 个路由标题逐项断言中→英即时更新、刷新保持及切回;`index.html` 静态中文标题/lang + root head 回退,中文与英文浏览器未知路由均验证。最终双字典 **193/193** keys,≤400。独立审查发现的静态英文标题缺口已修复,见下方执行备注。
+- [x] **S3 Admin + Settings + zod 消息**:Admin columns/actions/增删改/重置密码、Settings 三 tab 与 DeleteConfirmation 全链路双语;6 个指定表单文件 zod 均取字典,TS/TSX `message: "` / `message: '` 门禁零命中;toast 标题、非 Axios 兜底、shadcn aria 按 Task 11 清单处理。英文全量覆盖决策保留;递归比较两侧均 193 leaf keys,单侧独有 key 均为 0。相关最终 E2E 全绿。
+- [x] **S4 后端错误码契约**:先 login 试点再推广;AST 独立复核 login 3 + deps 4 + users 11 + items 6 = **24 处 / 17 code**,全部 `{code,message}` 且与 SPEC 冻结表逐项 HTTP/message 相同,状态不变;后端 74 passed。`sh scripts/generate-client.sh` 成功,`frontend/openapi.json` / `frontend/src/client/` 零 diff。前端错误字典 → 英文 message → 原始形状回退及未知 code E2E 通过;`uv run bash scripts/lint.sh` 的 mypy/ty/ruff/format 全绿。
+- [x] **S5 测试改造**:登录/Items/Admin/Settings 关键交互 testid 或语义结构/状态定位;非登录固定 UI 文案断言仍为零,本次新增标题期望值从 JSON 字典读取而非复制译文;语言切换/刷新保持用例通过。Task 16 的临时 `items.title` 文案修改 → Items 14 passed → 还原演练保留为直接证据。
+- [x] **S6 文档中文化**:四份指定文档中文叙述与 SPEC 口径一致,README 模板继承章节说明检测/双字典/错误码扩展/固定英文 message/未知 code 回退/生成物边界;`uv run prek run typos --files README.md development.md deployment.md deployment-docker-compose.md` 通过(2026-11-22 最终复核含本任务记录)。
+
+**执行备注(全量审计发现的范围外必要修复)**:
+- 独立审查判定旧 S1/S2 验收有两处覆盖缺口:登录已显示 zod 错误切语言不更新;`index.html` 仍英文标题且无 root fallback。先以 E2E RED 分别复现旧中文错误、英文静态模板/未知路由标题,再实现并转绿;修复提交 `b7b2cdd`。
+- 登录沿 AddUser/Settings 先例以 ref 守卫实际语言变化,仅重验当前错误字段,不 reset 表单;新增双向精确字典断言及密码必填/长度与双字段同显回归。root `head()` 提供 `documentTitle` 兜底,深层 5 路由标题正常覆盖;不修改 SPEC-i18n.md 冻结规范。
+- 二次独立审查对生产修复无 correctness/regression findings;建议加强测试后,登录断言改为目标语言字典精确值,避免只验证「文字变了」。新增语言测试显式隔离 auth storage,登录页用例清除继承 token,标题矩阵先验证登录再登录访问四个受保护路由。
+- 后端套件结束后按既有 Task 14/15 环境约定 `uv run python app/initial_data.py` 恢复开发管理员,再串行 E2E;未改测试隔离或服务配置。
+- Task 18 的「总体四项」与 SPEC 实际「总体两项」不一致,仅在本任务记录据实更正,不改历史 SPEC。最终**技术验收已满足,Checkpoint E 的人工终审未执行,保持未勾选**。
+
+**文件**:`tasks/todo.md`(验收记录);审计修复 `frontend/index.html`、`frontend/src/i18n.ts`、双字典、`frontend/src/routes/{__root,login}.tsx`、`frontend/tests/{language,login}.spec.ts`
 
 **依赖**:Task 17
 
-**文件**:无(仅本文件记录)
-
-**规模**:XS
+**规模**:XS(验收记录;另含审计发现的 8 文件小修复与测试加固)
 
 ---
 

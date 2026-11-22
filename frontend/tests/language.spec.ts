@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test"
+import en from "../src/locales/en.json" with { type: "json" }
+import zhCN from "../src/locales/zh-CN.json" with { type: "json" }
 import { firstSuperuserCode, firstSuperuserPassword } from "./config.ts"
 
 test.use({ locale: "zh-CN" })
@@ -8,15 +10,15 @@ test.describe("Document title and route language behavior", () => {
     const html = await (await request.get("/")).text()
 
     expect(html).toContain('<html lang="zh-CN">')
-    expect(html).toContain("<title>全栈 FastAPI 模板</title>")
+    expect(html).toContain(`<title>${zhCN.documentTitle}</title>`)
   })
 
   test("Document title fallback follows the selected language", async ({
     browser,
   }) => {
     for (const [browserLanguage, expectedTitle] of [
-      ["zh-CN", "全栈 FastAPI 模板"],
-      ["en-US", "Full Stack FastAPI Template"],
+      ["zh-CN", zhCN.documentTitle],
+      ["en-US", en.documentTitle],
     ]) {
       const context = await browser.newContext({
         locale: browserLanguage,
@@ -42,15 +44,15 @@ test.describe("Document title and route language behavior", () => {
     })
     const page = await context.newPage()
     await page.goto("/login")
-    await expect(page).toHaveTitle("登录 - FastAPI Template")
+    await expect(page).toHaveTitle(zhCN.login.headTitle)
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
-    await expect(page).toHaveTitle("Log In - FastAPI Template")
+    await expect(page).toHaveTitle(en.login.headTitle)
     await page.reload()
-    await expect(page).toHaveTitle("Log In - FastAPI Template")
+    await expect(page).toHaveTitle(en.login.headTitle)
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-zh").click()
-    await expect(page).toHaveTitle("登录 - FastAPI Template")
+    await expect(page).toHaveTitle(zhCN.login.headTitle)
 
     await page.getByTestId("identifier-input").fill(firstSuperuserCode)
     await page.getByTestId("password-input").fill(firstSuperuserPassword)
@@ -58,14 +60,10 @@ test.describe("Document title and route language behavior", () => {
     await page.waitForURL("/")
 
     const routeTitles = [
-      ["/", "仪表盘 - FastAPI Template", "Dashboard - FastAPI Template"],
-      ["/items", "项目 - FastAPI Template", "Items - FastAPI Template"],
-      ["/admin", "用户管理 - FastAPI Template", "Users - FastAPI Template"],
-      [
-        "/settings",
-        "用户设置 - FastAPI Template",
-        "Settings - FastAPI Template",
-      ],
+      ["/", zhCN.dashboard.headTitle, en.dashboard.headTitle],
+      ["/items", zhCN.items.headTitle, en.items.headTitle],
+      ["/admin", zhCN.admin.headTitle, en.admin.headTitle],
+      ["/settings", zhCN.settings.headTitle, en.settings.headTitle],
     ]
 
     for (const [path, chineseTitle, englishTitle] of routeTitles) {
