@@ -133,6 +133,32 @@ test("Unknown error codes fall back to the English server message", async ({
   ).toBeVisible()
 })
 
+test("Legacy string and validation-array errors keep their original messages", async ({
+  page,
+}) => {
+  const errorResponses = [
+    { status: 400, detail: "Invalid code" },
+    { status: 422, detail: [{ msg: "Invalid identifier field" }] },
+  ]
+
+  for (const { status, detail } of errorResponses) {
+    await page.goto("/login")
+    await page.route("**/api/v1/login/access-token", async (route) => {
+      await route.fulfill({
+        status,
+        contentType: "application/json",
+        body: JSON.stringify({ detail }),
+      })
+    })
+
+    await fillForm(page, "no_such_user_code", randomPassword())
+    await submitLogin(page)
+
+    const message = typeof detail === "string" ? detail : detail[0].msg
+    await expect(page.getByText(message, { exact: true })).toBeVisible()
+  }
+})
+
 test("Unexpected login errors use a localized toast title", async ({
   page,
 }) => {

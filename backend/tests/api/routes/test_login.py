@@ -86,6 +86,9 @@ def test_login_with_ambiguous_full_name(client: TestClient, db: Session) -> None
     r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
     assert r.status_code == 400
     assert r.json()["detail"]["code"] == "AUTH_LOGIN_NAME_CONFLICT"
+    assert r.json()["detail"]["message"] == (
+        "Multiple users share this name, please log in with your user code"
+    )
 
 
 def test_login_incorrect_credentials_unified_message(
@@ -106,6 +109,7 @@ def test_login_incorrect_credentials_unified_message(
     assert r.status_code == 400
     assert r.json()["detail"]["code"] == wrong_password_detail["code"]
     assert wrong_password_detail["code"] == "AUTH_LOGIN_INVALID"
+    assert wrong_password_detail["message"] == "Incorrect user code/name or password"
 
 
 def test_login_inactive_user(client: TestClient, db: Session) -> None:
@@ -120,6 +124,7 @@ def test_login_inactive_user(client: TestClient, db: Session) -> None:
 
     assert r.status_code == 400
     assert r.json()["detail"]["code"] == "AUTH_LOGIN_INACTIVE"
+    assert r.json()["detail"]["message"] == "Inactive user"
 
 
 def test_login_unknown_identifier_runs_dummy_hash(
