@@ -21,11 +21,16 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
         <div className="flex items-center gap-2">
           <span
             className={cn("font-medium", !fullName && "text-muted-foreground")}
+            data-testid="user-full-name-cell"
           >
             {fullName || i18next.t("admin.noFullName")}
           </span>
           {row.original.isCurrentUser && (
-            <Badge variant="outline" className="text-xs">
+            <Badge
+              variant="outline"
+              className="text-xs"
+              data-testid="current-user-badge"
+            >
               {i18next.t("admin.you")}
             </Badge>
           )}
@@ -44,7 +49,11 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
     accessorKey: "is_superuser",
     header: () => i18next.t("admin.columnRole"),
     cell: ({ row }) => (
-      <Badge variant={row.original.is_superuser ? "default" : "secondary"}>
+      <Badge
+        variant={row.original.is_superuser ? "default" : "secondary"}
+        data-testid="user-role-cell"
+        data-superuser={row.original.is_superuser}
+      >
         {row.original.is_superuser
           ? i18next.t("admin.superuser")
           : i18next.t("admin.user")}
@@ -55,7 +64,7 @@ export const columns: ColumnDef<DataTableFeatures, UserTableData>[] = [
     accessorKey: "is_active",
     header: () => i18next.t("admin.columnStatus"),
     cell: ({ row }) => (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" data-testid="user-status-cell">
         <span
           className={cn(
             "size-2 rounded-full",

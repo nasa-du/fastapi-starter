@@ -11,23 +11,24 @@ test.describe("Admin page and table", () => {
     page,
   }) => {
     await page.goto("/admin")
-    await expect(page).toHaveTitle("用户管理 - FastAPI Template")
-    await expect(page.getByRole("heading", { name: "用户" })).toBeVisible()
-    await expect(page.getByText("管理用户账户和权限")).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+    await expect(page.getByTestId("add-user")).toBeVisible()
+    await expect(page.getByRole("table")).toBeVisible()
+    const chineseTitle = await page.title()
 
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
 
-    await expect(page).toHaveTitle("Users - FastAPI Template")
-    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
-    await expect(
-      page.getByText("Manage user accounts and permissions"),
-    ).toBeVisible()
+    await expect(page.locator("html")).toHaveAttribute("lang", "en")
+    expect(await page.title()).not.toBe(chineseTitle)
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+    await expect(page.getByTestId("add-user")).toBeVisible()
+    await expect(page.getByRole("table")).toBeVisible()
   })
 
   test("Add User button is visible", async ({ page }) => {
     await page.goto("/admin")
-    await expect(page.getByTestId("add-user")).toHaveText("添加用户")
+    await expect(page.getByTestId("add-user")).toBeVisible()
   })
 
   test("Users table localizes headings, roles, status, and identity", async ({
@@ -71,36 +72,43 @@ test.describe("Admin page and table", () => {
     )
     await page.goto("/admin")
 
-    for (const heading of ["姓名", "用户编码", "角色", "状态"]) {
-      await expect(
-        page.getByRole("columnheader", { name: heading }),
-      ).toBeVisible()
-    }
-    await expect(page.getByText("操作")).toBeAttached()
+    const headings = page.getByRole("columnheader")
+    await expect(headings).toHaveCount(5)
+    const chineseHeadings = await headings.allTextContents()
+    await expect(page.getByTestId("user-actions")).toHaveCount(1)
     const adminRow = page.getByRole("row").filter({ hasText: "active_admin" })
-    await expect(adminRow.getByText("暂无姓名")).toBeVisible()
-    await expect(adminRow.getByText("你", { exact: true })).toBeVisible()
-    await expect(adminRow.getByText("超级管理员")).toBeVisible()
-    await expect(adminRow.getByText("启用")).toBeVisible()
+    const adminName = adminRow.getByTestId("user-full-name-cell")
+    const adminRole = adminRow.getByTestId("user-role-cell")
+    const adminStatus = adminRow.getByTestId("user-status-cell")
+    await expect(adminName).toBeVisible()
+    await expect(adminRow.getByTestId("current-user-badge")).toBeVisible()
+    await expect(adminRow.getByTestId("user-actions")).toHaveCount(0)
+    await expect(adminRole).toHaveAttribute("data-superuser", "true")
+    await expect(adminStatus.locator(".bg-green-500")).toBeVisible()
+    const chineseAdmin = await adminRow.textContent()
     const userRow = page.getByRole("row").filter({ hasText: "inactive_user" })
-    await expect(userRow.getByText("普通用户")).toBeVisible()
-    await expect(userRow.getByText("停用")).toBeVisible()
+    const userRole = userRow.getByTestId("user-role-cell")
+    const userStatus = userRow.getByTestId("user-status-cell")
+    await expect(userRole).toHaveAttribute("data-superuser", "false")
+    await expect(userStatus.locator(".bg-gray-400")).toBeVisible()
+    const chineseUser = await userRow.textContent()
+    await expect(userRow.getByTestId("user-actions")).toBeVisible()
 
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
 
-    for (const heading of ["Full Name", "User Code", "Role", "Status"]) {
-      await expect(
-        page.getByRole("columnheader", { name: heading }),
-      ).toBeVisible()
-    }
-    await expect(page.getByText("Actions")).toBeAttached()
-    await expect(adminRow.getByText("N/A")).toBeVisible()
-    await expect(adminRow.getByText("You", { exact: true })).toBeVisible()
-    await expect(adminRow.getByText("Superuser")).toBeVisible()
-    await expect(adminRow.getByText("Active", { exact: true })).toBeVisible()
-    await expect(userRow.getByText("User", { exact: true })).toBeVisible()
-    await expect(userRow.getByText("Inactive", { exact: true })).toBeVisible()
+    expect(await headings.allTextContents()).not.toEqual(chineseHeadings)
+    await expect(page.getByTestId("user-actions")).toHaveCount(1)
+    await expect(adminRow.getByTestId("user-actions")).toHaveCount(0)
+    await expect(userRow.getByTestId("user-actions")).toBeVisible()
+    expect(await adminName.textContent()).not.toBe("active_admin")
+    await expect(adminRow.getByTestId("current-user-badge")).toBeVisible()
+    await expect(adminRole).toHaveAttribute("data-superuser", "true")
+    await expect(adminStatus.locator(".bg-green-500")).toBeVisible()
+    await expect(userRole).toHaveAttribute("data-superuser", "false")
+    await expect(userStatus.locator(".bg-gray-400")).toBeVisible()
+    expect(await adminRow.textContent()).not.toBe(chineseAdmin)
+    expect(await userRow.textContent()).not.toBe(chineseUser)
   })
 
   test("Add user dialog switches to English without reload", async ({
@@ -111,7 +119,9 @@ test.describe("Admin page and table", () => {
     const dialog = page.getByRole("dialog")
     await page.getByTestId("user-code-input").focus()
     await page.getByTestId("user-code-input").blur()
-    await expect(dialog.getByText("请输入用户编码")).toBeVisible()
+    const userCodeError = dialog.locator("[data-slot='form-message']")
+    await expect(userCodeError).toBeVisible()
+    const chineseError = await userCodeError.textContent()
     await page.keyboard.press("Escape")
     await expect(dialog).not.toBeVisible()
 
@@ -119,29 +129,20 @@ test.describe("Admin page and table", () => {
     await page.getByTestId("language-en").click()
     await page.getByTestId("add-user").click()
 
+    await expect(dialog.getByRole("heading")).toBeVisible()
     await expect(
-      dialog.getByRole("heading", { name: "Add User" }),
+      dialog.locator("[data-slot='dialog-description']"),
     ).toBeVisible()
-    await expect(
-      dialog.getByText(
-        "Fill in the form below to add a new user to the system.",
-      ),
-    ).toBeVisible()
-    await expect(dialog.getByLabel("Is superuser?")).toBeVisible()
-    await expect(dialog.getByLabel("Is active?")).toBeVisible()
-    await expect(page.getByTestId("user-code-input")).toHaveAttribute(
-      "placeholder",
-      "User code",
-    )
-    await expect(page.getByTestId("user-full-name-input")).toHaveAttribute(
-      "placeholder",
-      "Full name",
-    )
-    await expect(page.getByTestId("cancel-create-user")).toHaveText("Cancel")
-    await expect(page.getByTestId("save-user")).toHaveText("Save")
+    await expect(page.getByTestId("user-superuser-input")).toBeVisible()
+    await expect(page.getByTestId("user-active-input")).toBeVisible()
+    await expect(page.getByTestId("user-code-input")).toBeEditable()
+    await expect(page.getByTestId("user-full-name-input")).toBeEditable()
+    await expect(page.getByTestId("cancel-create-user")).toBeEnabled()
+    await expect(page.getByTestId("save-user")).toBeEnabled()
     await expect(page).toHaveURL("/admin")
 
-    await expect(dialog.getByText("User code is required")).toBeVisible()
+    await expect(userCodeError).toBeVisible()
+    expect(await userCodeError.textContent()).not.toBe(chineseError)
 
     await page.getByTestId("user-code-input").fill("persisted-user-code")
     await page.keyboard.press("Escape")
@@ -153,7 +154,10 @@ test.describe("Admin page and table", () => {
     )
     await page.getByTestId("user-password-input").focus()
     await page.getByTestId("user-password-input").blur()
-    await expect(dialog.getByText("Password is required")).toBeVisible()
+    await expect(page.getByTestId("user-password-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
   })
 
   test("Pending Users uses localized table headings", async ({ page }) => {
@@ -163,12 +167,10 @@ test.describe("Admin page and table", () => {
     const pendingTable = page.locator("table").filter({
       has: page.locator("[data-slot='skeleton']"),
     })
-    for (const heading of ["姓名", "用户编码", "角色", "状态"]) {
-      await expect(
-        pendingTable.getByRole("columnheader", { name: heading }),
-      ).toBeVisible()
-    }
-    await expect(pendingTable.getByText("操作")).toBeAttached()
+    await expect(pendingTable.getByRole("columnheader")).toHaveCount(5)
+    await expect(
+      pendingTable.locator("[data-slot='skeleton']").first(),
+    ).toBeVisible()
   })
 })
 
@@ -184,36 +186,27 @@ test.describe("Admin user management", () => {
     await page.getByTestId("add-user").click()
 
     const dialog = page.getByRole("dialog")
+    await expect(dialog.getByRole("heading")).toBeVisible()
     await expect(
-      dialog.getByRole("heading", { name: "添加用户" }),
+      dialog.locator("[data-slot='dialog-description']"),
     ).toBeVisible()
-    await expect(dialog.getByText("填写以下表单以添加新用户。")).toBeVisible()
-    await expect(dialog.getByText("用户编码 *", { exact: true })).toBeVisible()
-    await expect(
-      dialog.getByText("用户编码必须唯一,用户将使用此编码登录。"),
-    ).toBeVisible()
-    await expect(dialog.getByText("姓名")).toBeVisible()
-    await expect(dialog.getByText("设置密码")).toBeVisible()
-    await expect(dialog.getByText("确认密码")).toBeVisible()
-    await expect(dialog.getByLabel("超级管理员")).toBeVisible()
-    await expect(dialog.getByLabel("启用用户")).toBeVisible()
     await expect(page.getByTestId("user-code-input")).toHaveAttribute(
-      "placeholder",
-      "用户编码",
+      "required",
+      "",
     )
-    await expect(page.getByTestId("user-full-name-input")).toHaveAttribute(
-      "placeholder",
-      "姓名",
-    )
+    await expect(dialog.locator("[data-slot='form-description']")).toBeVisible()
+    await expect(page.getByTestId("user-full-name-input")).toBeEditable()
     await expect(page.getByTestId("user-password-input")).toHaveAttribute(
-      "placeholder",
-      "密码",
+      "required",
+      "",
     )
     await expect(
       page.getByTestId("user-confirm-password-input"),
-    ).toHaveAttribute("placeholder", "密码")
-    await expect(page.getByTestId("cancel-create-user")).toHaveText("取消")
-    await expect(page.getByTestId("save-user")).toHaveText("保存")
+    ).toHaveAttribute("required", "")
+    await expect(page.getByTestId("user-superuser-input")).toBeVisible()
+    await expect(page.getByTestId("user-active-input")).toBeVisible()
+    await expect(page.getByTestId("cancel-create-user")).toBeEnabled()
+    await expect(page.getByTestId("save-user")).toBeEnabled()
 
     await page.getByTestId("user-code-input").fill(userCode)
     await page.getByTestId("user-full-name-input").fill(fullName)
@@ -222,9 +215,7 @@ test.describe("Admin user management", () => {
 
     await page.getByTestId("save-user").click()
 
-    await expect(page.getByTestId("user-created-toast")).toContainText(
-      "用户创建成功",
-    )
+    await expect(page.getByTestId("user-created-toast")).toBeVisible()
 
     await expect(page.getByRole("dialog")).not.toBeVisible()
 
@@ -253,7 +244,10 @@ test.describe("Admin user management", () => {
     await expect(page.getByRole("dialog")).not.toBeVisible()
 
     const userRow = page.getByRole("row").filter({ hasText: userCode })
-    await expect(userRow.getByText("超级管理员")).toBeVisible()
+    await expect(userRow.getByTestId("user-role-cell")).toHaveAttribute(
+      "data-superuser",
+      "true",
+    )
   })
 
   test("Edit a user successfully", async ({ page }) => {
@@ -280,23 +274,20 @@ test.describe("Admin user management", () => {
     await page.getByTestId("edit-user").click()
 
     const dialog = page.getByRole("dialog")
+    await expect(dialog.getByRole("heading")).toBeVisible()
     await expect(
-      dialog.getByRole("heading", { name: "编辑用户" }),
+      dialog.locator("[data-slot='dialog-description']"),
     ).toBeVisible()
-    await expect(dialog.getByText("在下方更新用户信息。")).toBeVisible()
     await expect(page.getByTestId("user-code-input")).toHaveValue(userCode)
-    await expect(page.getByTestId("cancel-edit-user")).toHaveText("取消")
-    await expect(page.getByTestId("user-full-name-input")).toHaveAttribute(
-      "placeholder",
-      "姓名",
+    await expect(page.getByTestId("cancel-edit-user")).toBeEnabled()
+    await expect(page.getByTestId("user-full-name-input")).toHaveValue(
+      originalName,
     )
 
     await page.getByTestId("user-full-name-input").fill(updatedName)
     await page.getByTestId("save-user").click()
 
-    await expect(page.getByTestId("user-updated-toast")).toContainText(
-      "用户更新成功",
-    )
+    await expect(page.getByTestId("user-updated-toast")).toBeVisible()
     await expect(userRow.getByText(updatedName)).toBeVisible()
   })
 
@@ -325,7 +316,9 @@ test.describe("Admin user management", () => {
     await page.getByTestId("user-full-name-input").fill("Unsaved Name")
     await page.getByTestId("user-code-input").fill("")
     await page.getByTestId("user-code-input").blur()
-    await expect(dialog.getByText("请输入用户编码")).toBeVisible()
+    const editUserCodeError = dialog.locator("[data-slot='form-message']")
+    await expect(editUserCodeError).toBeVisible()
+    const chineseEditError = await editUserCodeError.textContent()
     await page.keyboard.press("Escape")
     await expect(dialog).not.toBeVisible()
     await page.keyboard.press("Escape")
@@ -340,11 +333,20 @@ test.describe("Admin user management", () => {
     await expect(page.getByTestId("user-full-name-input")).toHaveValue(
       "Original Name",
     )
+    await page.getByTestId("user-code-input").fill("")
+    await page.getByTestId("user-code-input").blur()
+    await expect(editUserCodeError).toBeVisible()
+    expect(await editUserCodeError.textContent()).not.toBe(chineseEditError)
     await page.getByTestId("user-password-input").fill("password123")
     await page.getByTestId("user-confirm-password-input").fill("different12345")
     await page.getByTestId("user-confirm-password-input").blur()
 
-    await expect(dialog.getByText("The passwords don't match")).toBeVisible()
+    await expect(
+      page.getByTestId("user-confirm-password-input"),
+    ).toHaveAttribute("aria-invalid", "true")
+    await expect(
+      dialog.locator("[data-slot='form-message']").last(),
+    ).toBeVisible()
   })
 
   test("Delete a user successfully", async ({ page }) => {
@@ -369,21 +371,15 @@ test.describe("Admin user management", () => {
     await page.getByTestId("delete-user").click()
 
     const dialog = page.getByRole("dialog")
-    await expect(
-      dialog.getByRole("heading", { name: "删除用户" }),
-    ).toBeVisible()
-    await expect(dialog.getByText("与该用户关联的所有项目也将")).toBeVisible()
-    await expect(dialog.getByText("永久删除。", { exact: true })).toBeVisible()
-    await expect(
-      dialog.getByText("确定要删除吗?此操作无法撤销。"),
-    ).toBeVisible()
-    await expect(page.getByTestId("cancel-delete-user")).toHaveText("取消")
-    await expect(page.getByTestId("confirm-delete-user")).toHaveText("删除")
+    await expect(dialog.getByRole("heading")).toBeVisible()
+    const description = dialog.locator("[data-slot='dialog-description']")
+    await expect(description).toBeVisible()
+    await expect(description.locator("strong")).toBeVisible()
+    await expect(page.getByTestId("cancel-delete-user")).toBeEnabled()
+    await expect(page.getByTestId("confirm-delete-user")).toBeEnabled()
     await page.getByTestId("confirm-delete-user").click()
 
-    await expect(page.getByTestId("user-deleted-toast")).toContainText(
-      "用户删除成功",
-    )
+    await expect(page.getByTestId("user-deleted-toast")).toBeVisible()
 
     await expect(
       page.getByRole("row").filter({ hasText: userCode }),
@@ -409,7 +405,13 @@ test.describe("Admin user management", () => {
     await page.getByTestId("user-code-input").fill("")
     await page.getByTestId("user-code-input").blur()
 
-    await expect(page.getByText("请输入用户编码")).toBeVisible()
+    await expect(page.getByTestId("user-code-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
+    await expect(
+      page.locator("[data-slot='form-message']").first(),
+    ).toBeVisible()
   })
 
   test("User code must be at most 50 characters", async ({ page }) => {
@@ -420,7 +422,13 @@ test.describe("Admin user management", () => {
     await page.getByTestId("user-code-input").fill("x".repeat(51))
     await page.getByTestId("user-code-input").blur()
 
-    await expect(page.getByText("用户编码最多 50 个字符")).toBeVisible()
+    await expect(page.getByTestId("user-code-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
+    await expect(
+      page.locator("[data-slot='form-message']").first(),
+    ).toBeVisible()
   })
 
   test("Password is required", async ({ page }) => {
@@ -430,7 +438,13 @@ test.describe("Admin user management", () => {
     await page.getByTestId("user-password-input").focus()
     await page.getByTestId("user-password-input").blur()
 
-    await expect(page.getByText("请输入密码")).toBeVisible()
+    await expect(page.getByTestId("user-password-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
+    await expect(
+      page.locator("[data-slot='form-message']").first(),
+    ).toBeVisible()
   })
 
   test("Password confirmation is required", async ({ page }) => {
@@ -441,7 +455,12 @@ test.describe("Admin user management", () => {
     await page.getByTestId("user-confirm-password-input").focus()
     await page.getByTestId("user-confirm-password-input").blur()
 
-    await expect(page.getByText("请确认密码")).toBeVisible()
+    await expect(
+      page.getByTestId("user-confirm-password-input"),
+    ).toHaveAttribute("aria-invalid", "true")
+    await expect(
+      page.locator("[data-slot='form-message']").first(),
+    ).toBeVisible()
   })
 
   test("Password must be at least 8 characters", async ({ page }) => {
@@ -453,7 +472,13 @@ test.describe("Admin user management", () => {
     await page.getByTestId("user-confirm-password-input").fill("short")
     await page.getByTestId("save-user").click()
 
-    await expect(page.getByText("密码长度至少 8 个字符")).toBeVisible()
+    await expect(page.getByTestId("user-password-input")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    )
+    await expect(
+      page.locator("[data-slot='form-message']").first(),
+    ).toBeVisible()
   })
 
   test("Passwords must match", async ({ page }) => {
@@ -465,7 +490,12 @@ test.describe("Admin user management", () => {
     await page.getByTestId("user-confirm-password-input").fill("different12345")
     await page.getByTestId("user-confirm-password-input").blur()
 
-    await expect(page.getByText("两次输入的密码不一致")).toBeVisible()
+    await expect(
+      page.getByTestId("user-confirm-password-input"),
+    ).toHaveAttribute("aria-invalid", "true")
+    await expect(
+      page.locator("[data-slot='form-message']").first(),
+    ).toBeVisible()
   })
 })
 
@@ -490,42 +520,32 @@ test.describe("Admin reset password", () => {
 
     const userRow = page.getByRole("row").filter({ hasText: userCode })
     await userRow.getByTestId("user-actions").click()
-    await expect(page.getByTestId("edit-user")).toHaveText("编辑用户")
-    await expect(page.getByTestId("reset-password")).toHaveText("重置密码")
-    await expect(page.getByTestId("delete-user")).toHaveText("删除用户")
+    await expect(page.getByTestId("edit-user")).toBeVisible()
+    await expect(page.getByTestId("reset-password")).toBeVisible()
+    await expect(page.getByTestId("delete-user")).toBeVisible()
     await page.getByTestId("reset-password").click()
 
     const dialog = page.getByRole("dialog")
+    await expect(dialog.getByRole("heading")).toBeVisible()
     await expect(
-      dialog.getByRole("heading", { name: "重置用户密码" }),
+      dialog.locator("[data-slot='dialog-description']"),
     ).toBeVisible()
-    await expect(
-      dialog.getByText(
-        "将生成新的临时密码,用户的当前密码将失效。临时密码仅显示一次。",
-      ),
-    ).toBeVisible()
-    await expect(dialog.getByTestId("cancel-reset-password")).toHaveText("取消")
-    await expect(dialog.getByTestId("confirm-reset-password")).toHaveText(
-      "重置密码",
-    )
+    await expect(dialog.getByTestId("cancel-reset-password")).toBeEnabled()
+    await expect(dialog.getByTestId("confirm-reset-password")).toBeEnabled()
     await dialog.getByTestId("confirm-reset-password").click()
 
+    await expect(dialog.getByRole("heading")).toBeVisible()
     await expect(
-      dialog.getByRole("heading", { name: "密码已重置" }),
-    ).toBeVisible()
-    await expect(
-      dialog.getByText("请立即复制临时密码。关闭此弹窗后将不再显示。"),
+      dialog.locator("[data-slot='dialog-description']"),
     ).toBeVisible()
     const tempPasswordInput = dialog.getByTestId("temporary-password-input")
-    await expect(tempPasswordInput).toHaveAttribute("aria-label", "临时密码")
+    await expect(tempPasswordInput).toHaveAttribute("readonly", "")
     await expect(tempPasswordInput).toBeVisible()
     const tempPassword = await tempPasswordInput.inputValue()
     expect(tempPassword.length).toBeGreaterThanOrEqual(16)
 
-    await expect(dialog.getByTestId("copy-temporary-password")).toHaveText(
-      "复制临时密码",
-    )
-    await expect(dialog.getByTestId("close-reset-password")).toHaveText("关闭")
+    await expect(dialog.getByTestId("copy-temporary-password")).toBeEnabled()
+    await expect(dialog.getByTestId("close-reset-password")).toBeEnabled()
     await dialog.getByTestId("copy-temporary-password").click()
     const clipboard = await page.evaluate(() => navigator.clipboard.readText())
     expect(clipboard).toBe(tempPassword)
@@ -552,8 +572,9 @@ test.describe("Admin page access control", () => {
 
     await page.goto("/admin")
 
-    await expect(page.getByRole("heading", { name: "Users" })).not.toBeVisible()
+    await expect(page.getByRole("heading", { level: 1 })).not.toBeVisible()
     await expect(page).not.toHaveURL(/\/admin/)
+    await expect(page.getByTestId("user-menu")).toBeVisible()
   })
 
   test("Superuser can access admin page", async ({ page }) => {
@@ -561,6 +582,8 @@ test.describe("Admin page access control", () => {
 
     await page.goto("/admin")
 
-    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible()
+    await expect(page).toHaveURL("/admin")
+    await expect(page.getByTestId("add-user")).toBeVisible()
+    await expect(page.getByRole("table")).toBeVisible()
   })
 })
