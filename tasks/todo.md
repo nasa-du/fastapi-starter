@@ -347,16 +347,21 @@
 **描述**:grep 门禁:`frontend/src` 内 `message: "` / `message: '` 零字面量(全部来自字典);发现即修。产出 grep 结果记录。
 
 **验收标准**:
-- [ ] grep 零命中(字典定义处除外)
-- [ ] `bun run build` 通过
+- [x] grep 零命中(字典定义处除外)
+- [x] `bun run build` 通过
 
 **验证**:
-- [ ] `grep -rn "message: \"" frontend/src --include="*.tsx" | grep -v locales` 为空
-- [ ] E2E 全绿(回归)
+- [x] `grep -rn "message: \"" frontend/src --include="*.tsx" | grep -v locales` 为空
+- [x] E2E 全绿(回归)
+
+**执行备注**:
+- grep 门禁记录(2026-11-22):上述双引号 TSX 门禁及对应单引号门禁均无输出(零命中);额外扩展 `--include="*.ts"` 的双引号/单引号搜索也零命中。无需修改源文件或新增测试
+- `frontend/` 内 `bun run build` 通过(tsc + vite 绿);`bun run lint` 通过(biome 75 files)
+- `PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test` 全量 **70 passed**(2026-11-22)
 
 **依赖**:Task 11
 
-**文件**:按 grep 结果(预期 0–3)
+**文件**:无源码改动(仅本文件记录)
 
 **规模**:S
 
