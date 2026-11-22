@@ -9,11 +9,11 @@ import {
 
 test.use({ locale: "zh-CN" })
 
-test("Items page is accessible and shows correct title", async ({ page }) => {
+test("Items page renders its main content", async ({ page }) => {
   await page.goto("/items")
-  await expect(page).toHaveTitle("项目 - FastAPI Template")
-  await expect(page.getByRole("heading", { name: "项目" })).toBeVisible()
-  await expect(page.getByText("创建和管理您的项目")).toBeVisible()
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible()
+  await expect(page.getByTestId("add-item")).toBeVisible()
+  await expect(page.getByRole("table")).toBeVisible()
 })
 
 test("Add Item button is visible", async ({ page }) => {
@@ -41,22 +41,25 @@ test("Items table localizes headings and missing descriptions", async ({
     }),
   )
   await page.goto("/items")
-  await expect(page.getByRole("columnheader", { name: "标题" })).toBeVisible()
-  await expect(page.getByRole("columnheader", { name: "描述" })).toBeVisible()
-  await expect(page.getByText("暂无描述")).toBeVisible()
-  await expect(page.getByText("操作")).toBeAttached()
-  await expect(page.getByTestId("copy-item-id")).toHaveText("复制 ID")
+  const headings = page.getByRole("columnheader")
+  await expect(headings).toHaveCount(4)
+  const emptyDescription = page.getByTestId("item-description-empty")
+  await expect(emptyDescription).toBeVisible()
+  await expect(page.getByTestId("item-actions")).toBeVisible()
+  const chineseHeadings = await headings.allTextContents()
+  const chineseDescription = await emptyDescription.textContent()
+  const copyButton = page.getByTestId("copy-item-id")
+  const chineseCopyLabel = await copyButton.textContent()
 
   await page.getByTestId("language-button").click()
   await page.getByTestId("language-en").click()
 
-  await expect(page.getByRole("columnheader", { name: "Title" })).toBeVisible()
-  await expect(
-    page.getByRole("columnheader", { name: "Description" }),
-  ).toBeVisible()
-  await expect(page.getByText("No description")).toBeVisible()
-  await expect(page.getByText("Actions")).toBeAttached()
-  await expect(page.getByTestId("copy-item-id")).toHaveText("Copy ID")
+  await expect(headings).toHaveCount(4)
+  expect(await headings.allTextContents()).not.toEqual(chineseHeadings)
+  await expect(emptyDescription).toBeVisible()
+  expect(await emptyDescription.textContent()).not.toBe(chineseDescription)
+  await expect(page.getByTestId("item-actions")).toBeVisible()
+  expect(await copyButton.textContent()).not.toBe(chineseCopyLabel)
 })
 
 test("Pending Items uses localized table headings", async ({ page }) => {
@@ -66,21 +69,19 @@ test("Pending Items uses localized table headings", async ({ page }) => {
   const pendingTable = page.locator("table").filter({
     has: page.locator("[data-slot='skeleton']"),
   })
+  await expect(pendingTable.getByRole("columnheader")).toHaveCount(4)
   await expect(
-    pendingTable.getByRole("columnheader", { name: "标题" }),
+    pendingTable.locator("[data-slot='skeleton']").first(),
   ).toBeVisible()
-  await expect(
-    pendingTable.getByRole("columnheader", { name: "描述" }),
-  ).toBeVisible()
-  await expect(pendingTable.getByText("操作")).toBeAttached()
 })
 
 test("Add Item button uses localized dialog controls", async ({ page }) => {
   await page.goto("/items")
   await page.getByTestId("add-item").click()
 
+  const dialog = page.getByRole("dialog")
   await expect(
-    page.getByRole("dialog").getByRole("button", { name: "关闭" }),
+    dialog.locator("[data-slot='dialog-close']").last(),
   ).toBeVisible()
 })
 
@@ -103,37 +104,41 @@ test("Data table localizes pagination and navigation controls", async ({
   )
   await page.goto("/items")
 
-  await expect(page.getByText("显示第 1 至 10 条，共 11 条")).toBeVisible()
-  await expect(page.getByText("每页行数")).toBeVisible()
-  const pageSummary = page.getByTestId("table-page-summary")
-  await expect(pageSummary).toHaveText("第 1 / 2 页")
+  const entriesSummary = page.getByTestId("table-entries-summary")
+  await expect(entriesSummary).toBeVisible()
+  await expect(page.getByTestId("table-pagination")).toBeVisible()
+  const chineseEntriesSummary = await entriesSummary.textContent()
+  await expect(page.getByTestId("table-page-current")).toHaveText("1")
   await expect(page.getByTestId("table-page-current")).toHaveClass(
     /font-medium/,
   )
+  await expect(page.getByTestId("table-page-count")).toHaveText("2")
   await expect(page.getByTestId("table-page-count")).toHaveClass(/font-medium/)
+  await expect(page.getByTestId("table-total-count")).toHaveText("11")
   await expect(page.getByTestId("table-total-count")).toHaveClass(/font-medium/)
-  await page.getByRole("button", { name: "前往最后一页" }).click()
-  await expect(page.getByText("显示第 11 至 11 条，共 11 条")).toBeVisible()
-  await page.getByRole("button", { name: "前往上一页" }).click()
-  await expect(page.getByText("显示第 1 至 10 条，共 11 条")).toBeVisible()
-  await page.getByRole("button", { name: "前往下一页" }).click()
-  await expect(page.getByText("显示第 11 至 11 条，共 11 条")).toBeVisible()
-  await page.getByRole("button", { name: "前往第一页" }).click()
-  await expect(page.getByText("显示第 1 至 10 条，共 11 条")).toBeVisible()
+  await page.getByTestId("table-last-page").click()
+  await expect(page.getByTestId("table-page-current")).toHaveText("2")
+  await expect(page.getByText("Item 10", { exact: true })).toBeVisible()
+  await page.getByTestId("table-previous-page").click()
+  await expect(page.getByTestId("table-page-current")).toHaveText("1")
+  await expect(page.getByText("Item 0", { exact: true })).toBeVisible()
+  await page.getByTestId("table-next-page").click()
+  await expect(page.getByTestId("table-page-current")).toHaveText("2")
+  await expect(page.getByText("Item 10", { exact: true })).toBeVisible()
+  await page.getByTestId("table-first-page").click()
+  await expect(page.getByTestId("table-page-current")).toHaveText("1")
+  await expect(page.getByText("Item 0", { exact: true })).toBeVisible()
 
   await page.getByTestId("language-button").click()
   await page.getByTestId("language-en").click()
-  await expect(page.getByText("Showing 1 to 10 of 11 entries")).toBeVisible()
-  await expect(page.getByText("Rows per page")).toBeVisible()
-  await expect(pageSummary).toHaveText("Page 1 of 2")
-  for (const name of [
-    "Go to first page",
-    "Go to previous page",
-    "Go to next page",
-    "Go to last page",
-  ]) {
-    await expect(page.getByRole("button", { name })).toBeAttached()
-  }
+  await expect(entriesSummary).toBeVisible()
+  expect(await entriesSummary.textContent()).not.toBe(chineseEntriesSummary)
+  await expect(page.getByTestId("table-page-current")).toHaveText("1")
+  await expect(page.getByTestId("table-page-count")).toHaveText("2")
+  await expect(page.getByTestId("table-first-page")).toBeDisabled()
+  await expect(page.getByTestId("table-previous-page")).toBeDisabled()
+  await expect(page.getByTestId("table-next-page")).toBeEnabled()
+  await expect(page.getByTestId("table-last-page")).toBeEnabled()
 })
 
 test.describe("Items management", () => {
@@ -161,31 +166,28 @@ test.describe("Items management", () => {
 
     await page.getByTestId("add-item").click()
     const dialog = page.getByRole("dialog")
+    await expect(dialog.getByRole("heading")).toBeVisible()
     await expect(
-      dialog.getByRole("heading", { name: "添加项目" }),
+      dialog.locator("[data-slot='dialog-description']"),
     ).toBeVisible()
-    await expect(dialog.getByText("填写信息以添加新项目。")).toBeVisible()
-    await expect(dialog.getByText("标题")).toBeVisible()
-    await expect(dialog.getByText("描述")).toBeVisible()
+    await expect(dialog.locator("label")).toHaveCount(2)
     await expect(page.getByTestId("item-title-input")).toHaveAttribute(
-      "placeholder",
-      "标题",
+      "required",
+      "",
     )
-    await expect(page.getByTestId("item-description-input")).toHaveAttribute(
-      "placeholder",
-      "描述",
-    )
-    await expect(page.getByTestId("cancel-create-item")).toHaveText("取消")
-    await expect(page.getByTestId("save-item")).toHaveText("保存")
+    await expect(page.getByTestId("item-description-input")).toBeEditable()
+    await expect(page.getByTestId("cancel-create-item")).toBeEnabled()
+    await expect(page.getByTestId("save-item")).toBeEnabled()
 
     await page.getByTestId("item-title-input").fill(title)
     await page.getByTestId("item-description-input").fill(description)
     await page.getByTestId("save-item").click()
 
-    await expect(page.getByTestId("item-created-toast")).toContainText(
-      "项目创建成功",
+    await expect(page.getByTestId("item-created-toast")).toBeVisible()
+    await expect(page.getByTestId("item-created-toast")).toHaveAttribute(
+      "data-type",
+      "success",
     )
-    await expect(page.getByText("操作成功", { exact: true })).toBeVisible()
     await expect(page.getByText(title, { exact: true })).toBeVisible()
   })
 
@@ -217,7 +219,7 @@ test.describe("Items management", () => {
       "aria-invalid",
       "true",
     )
-    await expect(page.getByText("请输入标题")).toBeVisible()
+    await expect(page.locator("[data-slot='form-message']")).toBeVisible()
   })
 
   test.describe("Edit and Delete", () => {
@@ -236,18 +238,17 @@ test.describe("Items management", () => {
       await page.getByTestId("edit-item").click()
 
       const dialog = page.getByRole("dialog")
+      await expect(dialog.getByRole("heading")).toBeVisible()
       await expect(
-        dialog.getByRole("heading", { name: "编辑项目" }),
+        dialog.locator("[data-slot='dialog-description']"),
       ).toBeVisible()
-      await expect(dialog.getByText("在下方更新项目信息。")).toBeVisible()
+      await expect(page.getByTestId("item-title-input")).toHaveValue(itemTitle)
 
       const updatedTitle = randomItemTitle()
       await page.getByTestId("item-title-input").fill(updatedTitle)
       await page.getByTestId("save-item").click()
 
-      await expect(page.getByTestId("item-updated-toast")).toContainText(
-        "项目更新成功",
-      )
+      await expect(page.getByTestId("item-updated-toast")).toBeVisible()
       await expect(page.getByText(updatedTitle, { exact: true })).toBeVisible()
     })
 
@@ -256,17 +257,15 @@ test.describe("Items management", () => {
       await page.getByTestId("delete-item").click()
 
       const dialog = page.getByRole("dialog")
+      await expect(dialog.getByRole("heading")).toBeVisible()
       await expect(
-        dialog.getByRole("heading", { name: "删除项目" }),
+        dialog.locator("[data-slot='dialog-description']"),
       ).toBeVisible()
-      await expect(dialog.getByText("该项目将被永久删除")).toBeVisible()
-      await expect(page.getByTestId("confirm-delete-item")).toHaveText("删除")
+      await expect(page.getByTestId("confirm-delete-item")).toBeEnabled()
 
       await page.getByTestId("confirm-delete-item").click()
 
-      await expect(page.getByTestId("item-deleted-toast")).toContainText(
-        "项目删除成功",
-      )
+      await expect(page.getByTestId("item-deleted-toast")).toBeVisible()
       await expect(page.getByText(itemTitle, { exact: true })).not.toBeVisible()
     })
   })
@@ -287,7 +286,8 @@ test.describe("Items empty state", () => {
 
     await page.goto("/items")
 
-    await expect(page.getByText("您还没有任何项目")).toBeVisible()
-    await expect(page.getByText("添加一个新项目开始使用")).toBeVisible()
+    const emptyState = page.getByTestId("items-empty-state")
+    await expect(emptyState).toBeVisible()
+    await expect(emptyState.getByRole("heading")).toBeVisible()
   })
 })

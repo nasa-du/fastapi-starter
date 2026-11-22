@@ -60,6 +60,7 @@ export const columns: ColumnDef<DataTableFeatures, ItemPublic>[] = [
             "max-w-xs truncate block text-muted-foreground",
             !description && "italic",
           )}
+          data-testid={description ? undefined : "item-description-empty"}
         >
           {description || i18next.t("items.noDescription")}
         </span>

@@ -101,9 +101,15 @@ export function DataTable<TData extends RowData>({
       </Table>
 
       {table.getPageCount() > 1 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-t bg-muted/20">
+        <div
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-t bg-muted/20"
+          data-testid="table-pagination"
+        >
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="text-sm text-muted-foreground">
+            <div
+              className="text-sm text-muted-foreground"
+              data-testid="table-entries-summary"
+            >
               {t("common.tableSummaryStart", {
                 start:
                   table.state.pagination.pageIndex *
@@ -174,6 +180,7 @@ export function DataTable<TData extends RowData>({
                 variant="outline"
                 size="sm"
                 className="h-8 w-8 p-0"
+                data-testid="table-first-page"
                 onClick={() => table.setPageIndex(0)}
                 disabled={!table.getCanPreviousPage()}
               >
@@ -184,6 +191,7 @@ export function DataTable<TData extends RowData>({
                 variant="outline"
                 size="sm"
                 className="h-8 w-8 p-0"
+                data-testid="table-previous-page"
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
@@ -194,6 +202,7 @@ export function DataTable<TData extends RowData>({
                 variant="outline"
                 size="sm"
                 className="h-8 w-8 p-0"
+                data-testid="table-next-page"
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
@@ -204,6 +213,7 @@ export function DataTable<TData extends RowData>({
                 variant="outline"
                 size="sm"
                 className="h-8 w-8 p-0"
+                data-testid="table-last-page"
                 onClick={() => table.setPageIndex(table.getPageCount() - 1)}
                 disabled={!table.getCanNextPage()}
               >
