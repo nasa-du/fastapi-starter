@@ -491,8 +491,8 @@
 
 ## ◆ Checkpoint D:S4 验收
 
-- [ ] 契约表核对记录完整;`uv run pytest` + `bun run test` 双绿
-- [ ] idea 假设 2 验证成立(契约不破坏唯一消费方)
+- [x] 契约表核对记录完整;`uv run pytest` + `bun run test` 双绿
+- [x] idea 假设 2 验证成立(契约不破坏唯一消费方)
 
 ---
 
@@ -501,11 +501,25 @@
 **描述**:全 spec 文件 grep 英文文案定位/断言(允许仅 login.spec.ts 中文冒烟);抽查演练:临时改一个非登录文案跑 items.spec 确认仍绿后还原(验证「改文案不碎测试」);S5 清单核对。
 
 **验收标准**:
-- [ ] login.spec.ts 之外零文案断言;关键路径均 testid 定位
-- [ ] 抽查演练记录(改文案 → items.spec 仍绿 → 还原)
+- [x] login.spec.ts 之外零文案断言;关键路径均 testid 定位
+- [x] 抽查演练记录(改文案 → items.spec 仍绿 → 还原)
 
 **验证**:
-- [ ] `bun run test`(全量)
+- [x] `bun run test`(全量)— **74 passed**(2026-11-22;`PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test`,含 setup)
+- [x] `bun run lint` + `bun run --filter frontend build` 全绿(biome 75 files;tsc + vite)
+- [x] S5 清单:登录 / Items / Admin / Settings 关键交互使用 testid;语言切换与刷新保持 3 项冒烟通过;非登录固定 UI 文案断言清零
+
+**执行备注**(实际审计范围超出原预估):
+- 初始 grep 在 Items / Admin / Settings / language 及共享 `tests/utils/user.ts` 均发现固定文案依赖,不止预估的 0–3 个 spec;按审计结果分 5 个增量提交,不删除任何测试用例
+- 登录辅助函数改以 login-submit / user-menu / logout 定位,并等待真实登出跳转;新增中文 locale 辅助函数用例,先复现找不到「Log In」按钮的 RED,修复后 GREEN
+- 非登录断言改为语义结构(heading/dialog/table)、`aria-invalid` / `aria-selected` / 控件可用态、稳定 testid、URL 及测试动态生成的数据;语言用例比较同一稳定元素切换前后内容,保留语言响应与持久化断言,不固定任一种译文
+- 新增测试钩子只含 data 属性:Items 空态/空描述、Admin 单元格角色/状态、DataTable 分页操作与汇总、共享错误 toast;页面文案、样式与业务行为不变
+- **抽查演练(2026-11-22)**:临时将 `zh-CN.json` 的 `items.title` 从「项目」改为「临时文案演练」,`bun run test tests/items.spec.ts` **14 passed**(含 setup);随即还原为「项目」,双字典 `git diff` 均为空
+- 审计仅保留动态 fixture/用户输入(如 item title、user code)文本断言,不依赖 UI 译文;固定文案断言仅存于 login.spec.ts 既有冒烟范围
+- 开发验证期间一次从仓库根直接调用 `bunx playwright` 丢失了 frontend 配置上下文,导致 baseURL 缺失;无源码原因,改用 frontend 包脚本后恢复,最终根目录 `bun run test` 全量绿
+- 独立审查发现并已修复:Items 编辑/删除按 fixture 标题限定行,避免共享用户历史数据下 `.last()` 误操作旧项目;Settings 两个密码错误用例同时断言真实响应 400 与 `detail.code`(`USERS_PASSWORD_UNCHANGED` / `USERS_PASSWORD_INCORRECT`),不再仅凭通用错误 toast 判断
+- 独立审查确认非 login 无固定 UI 文案定位/断言,新增 data 属性无语义回归;语言用例另经 10 次重复运行(含 setup 共 31 次)通过
+- 修复后修改域定向回归 **56 passed / 1 failed**,唯一失败为既有主题菜单偶发超时;该用例孤立运行 **2 passed**(含 setup),未改主题源码;最终完整回归 **74 passed**
 
 **依赖**:Task 15
 
