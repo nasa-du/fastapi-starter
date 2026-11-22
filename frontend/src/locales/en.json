@@ -162,7 +162,11 @@
     "next": "Next",
     "morePages": "More pages"
   },
-  "errors": {},
+  "errors": {
+    "AUTH_LOGIN_NAME_CONFLICT": "Multiple users share this name, please log in with your user code",
+    "AUTH_LOGIN_INVALID": "Incorrect user code/name or password",
+    "AUTH_LOGIN_INACTIVE": "Inactive user"
+  },
   "admin": {
     "headTitle": "Users - FastAPI Template",
     "title": "Users",

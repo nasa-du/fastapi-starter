@@ -162,7 +162,11 @@
     "next": "下一页",
     "morePages": "更多页面"
   },
-  "errors": {},
+  "errors": {
+    "AUTH_LOGIN_NAME_CONFLICT": "多个用户共用此姓名,请使用用户编码登录",
+    "AUTH_LOGIN_INVALID": "用户编码或密码错误",
+    "AUTH_LOGIN_INACTIVE": "用户已停用"
+  },
   "admin": {
     "headTitle": "用户管理 - FastAPI Template",
     "title": "用户",

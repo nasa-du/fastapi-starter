@@ -31,14 +31,27 @@ def login_access_token(
     except UserAmbiguousIdentifierError:
         raise HTTPException(
             status_code=400,
-            detail="Multiple users share this name, please log in with your user code",
+            detail={
+                "code": "AUTH_LOGIN_NAME_CONFLICT",
+                "message": "Multiple users share this name, please log in with your user code",
+            },
         )
     if not user:
         raise HTTPException(
-            status_code=400, detail="Incorrect user code/name or password"
+            status_code=400,
+            detail={
+                "code": "AUTH_LOGIN_INVALID",
+                "message": "Incorrect user code/name or password",
+            },
         )
     elif not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "AUTH_LOGIN_INACTIVE",
+                "message": "Inactive user",
+            },
+        )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return Token(
         access_token=security.create_access_token(
