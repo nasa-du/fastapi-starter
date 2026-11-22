@@ -78,7 +78,10 @@ def test_get_non_existing_user_as_superuser(
         headers=superuser_token_headers,
     )
     assert r.status_code == 404
-    assert r.json() == {"detail": "User not found"}
+    assert r.json()["detail"] == {
+        "code": "USERS_NOT_FOUND",
+        "message": "User not found",
+    }
 
 
 def test_get_existing_user_current_user(client: TestClient, db: Session) -> None:
@@ -120,7 +123,10 @@ def test_get_existing_user_permissions_error(
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
-    assert r.json() == {"detail": "The user doesn't have enough privileges"}
+    assert r.json()["detail"] == {
+        "code": "USERS_FORBIDDEN",
+        "message": "The user doesn't have enough privileges",
+    }
 
 
 def test_get_non_existing_user_permissions_error(
@@ -134,7 +140,10 @@ def test_get_non_existing_user_permissions_error(
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
-    assert r.json() == {"detail": "The user doesn't have enough privileges"}
+    assert r.json()["detail"] == {
+        "code": "USERS_FORBIDDEN",
+        "message": "The user doesn't have enough privileges",
+    }
 
 
 def test_create_user_existing_user_code(
@@ -152,6 +161,10 @@ def test_create_user_existing_user_code(
     )
     created_user = r.json()
     assert r.status_code == 400
+    assert created_user["detail"] == {
+        "code": "USERS_CODE_ALREADY_EXISTS",
+        "message": "The user with this user_code already exists in the system.",
+    }
     assert "_id" not in created_user
 
 
@@ -167,6 +180,10 @@ def test_create_user_by_normal_user(
         json=data,
     )
     assert r.status_code == 403
+    assert r.json()["detail"] == {
+        "code": "AUTH_FORBIDDEN",
+        "message": "The user doesn't have enough privileges",
+    }
 
 
 def test_retrieve_users(
@@ -285,7 +302,10 @@ def test_update_password_me_incorrect_password(
     )
     assert r.status_code == 400
     updated_user = r.json()
-    assert updated_user["detail"] == "Incorrect password"
+    assert updated_user["detail"] == {
+        "code": "USERS_PASSWORD_INCORRECT",
+        "message": "Incorrect password",
+    }
 
 
 def test_update_password_me_same_password_error(
@@ -302,9 +322,10 @@ def test_update_password_me_same_password_error(
     )
     assert r.status_code == 400
     updated_user = r.json()
-    assert (
-        updated_user["detail"] == "New password cannot be the same as the current one"
-    )
+    assert updated_user["detail"] == {
+        "code": "USERS_PASSWORD_UNCHANGED",
+        "message": "New password cannot be the same as the current one",
+    }
 
 
 def test_signup_endpoint_removed(client: TestClient) -> None:
@@ -357,7 +378,10 @@ def test_update_user_not_exists(
         json=data,
     )
     assert r.status_code == 404
-    assert r.json()["detail"] == "The user with this id does not exist in the system"
+    assert r.json()["detail"] == {
+        "code": "USERS_ID_NOT_FOUND",
+        "message": "The user with this id does not exist in the system",
+    }
 
 
 def test_update_user_user_code_exists(
@@ -380,7 +404,10 @@ def test_update_user_user_code_exists(
         json=data,
     )
     assert r.status_code == 409
-    assert r.json()["detail"] == "User with this user_code already exists"
+    assert r.json()["detail"] == {
+        "code": "USERS_CODE_CONFLICT",
+        "message": "User with this user_code already exists",
+    }
 
 
 def test_delete_user_me(client: TestClient, db: Session) -> None:
@@ -423,7 +450,10 @@ def test_delete_user_me_as_superuser(
     )
     assert r.status_code == 403
     response = r.json()
-    assert response["detail"] == "Super users are not allowed to delete themselves"
+    assert response["detail"] == {
+        "code": "USERS_SUPERUSER_DELETE_SELF",
+        "message": "Super users are not allowed to delete themselves",
+    }
 
 
 def test_delete_user_super_user(
@@ -453,7 +483,10 @@ def test_delete_user_not_found(
         headers=superuser_token_headers,
     )
     assert r.status_code == 404
-    assert r.json()["detail"] == "User not found"
+    assert r.json()["detail"] == {
+        "code": "USERS_NOT_FOUND",
+        "message": "User not found",
+    }
 
 
 def test_delete_user_current_super_user_error(
@@ -470,7 +503,10 @@ def test_delete_user_current_super_user_error(
         headers=superuser_token_headers,
     )
     assert r.status_code == 403
-    assert r.json()["detail"] == "Super users are not allowed to delete themselves"
+    assert r.json()["detail"] == {
+        "code": "USERS_SUPERUSER_DELETE_SELF",
+        "message": "Super users are not allowed to delete themselves",
+    }
 
 
 def test_delete_user_without_privileges(
@@ -486,7 +522,10 @@ def test_delete_user_without_privileges(
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
-    assert r.json()["detail"] == "The user doesn't have enough privileges"
+    assert r.json()["detail"] == {
+        "code": "AUTH_FORBIDDEN",
+        "message": "The user doesn't have enough privileges",
+    }
 
 
 def test_reset_user_password(
@@ -523,7 +562,10 @@ def test_reset_user_password_not_found(
         headers=superuser_token_headers,
     )
     assert r.status_code == 404
-    assert r.json() == {"detail": "User not found"}
+    assert r.json()["detail"] == {
+        "code": "USERS_NOT_FOUND",
+        "message": "User not found",
+    }
 
 
 def test_reset_user_password_without_privileges(
@@ -536,7 +578,10 @@ def test_reset_user_password_without_privileges(
         headers=normal_user_token_headers,
     )
     assert r.status_code == 403
-    assert r.json() == {"detail": "The user doesn't have enough privileges"}
+    assert r.json()["detail"] == {
+        "code": "AUTH_FORBIDDEN",
+        "message": "The user doesn't have enough privileges",
+    }
 
 
 def test_reset_user_password_for_deactivated_user(

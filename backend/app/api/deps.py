@@ -36,7 +36,10 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
     except InvalidTokenError, ValidationError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
+            detail={
+                "code": "AUTH_CREDENTIALS_INVALID",
+                "message": "Could not validate credentials",
+            },
         )
     user = session.get(User, token_data.sub)
     if not user:
@@ -44,10 +47,14 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
         # resource lookup: return 403 (consistent with the invalid-token branch
         # above) so the SPA's response interceptor logs the user out cleanly.
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="User not found"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "AUTH_USER_NOT_FOUND", "message": "User not found"},
         )
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "AUTH_USER_INACTIVE", "message": "Inactive user"},
+        )
     return user
 
 
@@ -57,6 +64,10 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 def get_current_active_superuser(current_user: CurrentUser) -> User:
     if not current_user.is_superuser:
         raise HTTPException(
-            status_code=403, detail="The user doesn't have enough privileges"
+            status_code=403,
+            detail={
+                "code": "AUTH_FORBIDDEN",
+                "message": "The user doesn't have enough privileges",
+            },
         )
     return current_user

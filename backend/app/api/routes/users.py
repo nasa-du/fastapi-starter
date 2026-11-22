@@ -64,7 +64,10 @@ def create_user(*, session: SessionDep, user_in: UserCreate) -> Any:
     if user:
         raise HTTPException(
             status_code=400,
-            detail="The user with this user_code already exists in the system.",
+            detail={
+                "code": "USERS_CODE_ALREADY_EXISTS",
+                "message": "The user with this user_code already exists in the system.",
+            },
         )
 
     user = crud.create_user(session=session, user_create=user_in)
@@ -96,10 +99,20 @@ def update_password_me(
     """
     verified, _ = verify_password(body.current_password, current_user.hashed_password)
     if not verified:
-        raise HTTPException(status_code=400, detail="Incorrect password")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "USERS_PASSWORD_INCORRECT",
+                "message": "Incorrect password",
+            },
+        )
     if body.current_password == body.new_password:
         raise HTTPException(
-            status_code=400, detail="New password cannot be the same as the current one"
+            status_code=400,
+            detail={
+                "code": "USERS_PASSWORD_UNCHANGED",
+                "message": "New password cannot be the same as the current one",
+            },
         )
     hashed_password = get_password_hash(body.new_password)
     current_user.hashed_password = hashed_password
@@ -123,7 +136,11 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     """
     if current_user.is_superuser:
         raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves"
+            status_code=403,
+            detail={
+                "code": "USERS_SUPERUSER_DELETE_SELF",
+                "message": "Super users are not allowed to delete themselves",
+            },
         )
     session.delete(current_user)
     session.commit()
@@ -143,10 +160,16 @@ def read_user_by_id(
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=403,
-            detail="The user doesn't have enough privileges",
+            detail={
+                "code": "USERS_FORBIDDEN",
+                "message": "The user doesn't have enough privileges",
+            },
         )
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "USERS_NOT_FOUND", "message": "User not found"},
+        )
     return user
 
 
@@ -169,7 +192,10 @@ def update_user(
     if not db_user:
         raise HTTPException(
             status_code=404,
-            detail="The user with this id does not exist in the system",
+            detail={
+                "code": "USERS_ID_NOT_FOUND",
+                "message": "The user with this id does not exist in the system",
+            },
         )
     if user_in.user_code:
         existing_user = crud.get_user_by_code(
@@ -177,7 +203,11 @@ def update_user(
         )
         if existing_user and existing_user.id != user_id:
             raise HTTPException(
-                status_code=409, detail="User with this user_code already exists"
+                status_code=409,
+                detail={
+                    "code": "USERS_CODE_CONFLICT",
+                    "message": "User with this user_code already exists",
+                },
             )
 
     db_user = crud.update_user(session=session, db_user=db_user, user_in=user_in)
@@ -193,10 +223,17 @@ def delete_user(
     """
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "USERS_NOT_FOUND", "message": "User not found"},
+        )
     if user == current_user:
         raise HTTPException(
-            status_code=403, detail="Super users are not allowed to delete themselves"
+            status_code=403,
+            detail={
+                "code": "USERS_SUPERUSER_DELETE_SELF",
+                "message": "Super users are not allowed to delete themselves",
+            },
         )
     statement = delete(Item).where(col(Item.owner_id) == user_id)
     session.exec(statement)
@@ -216,7 +253,10 @@ def reset_user_password(session: SessionDep, user_id: uuid.UUID) -> Any:
     """
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "USERS_NOT_FOUND", "message": "User not found"},
+        )
     new_password = generate_random_password()
     user.hashed_password = get_password_hash(new_password)
     session.add(user)

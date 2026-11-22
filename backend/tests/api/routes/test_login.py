@@ -213,6 +213,47 @@ def test_login_with_argon2_password_keeps_hash(client: TestClient, db: Session) 
     assert user.hashed_password.startswith("$argon2")
 
 
+def test_access_token_with_invalid_signature_returns_403(
+    client: TestClient,
+) -> None:
+    token = create_access_token(
+        "00000000-0000-7000-8000-000000000000", timedelta(minutes=30)
+    )
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers={"Authorization": f"Bearer {token}invalid"},
+    )
+    assert r.status_code == 403
+    assert r.json()["detail"] == {
+        "code": "AUTH_CREDENTIALS_INVALID",
+        "message": "Could not validate credentials",
+    }
+
+
+def test_access_token_for_inactive_user_returns_400(
+    client: TestClient, db: Session
+) -> None:
+    user = User(
+        user_code=random_user_code(),
+        hashed_password=get_password_hash(random_lower_string()),
+        is_active=False,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token(user.id, timedelta(minutes=30))
+    r = client.get(
+        f"{settings.API_V1_STR}/users/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 400
+    assert r.json()["detail"] == {
+        "code": "AUTH_USER_INACTIVE",
+        "message": "Inactive user",
+    }
+
+
 def test_token_for_nonexistent_user_returns_403(client: TestClient) -> None:
     """A valid-shaped JWT whose subject references a missing user is an
     authentication failure: it must return 403 (like the invalid-token branch)
@@ -226,4 +267,7 @@ def test_token_for_nonexistent_user_returns_403(client: TestClient) -> None:
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 403
-    assert r.json()["detail"] == "User not found"
+    assert r.json()["detail"] == {
+        "code": "AUTH_USER_NOT_FOUND",
+        "message": "User not found",
+    }
