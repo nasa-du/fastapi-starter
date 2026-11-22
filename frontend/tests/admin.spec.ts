@@ -108,11 +108,17 @@ test.describe("Admin page and table", () => {
   }) => {
     await page.goto("/admin")
     await page.getByTestId("add-user").click()
+    const dialog = page.getByRole("dialog")
+    await page.getByTestId("user-code-input").focus()
+    await page.getByTestId("user-code-input").blur()
+    await expect(dialog.getByText("请输入用户编码")).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(dialog).not.toBeVisible()
 
     await page.getByTestId("language-button").click()
     await page.getByTestId("language-en").click()
+    await page.getByTestId("add-user").click()
 
-    const dialog = page.getByRole("dialog")
     await expect(
       dialog.getByRole("heading", { name: "Add User" }),
     ).toBeVisible()
@@ -134,6 +140,20 @@ test.describe("Admin page and table", () => {
     await expect(page.getByTestId("cancel-create-user")).toHaveText("Cancel")
     await expect(page.getByTestId("save-user")).toHaveText("Save")
     await expect(page).toHaveURL("/admin")
+
+    await expect(dialog.getByText("User code is required")).toBeVisible()
+
+    await page.getByTestId("user-code-input").fill("persisted-user-code")
+    await page.keyboard.press("Escape")
+    await expect(dialog).not.toBeVisible()
+    await page.getByTestId("add-user").click()
+
+    await expect(page.getByTestId("user-code-input")).toHaveValue(
+      "persisted-user-code",
+    )
+    await page.getByTestId("user-password-input").focus()
+    await page.getByTestId("user-password-input").blur()
+    await expect(dialog.getByText("Password is required")).toBeVisible()
   })
 
   test("Pending Users uses localized table headings", async ({ page }) => {
@@ -168,7 +188,7 @@ test.describe("Admin user management", () => {
       dialog.getByRole("heading", { name: "添加用户" }),
     ).toBeVisible()
     await expect(dialog.getByText("填写以下表单以添加新用户。")).toBeVisible()
-    await expect(dialog.getByText("用户编码")).toBeVisible()
+    await expect(dialog.getByText("用户编码 *", { exact: true })).toBeVisible()
     await expect(
       dialog.getByText("用户编码必须唯一,用户将使用此编码登录。"),
     ).toBeVisible()
@@ -278,6 +298,53 @@ test.describe("Admin user management", () => {
       "用户更新成功",
     )
     await expect(userRow.getByText(updatedName)).toBeVisible()
+  })
+
+  test("Edit user dialog uses English validation after language switch", async ({
+    page,
+  }) => {
+    const userCode = "edit_language_fixture"
+    const user = {
+      id: "edit-language-fixture",
+      user_code: userCode,
+      full_name: "Original Name",
+      is_active: true,
+      is_superuser: false,
+    }
+    await page.route("**/api/v1/users/?**", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ data: [user], count: 1 }),
+      }),
+    )
+    await page.goto("/admin")
+    await page.getByTestId("user-actions").click()
+    await page.getByTestId("edit-user").click()
+
+    const dialog = page.getByRole("dialog")
+    await page.getByTestId("user-full-name-input").fill("Unsaved Name")
+    await page.getByTestId("user-code-input").fill("")
+    await page.getByTestId("user-code-input").blur()
+    await expect(dialog.getByText("请输入用户编码")).toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(dialog).not.toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(page.getByTestId("edit-user")).toHaveCount(0)
+
+    await page.getByTestId("language-button").click()
+    await page.getByTestId("language-en").click()
+    await page.getByTestId("user-actions").click()
+    await page.getByTestId("edit-user").click()
+
+    await expect(page.getByTestId("user-code-input")).toHaveValue(userCode)
+    await expect(page.getByTestId("user-full-name-input")).toHaveValue(
+      "Original Name",
+    )
+    await page.getByTestId("user-password-input").fill("password123")
+    await page.getByTestId("user-confirm-password-input").fill("different12345")
+    await page.getByTestId("user-confirm-password-input").blur()
+
+    await expect(dialog.getByText("The passwords don't match")).toBeVisible()
   })
 
   test("Delete a user successfully", async ({ page }) => {

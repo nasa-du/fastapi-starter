@@ -102,6 +102,56 @@
     "user": "普通用户",
     "active": "启用",
     "inactive": "停用",
-    "actions": "操作"
+    "actions": "操作",
+    "menuLabel": "用户操作",
+    "form": {
+      "userCodeLabel": "用户编码",
+      "userCodePlaceholder": "用户编码",
+      "userCodeDescription": "用户编码必须唯一,用户将使用此编码登录。",
+      "fullNameLabel": "姓名",
+      "fullNamePlaceholder": "姓名",
+      "passwordLabel": "设置密码",
+      "passwordPlaceholder": "密码",
+      "confirmPasswordLabel": "确认密码",
+      "isSuperuser": "超级管理员",
+      "isActive": "启用用户",
+      "userCodeRequired": "请输入用户编码",
+      "userCodeMaxLength": "用户编码最多 50 个字符",
+      "passwordRequired": "请输入密码",
+      "passwordMinLength": "密码长度至少 8 个字符",
+      "confirmPasswordRequired": "请确认密码",
+      "passwordsDoNotMatch": "两次输入的密码不一致",
+      "cancel": "取消",
+      "save": "保存"
+    },
+    "add": {
+      "title": "添加用户",
+      "description": "填写以下表单以添加新用户。",
+      "toast": "用户创建成功"
+    },
+    "edit": {
+      "title": "编辑用户",
+      "description": "在下方更新用户信息。",
+      "toast": "用户更新成功"
+    },
+    "delete": {
+      "title": "删除用户",
+      "descriptionStart": "与该用户关联的所有项目也将",
+      "descriptionEmphasis": "永久删除。",
+      "descriptionEnd": "确定要删除吗?此操作无法撤销。",
+      "confirm": "删除",
+      "toast": "用户删除成功"
+    },
+    "resetPassword": {
+      "title": "重置密码",
+      "resetTitle": "重置用户密码",
+      "resetDescription": "将生成新的临时密码,用户的当前密码将失效。临时密码仅显示一次。",
+      "successTitle": "密码已重置",
+      "successDescription": "请立即复制临时密码。关闭此弹窗后将不再显示。",
+      "temporaryPasswordLabel": "临时密码",
+      "copyTemporaryPassword": "复制临时密码",
+      "close": "关闭",
+      "confirm": "重置密码"
+    }
   }
 }

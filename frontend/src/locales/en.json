@@ -102,6 +102,56 @@
     "user": "User",
     "active": "Active",
     "inactive": "Inactive",
-    "actions": "Actions"
+    "actions": "Actions",
+    "menuLabel": "User actions",
+    "form": {
+      "userCodeLabel": "User Code",
+      "userCodePlaceholder": "User code",
+      "userCodeDescription": "Must be unique. Users log in with this code.",
+      "fullNameLabel": "Full Name",
+      "fullNamePlaceholder": "Full name",
+      "passwordLabel": "Set Password",
+      "passwordPlaceholder": "Password",
+      "confirmPasswordLabel": "Confirm Password",
+      "isSuperuser": "Is superuser?",
+      "isActive": "Is active?",
+      "userCodeRequired": "User code is required",
+      "userCodeMaxLength": "User code must be at most 50 characters",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "confirmPasswordRequired": "Please confirm your password",
+      "passwordsDoNotMatch": "The passwords don't match",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "add": {
+      "title": "Add User",
+      "description": "Fill in the form below to add a new user to the system.",
+      "toast": "User created successfully"
+    },
+    "edit": {
+      "title": "Edit User",
+      "description": "Update the user details below.",
+      "toast": "User updated successfully"
+    },
+    "delete": {
+      "title": "Delete User",
+      "descriptionStart": "All items associated with this user will also be",
+      "descriptionEmphasis": "permanently deleted.",
+      "descriptionEnd": "Are you sure? You will not be able to undo this action.",
+      "confirm": "Delete",
+      "toast": "The user was deleted successfully"
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "resetTitle": "Reset User Password",
+      "resetDescription": "A new temporary password will be generated and the user's current password will stop working. The temporary password is shown only once.",
+      "successTitle": "Password Reset",
+      "successDescription": "Copy the temporary password now. It will not be shown again after this dialog is closed.",
+      "temporaryPasswordLabel": "Temporary password",
+      "copyTemporaryPassword": "Copy temporary password",
+      "close": "Close",
+      "confirm": "Reset Password"
+    }
   }
 }

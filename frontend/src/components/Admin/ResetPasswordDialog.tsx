@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { Check, Copy, KeyRound } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { UsersService } from "@/client"
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,7 @@ const ResetPasswordDialog = ({ id, onSuccess }: ResetPasswordDialogProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [copiedText, copy] = useCopyToClipboard()
   const { showErrorToast } = useCustomToast()
+  const { t } = useTranslation()
 
   const resetPassword = useMutation({
     mutationFn: async () =>
@@ -54,21 +56,24 @@ const ResetPasswordDialog = ({ id, onSuccess }: ResetPasswordDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DropdownMenuItem
+        data-testid="reset-password"
         onSelect={(e) => e.preventDefault()}
         onClick={() => setIsOpen(true)}
       >
         <KeyRound />
-        Reset Password
+        {t("admin.resetPassword.title")}
       </DropdownMenuItem>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {newPassword ? "Password Reset" : "Reset User Password"}
+            {newPassword
+              ? t("admin.resetPassword.successTitle")
+              : t("admin.resetPassword.resetTitle")}
           </DialogTitle>
           <DialogDescription>
             {newPassword
-              ? "Copy the temporary password now. It will not be shown again after this dialog is closed."
-              : "A new temporary password will be generated and the user's current password will stop working. The temporary password is shown only once."}
+              ? t("admin.resetPassword.successDescription")
+              : t("admin.resetPassword.resetDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -78,15 +83,19 @@ const ResetPasswordDialog = ({ id, onSuccess }: ResetPasswordDialogProps) => {
               readOnly
               value={newPassword}
               className="font-mono"
-              aria-label="Temporary password"
+              data-testid="temporary-password-input"
+              aria-label={t("admin.resetPassword.temporaryPasswordLabel")}
             />
             <Button
+              data-testid="copy-temporary-password"
               variant="outline"
               size="icon"
               onClick={() => copy(newPassword)}
             >
               {isCopied ? <Check className="text-green-500" /> : <Copy />}
-              <span className="sr-only">Copy temporary password</span>
+              <span className="sr-only">
+                {t("admin.resetPassword.copyTemporaryPassword")}
+              </span>
             </Button>
           </div>
         )}
@@ -94,20 +103,27 @@ const ResetPasswordDialog = ({ id, onSuccess }: ResetPasswordDialogProps) => {
         <DialogFooter className="mt-4">
           {newPassword ? (
             <DialogClose asChild>
-              <Button variant="outline">Close</Button>
+              <Button data-testid="close-reset-password" variant="outline">
+                {t("admin.resetPassword.close")}
+              </Button>
             </DialogClose>
           ) : (
             <>
               <DialogClose asChild>
-                <Button variant="outline" disabled={resetPassword.isPending}>
-                  Cancel
+                <Button
+                  data-testid="cancel-reset-password"
+                  variant="outline"
+                  disabled={resetPassword.isPending}
+                >
+                  {t("admin.form.cancel")}
                 </Button>
               </DialogClose>
               <LoadingButton
+                data-testid="confirm-reset-password"
                 onClick={() => resetPassword.mutate()}
                 loading={resetPassword.isPending}
               >
-                Reset Password
+                {t("admin.resetPassword.confirm")}
               </LoadingButton>
             </>
           )}

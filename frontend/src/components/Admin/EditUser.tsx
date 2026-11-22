@@ -1,8 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Pencil } from "lucide-react"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useEffect, useRef, useState } from "react"
+import { type FieldPath, useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { type UserPublic, UsersService } from "@/client"
@@ -32,29 +33,6 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const formSchema = z
-  .object({
-    user_code: z
-      .string()
-      .min(1, { message: "User code is required" })
-      .max(50, { message: "User code must be at most 50 characters" }),
-    full_name: z.string().optional(),
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters" })
-      .optional()
-      .or(z.literal("")),
-    confirm_password: z.string().optional(),
-    is_superuser: z.boolean().optional(),
-    is_active: z.boolean().optional(),
-  })
-  .refine((data) => !data.password || data.password === data.confirm_password, {
-    message: "The passwords don't match",
-    path: ["confirm_password"],
-  })
-
-type FormData = z.infer<typeof formSchema>
-
 interface EditUserProps {
   user: UserPublic
   onSuccess: () => void
@@ -64,6 +42,33 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { t, i18n } = useTranslation()
+
+  const formSchema = z
+    .object({
+      user_code: z
+        .string()
+        .min(1, { message: t("admin.form.userCodeRequired") })
+        .max(50, { message: t("admin.form.userCodeMaxLength") }),
+      full_name: z.string().optional(),
+      password: z
+        .string()
+        .min(8, { message: t("admin.form.passwordMinLength") })
+        .optional()
+        .or(z.literal("")),
+      confirm_password: z.string().optional(),
+      is_superuser: z.boolean().optional(),
+      is_active: z.boolean().optional(),
+    })
+    .refine(
+      (data) => !data.password || data.password === data.confirm_password,
+      {
+        message: t("admin.form.passwordsDoNotMatch"),
+        path: ["confirm_password"],
+      },
+    )
+
+  type FormData = z.infer<typeof formSchema>
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -77,11 +82,29 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
     },
   })
 
+  const language = i18n.language
+  const previousLanguage = useRef(i18n.language)
+  const errorFields = Object.keys(
+    form.formState.errors,
+  ) as FieldPath<FormData>[]
+
+  useEffect(() => {
+    if (previousLanguage.current === language) {
+      return
+    }
+    previousLanguage.current = language
+    if (errorFields.length) {
+      void form.trigger(errorFields)
+    }
+  }, [form.trigger, language, errorFields])
+
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
       UsersService.updateUser({ path: { user_id: user.id }, body: data }),
     onSuccess: () => {
-      showSuccessToast("User updated successfully")
+      showSuccessToast(t("admin.edit.toast"), {
+        testId: "user-updated-toast",
+      })
       setIsOpen(false)
       onSuccess()
     },
@@ -103,19 +126,20 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuItem
+        data-testid="edit-user"
         onSelect={(e) => e.preventDefault()}
         onClick={() => setIsOpen(true)}
       >
         <Pencil />
-        Edit User
+        {t("admin.edit.title")}
       </DropdownMenuItem>
       <DialogContent className="sm:max-w-md">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
+              <DialogTitle>{t("admin.edit.title")}</DialogTitle>
               <DialogDescription>
-                Update the user details below.
+                {t("admin.edit.description")}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -125,18 +149,21 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      User Code <span className="text-destructive">*</span>
+                      {t("admin.form.userCodeLabel")}{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="User code"
+                        data-testid="user-code-input"
+                        aria-label={t("admin.form.userCodeLabel")}
+                        placeholder={t("admin.form.userCodePlaceholder")}
                         type="text"
                         {...field}
                         required
                       />
                     </FormControl>
                     <FormDescription>
-                      Must be unique. Users log in with this code.
+                      {t("admin.form.userCodeDescription")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -148,9 +175,15 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                 name="full_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{t("admin.form.fullNameLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Full name" type="text" {...field} />
+                      <Input
+                        data-testid="user-full-name-input"
+                        aria-label={t("admin.form.fullNameLabel")}
+                        placeholder={t("admin.form.fullNamePlaceholder")}
+                        type="text"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -162,10 +195,12 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Set Password</FormLabel>
+                    <FormLabel>{t("admin.form.passwordLabel")}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Password"
+                        data-testid="user-password-input"
+                        aria-label={t("admin.form.passwordLabel")}
+                        placeholder={t("admin.form.passwordPlaceholder")}
                         type="password"
                         {...field}
                       />
@@ -180,10 +215,14 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                 name="confirm_password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <FormLabel>
+                      {t("admin.form.confirmPasswordLabel")}
+                    </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Password"
+                        data-testid="user-confirm-password-input"
+                        aria-label={t("admin.form.confirmPasswordLabel")}
+                        placeholder={t("admin.form.passwordPlaceholder")}
                         type="password"
                         {...field}
                       />
@@ -200,11 +239,15 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                   <FormItem className="flex items-center gap-3 space-y-0">
                     <FormControl>
                       <Checkbox
+                        data-testid="user-superuser-input"
+                        aria-label={t("admin.form.isSuperuser")}
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormLabel className="font-normal">Is superuser?</FormLabel>
+                    <FormLabel className="font-normal">
+                      {t("admin.form.isSuperuser")}
+                    </FormLabel>
                   </FormItem>
                 )}
               />
@@ -216,11 +259,15 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
                   <FormItem className="flex items-center gap-3 space-y-0">
                     <FormControl>
                       <Checkbox
+                        data-testid="user-active-input"
+                        aria-label={t("admin.form.isActive")}
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormLabel className="font-normal">Is active?</FormLabel>
+                    <FormLabel className="font-normal">
+                      {t("admin.form.isActive")}
+                    </FormLabel>
                   </FormItem>
                 )}
               />
@@ -228,12 +275,20 @@ const EditUser = ({ user, onSuccess }: EditUserProps) => {
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
+                <Button
+                  data-testid="cancel-edit-user"
+                  variant="outline"
+                  disabled={mutation.isPending}
+                >
+                  {t("admin.form.cancel")}
                 </Button>
               </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Save
+              <LoadingButton
+                data-testid="save-user"
+                type="submit"
+                loading={mutation.isPending}
+              >
+                {t("admin.form.save")}
               </LoadingButton>
             </DialogFooter>
           </form>

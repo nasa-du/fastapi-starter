@@ -1,8 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Plus } from "lucide-react"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useEffect, useRef, useState } from "react"
+import { type FieldPath, useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { type UserCreate, UsersService } from "@/client"
@@ -32,34 +33,35 @@ import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
-const formSchema = z
-  .object({
-    user_code: z
-      .string()
-      .min(1, { message: "User code is required" })
-      .max(50, { message: "User code must be at most 50 characters" }),
-    full_name: z.string().optional(),
-    password: z
-      .string()
-      .min(1, { message: "Password is required" })
-      .min(8, { message: "Password must be at least 8 characters" }),
-    confirm_password: z
-      .string()
-      .min(1, { message: "Please confirm your password" }),
-    is_superuser: z.boolean(),
-    is_active: z.boolean(),
-  })
-  .refine((data) => data.password === data.confirm_password, {
-    message: "The passwords don't match",
-    path: ["confirm_password"],
-  })
-
-type FormData = z.infer<typeof formSchema>
-
 const AddUser = () => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
+  const { t, i18n } = useTranslation()
+
+  const formSchema = z
+    .object({
+      user_code: z
+        .string()
+        .min(1, { message: t("admin.form.userCodeRequired") })
+        .max(50, { message: t("admin.form.userCodeMaxLength") }),
+      full_name: z.string().optional(),
+      password: z
+        .string()
+        .min(1, { message: t("admin.form.passwordRequired") })
+        .min(8, { message: t("admin.form.passwordMinLength") }),
+      confirm_password: z
+        .string()
+        .min(1, { message: t("admin.form.confirmPasswordRequired") }),
+      is_superuser: z.boolean(),
+      is_active: z.boolean(),
+    })
+    .refine((data) => data.password === data.confirm_password, {
+      message: t("admin.form.passwordsDoNotMatch"),
+      path: ["confirm_password"],
+    })
+
+  type FormData = z.infer<typeof formSchema>
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -75,10 +77,27 @@ const AddUser = () => {
     },
   })
 
+  const language = i18n.language
+  const previousLanguage = useRef(i18n.language)
+  const errorFields = Object.keys(
+    form.formState.errors,
+  ) as FieldPath<FormData>[]
+
+  useEffect(() => {
+    if (previousLanguage.current === language) {
+      return
+    }
+    previousLanguage.current = language
+    if (errorFields.length) {
+      void form.trigger(errorFields)
+    }
+  }, [form.trigger, language, errorFields])
   const mutation = useMutation({
     mutationFn: (data: UserCreate) => UsersService.createUser({ body: data }),
     onSuccess: () => {
-      showSuccessToast("User created successfully")
+      showSuccessToast(t("admin.add.toast"), {
+        testId: "user-created-toast",
+      })
       form.reset()
       setIsOpen(false)
     },
@@ -95,17 +114,15 @@ const AddUser = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="my-4">
+        <Button className="my-4" data-testid="add-user">
           <Plus className="mr-2" />
-          Add User
+          {t("admin.add.title")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add User</DialogTitle>
-          <DialogDescription>
-            Fill in the form below to add a new user to the system.
-          </DialogDescription>
+          <DialogTitle>{t("admin.add.title")}</DialogTitle>
+          <DialogDescription>{t("admin.add.description")}</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -116,18 +133,21 @@ const AddUser = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      User Code <span className="text-destructive">*</span>
+                      {t("admin.form.userCodeLabel")}{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="User code"
+                        data-testid="user-code-input"
+                        aria-label={t("admin.form.userCodeLabel")}
+                        placeholder={t("admin.form.userCodePlaceholder")}
                         type="text"
                         {...field}
                         required
                       />
                     </FormControl>
                     <FormDescription>
-                      Must be unique. Users log in with this code.
+                      {t("admin.form.userCodeDescription")}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -139,9 +159,15 @@ const AddUser = () => {
                 name="full_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <FormLabel>{t("admin.form.fullNameLabel")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Full name" type="text" {...field} />
+                      <Input
+                        data-testid="user-full-name-input"
+                        aria-label={t("admin.form.fullNameLabel")}
+                        placeholder={t("admin.form.fullNamePlaceholder")}
+                        type="text"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -154,11 +180,14 @@ const AddUser = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Set Password <span className="text-destructive">*</span>
+                      {t("admin.form.passwordLabel")}{" "}
+                      <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Password"
+                        data-testid="user-password-input"
+                        aria-label={t("admin.form.passwordLabel")}
+                        placeholder={t("admin.form.passwordPlaceholder")}
                         type="password"
                         {...field}
                         required
@@ -175,12 +204,14 @@ const AddUser = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Confirm Password{" "}
+                      {t("admin.form.confirmPasswordLabel")}{" "}
                       <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Password"
+                        data-testid="user-confirm-password-input"
+                        aria-label={t("admin.form.confirmPasswordLabel")}
+                        placeholder={t("admin.form.passwordPlaceholder")}
                         type="password"
                         {...field}
                         required
@@ -198,11 +229,15 @@ const AddUser = () => {
                   <FormItem className="flex items-center gap-3 space-y-0">
                     <FormControl>
                       <Checkbox
+                        data-testid="user-superuser-input"
+                        aria-label={t("admin.form.isSuperuser")}
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormLabel className="font-normal">Is superuser?</FormLabel>
+                    <FormLabel className="font-normal">
+                      {t("admin.form.isSuperuser")}
+                    </FormLabel>
                   </FormItem>
                 )}
               />
@@ -214,11 +249,15 @@ const AddUser = () => {
                   <FormItem className="flex items-center gap-3 space-y-0">
                     <FormControl>
                       <Checkbox
+                        data-testid="user-active-input"
+                        aria-label={t("admin.form.isActive")}
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormLabel className="font-normal">Is active?</FormLabel>
+                    <FormLabel className="font-normal">
+                      {t("admin.form.isActive")}
+                    </FormLabel>
                   </FormItem>
                 )}
               />
@@ -226,12 +265,20 @@ const AddUser = () => {
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
+                <Button
+                  data-testid="cancel-create-user"
+                  variant="outline"
+                  disabled={mutation.isPending}
+                >
+                  {t("admin.form.cancel")}
                 </Button>
               </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Save
+              <LoadingButton
+                data-testid="save-user"
+                type="submit"
+                loading={mutation.isPending}
+              >
+                {t("admin.form.save")}
               </LoadingButton>
             </DialogFooter>
           </form>
