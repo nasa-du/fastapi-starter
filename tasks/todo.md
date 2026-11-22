@@ -380,14 +380,23 @@
 **描述**:打通全链路样板。先字典后后端:双字典 `errors` 组新增 `AUTH_LOGIN_NAME_CONFLICT` / `AUTH_LOGIN_INVALID` / `AUTH_LOGIN_INACTIVE`(中文译文,与 Task 2 的 `login.errors.{invalid,nameConflict,inactive}` 译文一致);login.py 3 处 `detail` 改 `{"code", "message"}`(message 固定英文,契约表);test_login.py 对应断言改 `detail["code"]`;utils.ts `extractErrorMessage` 增加 `detail?.code` 分支(`t("errors."+code, { defaultValue: detail.message })`);`sh scripts/generate-client.sh` 再生成。**收尾迁移**:移除 Task 2 在 login.tsx 的本地错误映射(`LOGIN_ERROR_KEYS` + per-call onError),恢复 useAuth loginMutation 的 `onError: handleError.bind(showErrorToast)`。
 
 **验收标准**:
-- [ ] 登录接口错误返回 `{"code","message"}`,状态码不变;test_login.py 以 code 断言
-- [ ] 前端错误登录 toast 显示中文;未知 code 场景回退英文 message(有验证记录)
-- [ ] client 再生成零手改;pytest + E2E 全绿
+- [x] 登录接口错误返回 `{"code","message"}`,状态码不变;test_login.py 以 code 断言
+- [x] 前端错误登录 toast 显示中文;未知 code 场景回退英文 message(有验证记录)
+- [x] client 再生成零手改;pytest + E2E 全绿
 
 **验证**:
-- [ ] `cd backend && uv run pytest`
-- [ ] `bunx playwright test tests/login.spec.ts`
-- [ ] 手动检查:错误登录 → 中文 toast
+- [x] `cd backend && uv run pytest` — **72 passed**(2026-11-22)
+- [x] `bunx playwright test tests/login.spec.ts` — **19 passed**(18 spec tests + setup;RED 先行:真实后端结构化 detail 时中文 toast 与未知 code 英文兜底各 1 项失败,迁移后全绿)
+- [x] 手动检查:错误登录 → 中文 toast(headless chromium 实测无效凭据、姓名冲突「多个用户共用此姓名,请使用用户编码登录」、停用用户「用户已停用」三条真实后端路径)
+- [x] `sh scripts/generate-client.sh` 两次执行均成功,`frontend/openapi.json` 与 `frontend/src/client/` 无 diff、零手改;`bun run lint` + `frontend/` 内 `bun run build` 通过
+- [x] 回归:`PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test` **72 passed**(2026-11-22);双字典 key 集合 diff = 0(**178/178**)
+
+**执行备注**(超出原文件预算部分):
+- `useAuth.ts` / `login.tsx` 为任务显式收尾迁移:恢复 `handleError.bind(showErrorToast)` 唯一错误漏斗,删除 Task 2 临时字符串映射与 per-call onError;E2E 断言错误描述仅 1 个 toast,无双提示
+- `frontend/tests/login.spec.ts` 增加真实接口 400 + 中文冒烟、未知 code → 固定英文 message、旧字符串 detail 与 422 数组形状保留;两个浏览器断言经临时禁用 code 分支的变异检查均按预期失败后恢复
+- `utils.ts` code 分支限定为非空对象且存在 `code` 字段,避免字符串包含「code」时误走契约分支;其余 Axios/非 Axios 回退原样保留。后端三种错误均断言固定英文 `message` 与既有 400 状态码
+- **发现未动**:首次全量回归 `user-settings.spec.ts`「Selected mode is preserved across sessions」出现已知主题菜单偶发超时(70/71);该用例独立运行通过,最终源码不变的完整回归 **72 passed**。主题文件不在 T13 范围,未修改
+- 独立审查(2026-11-22):无 findings,判定 Approve;覆盖错误分支、翻译与回退链、单 toast 接线、旧错误形状与 message 契约测试。审查建议的字符串/422 形状与 message 字段断言已补齐
 
 **依赖**:Task 11(utils.ts 归属)、Task 2(登录页中文)
 
