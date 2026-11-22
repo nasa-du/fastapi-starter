@@ -247,12 +247,26 @@
 **描述**:Admin/AddUser.tsx、EditUser.tsx、DeleteUser.tsx(zod 内联)、UserActionsMenu.tsx、ResetPasswordDialog.tsx(临时密码弹窗文案)t() 化;admin.spec.ts 弹窗断言同步。
 
 **验收标准**:
-- [ ] Admin 全操作链路(增删改、重置密码、菜单)零英文残留;zod 零字面量
-- [ ] admin.spec.ts 全绿
+- [x] Admin 全操作链路(增删改、重置密码、菜单)零英文残留;zod 零字面量
+- [x] admin.spec.ts 全绿
 
 **验证**:
-- [ ] E2E:`bunx playwright test tests/admin.spec.ts`
-- [ ] 手动检查:创建用户/重置密码流程中文
+- [x] E2E:`bunx playwright test tests/admin.spec.ts` — **21 passed**(20 spec tests + setup;RED 先行 14 项失败,独立审查后再补旧错误语言 RED,修复后全绿;2026-11-22)
+- [x] 手动检查:创建用户/重置密码流程中文(E2E zh-CN 全链路断言 + headless chromium 表单冒烟;临时密码复制、新密码登录、操作菜单与校验消息均实测)
+- [x] lint + build 通过(biome 75 files;`frontend/` 内 `bun run build`,tsc + vite 绿)
+- [x] 回归:`bun run test` 全量 **57 passed**(2026-11-22;包含本次新增 4 条与独立审查补回归,既有主题持久化用例通过)
+- [x] 双字典 key 集合 diff = 0(116/116,新增 admin 40 keys)
+
+**执行备注**:
+- testid 落点:add-user、user-actions、edit-user / delete-user / reset-password、四类用户表单输入与复选框、保存/取消/确认钮、user-{created,updated,deleted}-toast、temporary-password-input / copy-temporary-password 等;所有交互路径保留行为断言,中文冒烟补充弹窗描述、菜单、占位符及校验消息
+- AddUser / EditUser 表单 schema 沿用 Items Task 7 先例移入组件;共享 `admin.form.*` 17 keys(含 6 条校验、按钮和标签),en 字面量与原文逐项一致
+- 独立审查发现既有错误在切语言后保留旧文(2026-11-22):AddUser 用 ref 记录上次语言,只在实际变化时对现有错误字段 `trigger()` 重求值,不 reset 输入;ref 守卫避免 effect 依赖错误对象形成循环,TypeScript 以 `FieldPath<FormData>[]` 明确错误字段类型。Add 回归保留「中文错误→关闭→切 en→重开→英文错误」RED→GREEN 证据与后续字段持久化/新错误断言
+- EditUser 使用同一防御性重验;Radix 菜单卸载重建表单的真实行为保留,语言切换测试断言重开原始行数据及新 schema 英文密码不一致消息,不把未保存编辑输入的既有取消语义扩大为保留
+- 删除警告以 `descriptionStart` / `descriptionEmphasis` / `descriptionEnd` 保留 `<strong>` 结构与各语序;临时密码 `aria-label` 和复制按钮 sr-only 均入字典,关闭后 `resetPassword.reset()` 原逻辑未动
+- 重开英文创建弹窗实测 schema 重建后英文校验生效、已填字段保留;模态弹窗内不可操作背景切换器,语言回归在关闭弹窗后切英文并重开,原有错误及新触发错误均断言
+- 重置密码用例仍以先在 en 环境 `logInUser`、`logOutUser` 为前提,操作域内显式切 zh 验证后切回 en;辅助函数英文文案依赖仍归 T16,未扩范围修改
+- **发现未动**:共享 toast 标题 `Success!` / `Something went wrong!` 归 Task 11;共享 DataTable 分页与 radix 内置 `Close` 归 Task 11;后端错误消息契约归 Task 14,本任务仅覆盖 Task 9 组件文案与成功提示
+- 浏览器截图证据:`/tmp/task9-add-user-zh.png`;自动化 headless chromium 检查中文标题、复选框可访问名称与 `<html lang="zh-CN">`,console 错误/警告均 0(2026-11-22)
 
 **依赖**:Task 8
 
