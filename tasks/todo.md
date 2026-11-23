@@ -15,14 +15,21 @@
 **描述**:删除 `routes/_layout/items.tsx` 与其唯一消费者 `components/Pending/PendingItems.tsx`;`AppSidebar.tsx` 移除 Items 导航项与仅为其存在的 `Briefcase` 导入。同步处理直接指向该页面的前端测试:删除 `tests/items.spec.ts`;`login.spec.ts` 侧边栏断言由「项目链接可见」改为「断言不存在」;`language.spec.ts` 路由标题矩阵移除 `/items` 行。
 
 **验收标准**:
-- [ ] `frontend/src/routes/_layout/items.tsx`、`frontend/src/components/Pending/PendingItems.tsx`、`frontend/tests/items.spec.ts` 删除
-- [ ] `AppSidebar.tsx` 无 Items 导航项,`Briefcase` 导入删除;`login.spec.ts` 断言侧边栏无「项目/Items」链接(双语)
-- [ ] `language.spec.ts` 不再访问 `/items`
+- [x] `frontend/src/routes/_layout/items.tsx`、`frontend/src/components/Pending/PendingItems.tsx`、`frontend/tests/items.spec.ts` 删除
+- [x] `AppSidebar.tsx` 无 Items 导航项,`Briefcase` 导入删除;`login.spec.ts` 断言侧边栏无「项目/Items」链接(双语)
+- [x] `language.spec.ts` 不再访问 `/items`
 
 **验证**:
-- [ ] 引用扫描:`grep -rn "routes/_layout/items\|PendingItems\|Briefcase" frontend/src` 零命中
-- [ ] `bun run lint` + `bun run --filter frontend build` 通过(构建重写 `routeTree.gen.ts`,不再含 `/items`)
-- [ ] 定向 E2E(后端运行时):`bunx playwright test tests/login.spec.ts tests/language.spec.ts` 全绿
+- [x] 引用扫描:`grep -rn "routes/_layout/items\|PendingItems\|Briefcase" frontend/src` 零命中
+- [x] `bun run lint` + `bun run --filter frontend build` 通过(构建重写 `routeTree.gen.ts`,不再含 `/items`)
+- [x] 定向 E2E(后端运行时):`bunx playwright test tests/login.spec.ts tests/language.spec.ts` 全绿
+
+**执行记录**(2026-11-23):
+- RED 先行:提交 `ea35330`(login.spec.ts 侧边栏断言改「项目链接不存在」),定向运行失败于 `toHaveCount(0)`(定位到 1 个元素),符合预期
+- GREEN:删除三个文件;`AppSidebar.tsx` 移除 Items 项与 `Briefcase` 导入;`language.spec.ts` 路由标题矩阵移除 `/items` 行;`routeTree.gen.ts` 由 build 重生成(grep `items` 零命中);构建产物无 items chunk
+- 双语断言布局调整:中文「项目」不存在断言保留在「Sidebar and user menu use localized labels」用例;英文「Items」不存在断言落在「Sidebar controls respond to language changes」用例(已切至 en 状态)。原因:在用户菜单 Escape 后紧接着连续开关语言下拉,radix 菜单元素不稳定导致确定性超时(等待 `language-zh` 挂起,含 60s 超时复现),故复用既有已切英的用例而非新开菜单往返
+- `bunx playwright test tests/login.spec.ts tests/language.spec.ts` — **28 passed**(GREEN 提交后复跑仍 28 passed);`bun run lint`(72 files)绿;`bun run --filter frontend build` 绿
+- E2E 环境:开发库 `docker compose up -d db` + `uv run python app/initial_data.py` 重建管理员;后端 `uvicorn`(8000)与前端 `vite dev`(5173)以后台任务运行,`PLAYWRIGHT_BASE_URL`/`VITE_API_URL` 显式传递上下文沿用既有踩坑记录
 
 **依赖**:无
 
