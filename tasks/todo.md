@@ -71,14 +71,22 @@
 **描述**:双字典删除 `items` 组、`nav.items`、`ITEMS_NOT_FOUND`、`ITEMS_FORBIDDEN`(en 与 zh-CN 同步);`tests/utils/random.ts` 删除 `randomItemTitle`/`randomItemDescription`。完成后双字典 key 集合 diff = 0。
 
 **验收标准**:
-- [ ] 双字典无 `items` 组、`nav.items`、`ITEMS_*`;key 集合 diff = 0
-- [ ] `random.ts` 无 Item 专属函数,其余函数保留
-- [ ] `frontend/src` 中 `t("items.` 与 `nav.items` 零引用
+- [x] 双字典无 `items` 组、`nav.items`、`ITEMS_*`;key 集合 diff = 0
+- [x] `random.ts` 无 Item 专属函数,其余函数保留
+- [x] `frontend/src` 中 `t("items.` 与 `nav.items` 零引用
 
 **验证**:
-- [ ] 引用扫描:`grep -rn "t(\"items\.\|nav\.items\|randomItem" frontend/src frontend/tests` 零命中
-- [ ] `bun run lint` + `bun run --filter frontend build` 通过
-- [ ] 定向 E2E(后端运行时):`bunx playwright test tests/language.spec.ts` 全绿
+- [x] 引用扫描:`grep -rn "t(\"items\.\|nav\.items\|randomItem" frontend/src frontend/tests` 零命中
+- [x] `bun run lint` + `bun run --filter frontend build` 通过
+- [x] 定向 E2E(后端运行时):`bunx playwright test tests/language.spec.ts` 全绿
+
+**执行记录**(2026-11-23):
+- RED 先行:一次性脚本断言「双字典无 `items` 组/`nav.items`/`ITEMS_*`、key 集合一致、`random.ts` 无 `randomItem`」运行失败(en/zh-CN 各报 Item 文案存在 + random.ts 报 Item 工具存在),符合预期
+- GREEN:双字典各删 `items` 组(39 行)、`nav.items`、`errors` 尾部 `ITEMS_NOT_FOUND`/`ITEMS_FORBIDDEN`;`random.ts` 删 `randomItemTitle`/`randomItemDescription`,其余函数(`randomUserCode`/`randomTeamName`/`randomPassword`/`slugify`)保留
+- key 集合校验:flatten 双字典全路径 key 后 diff = 0;引用扫描 `t("items.`/`nav.items`/`randomItem` 于 `frontend/src`、`frontend/tests` 零命中
+- `bun run lint`(67 files,无需修复)绿;`bun run --filter frontend build` 绿(i18n chunk 正常产出,构建产物无 items chunk)
+- 定向 E2E:数据库容器复用 Task 1 的 `docker compose up -d db`;后端 `uvicorn`(8000)与前端 `vite dev`(5173)以后台任务临时启动,`PLAYWRIGHT_BASE_URL`/`VITE_API_URL` 显式传递;`bunx playwright test tests/language.spec.ts` — **7 passed**(11.5s);E2E 后两个服务已停止
+- 提交:`b1744ca`(纯删除 commit)
 
 **依赖**:Task 1、Task 2
 
