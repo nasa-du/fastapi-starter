@@ -44,12 +44,19 @@
 **描述**:整目录删除 `frontend/src/components/Items/`(AddItem、EditItem、DeleteItem、ItemActionsMenu、columns)。Task 1 已移除其全部消费者,本任务为纯删除。
 
 **验收标准**:
-- [ ] `frontend/src/components/Items/` 目录不存在
-- [ ] 无任何源文件导入这五个组件
+- [x] `frontend/src/components/Items/` 目录不存在
+- [x] 无任何源文件导入这五个组件
 
 **验证**:
-- [ ] 引用扫描:`grep -rn "components/Items\|AddItem\|EditItem\|DeleteItem\|ItemActionsMenu" frontend/src` 零命中
-- [ ] `bun run lint` + `bun run --filter frontend build` 通过(tsc 无悬空导入)
+- [x] 引用扫描:`grep -rn "components/Items\|AddItem\|EditItem\|DeleteItem\|ItemActionsMenu" frontend/src` 零命中
+- [x] `bun run lint` + `bun run --filter frontend build` 通过(tsc 无悬空导入)
+
+**执行记录**(2026-11-23):
+- 纯删除任务,按约定以引用扫描 + 构建/生成为 RED 证据:删除前扫描命中均为 `components/Items/` 内部互引(`columns` → `ItemActionsMenu` → `EditItem`/`DeleteItem`)与生成物 `src/client/` 中的 `items*` 类型名,手写源码零外部消费者
+- `git rm -r src/components/Items/`(5 文件);删除后 `frontend/src` 手写源码扫描零命中,目录不存在
+- 生成物 `src/client/` 仍含 `itemsDeleteItem*` 等类型名(子串命中,非组件导入):按本文件头部约定生成物仅由生成器更新,待 Task 4 删后端路由后 Task 6 再生成清零
+- `bun run lint`(67 files)绿;`bun run --filter frontend build` 绿(tsc 无悬空导入);无 E2E 要求(本任务验证清单未列)
+- 提交:`e44c802` 之后本任务提交为纯删除 commit(见 git log `feat: delete Items component directory`)
 
 **依赖**:Task 1
 
