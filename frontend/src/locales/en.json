@@ -30,7 +30,6 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "items": "Items",
     "admin": "Admin"
   },
   "menu": {
@@ -96,44 +95,6 @@
     "pageNotFound": "The page you are looking for was not found.",
     "goBack": "Go Back"
   },
-  "items": {
-    "headTitle": "Items - FastAPI Template",
-    "title": "Items",
-    "description": "Create and manage your items",
-    "empty": "You don't have any items yet",
-    "emptyHint": "Add a new item to get started",
-    "copyId": "Copy ID",
-    "columnTitle": "Title",
-    "columnDescription": "Description",
-    "noDescription": "No description",
-    "actions": "Actions",
-    "form": {
-      "titleLabel": "Title",
-      "titlePlaceholder": "Title",
-      "descriptionLabel": "Description",
-      "descriptionPlaceholder": "Description",
-      "titleRequired": "Title is required",
-      "cancel": "Cancel",
-      "save": "Save"
-    },
-    "add": {
-      "title": "Add Item",
-      "description": "Fill in the details to add a new item.",
-      "toast": "Item created successfully"
-    },
-    "edit": {
-      "title": "Edit Item",
-      "description": "Update the item details below.",
-      "toast": "Item updated successfully"
-    },
-    "delete": {
-      "title": "Delete Item",
-      "description": "This item will be permanently deleted. Are you sure? You will not be able to undo this action.",
-      "confirm": "Delete",
-      "toast": "The item was deleted successfully"
-    },
-    "menuLabel": "Item actions"
-  },
   "toast": {
     "success": "Success!",
     "error": "Something went wrong!"
@@ -178,9 +139,7 @@
     "USERS_FORBIDDEN": "The user doesn't have enough privileges",
     "USERS_NOT_FOUND": "User not found",
     "USERS_ID_NOT_FOUND": "The user with this id does not exist in the system",
-    "USERS_CODE_CONFLICT": "User with this user_code already exists",
-    "ITEMS_NOT_FOUND": "Item not found",
-    "ITEMS_FORBIDDEN": "Not enough permissions"
+    "USERS_CODE_CONFLICT": "User with this user_code already exists"
   },
   "admin": {
     "headTitle": "Users - FastAPI Template",
