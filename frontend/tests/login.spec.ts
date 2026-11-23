@@ -280,7 +280,7 @@ test("Sidebar and user menu use localized labels", async ({ page }) => {
   await expect(dashboardLink).toBeVisible()
   await expect(
     page.getByRole("link", { name: "项目", exact: true }),
-  ).toBeVisible()
+  ).toHaveCount(0)
   await expect(
     page.getByRole("link", { name: "管理", exact: true }),
   ).toBeVisible()
@@ -289,6 +289,19 @@ test("Sidebar and user menu use localized labels", async ({ page }) => {
   await expect(page.getByRole("menuitem", { name: "用户设置" })).toBeVisible()
   await expect(page.getByTestId("logout")).toHaveText("退出登录")
   await page.keyboard.press("Escape")
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-en").click()
+
+  await expect(
+    page.getByRole("link", { name: "Items", exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole("link", { name: "Dashboard", exact: true }),
+  ).toBeVisible()
+
+  await page.getByTestId("language-button").click()
+  await page.getByTestId("language-zh").click()
 
   await page.locator('[data-sidebar="trigger"]').click()
   await expect(trigger).toHaveAccessibleName("展开侧边栏")
