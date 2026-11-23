@@ -290,19 +290,6 @@ test("Sidebar and user menu use localized labels", async ({ page }) => {
   await expect(page.getByTestId("logout")).toHaveText("退出登录")
   await page.keyboard.press("Escape")
 
-  await page.getByTestId("language-button").click()
-  await page.getByTestId("language-en").click()
-
-  await expect(
-    page.getByRole("link", { name: "Items", exact: true }),
-  ).toHaveCount(0)
-  await expect(
-    page.getByRole("link", { name: "Dashboard", exact: true }),
-  ).toBeVisible()
-
-  await page.getByTestId("language-button").click()
-  await page.getByTestId("language-zh").click()
-
   await page.locator('[data-sidebar="trigger"]').click()
   await expect(trigger).toHaveAccessibleName("展开侧边栏")
   await dashboardLink.hover()
@@ -320,6 +307,16 @@ test("Sidebar controls respond to language changes", async ({ page }) => {
   await page.getByTestId("language-button").click()
   await page.getByTestId("language-en").click()
   await expect(trigger).toHaveAccessibleName("Collapse Sidebar")
+
+  await expect(
+    page.getByRole("link", { name: "Items", exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole("link", { name: "Dashboard", exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole("link", { name: "Admin", exact: true }),
+  ).toBeVisible()
 })
 
 test("Mobile sidebar uses localized accessibility text", async ({ page }) => {

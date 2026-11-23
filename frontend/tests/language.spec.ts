@@ -61,7 +61,6 @@ test.describe("Document title and route language behavior", () => {
 
     const routeTitles = [
       ["/", zhCN.dashboard.headTitle, en.dashboard.headTitle],
-      ["/items", zhCN.items.headTitle, en.items.headTitle],
       ["/admin", zhCN.admin.headTitle, en.admin.headTitle],
       ["/settings", zhCN.settings.headTitle, en.settings.headTitle],
     ]
