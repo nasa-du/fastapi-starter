@@ -98,9 +98,9 @@
 
 ## ◆ Checkpoint A:前端源码无 Item 业务入口
 
-- [ ] `bun run lint` + `bun run --filter frontend build` 通过;路由树无 `/items`
-- [ ] 双字典与现有测试不再依赖 Item 页面;`backend/app/frontend/` 构建产物不含 items chunk(本地验证,不提交)
-- [ ] 人工确认后进入 Phase 2
+- [x] `bun run lint` + `bun run --filter frontend build` 通过;路由树无 `/items`
+- [x] 双字典与现有测试不再依赖 Item 页面;`backend/app/frontend/` 构建产物不含 items chunk(本地验证,不提交)
+- [x] 人工确认后进入 Phase 2
 
 ---
 
@@ -109,14 +109,23 @@
 **描述**:RED 先行:新建 `backend/tests/api/routes/test_items_removed.py`,断言 `/api/v1/items/` 的 GET/POST 与 `/api/v1/items/{id}` 的 GET/PUT/DELETE 均返回 FastAPI 默认 404(带有效 token 与匿名均为未匹配路由行为,而非 401/405/旧 CRUD 响应)。随后删除 `routes/items.py` 并从 `api/main.py` 移除注册;删除旧 `test_items.py`。
 
 **验收标准**:
-- [ ] `backend/app/api/routes/items.py`、`backend/tests/api/routes/test_items.py` 删除;`api/main.py` 不再注册 items
-- [ ] 新契约测试断言五个原端点默认 404,且 OpenAPI 无 items 路径
-- [ ] 其余路由(login、users、private)不受影响
+- [x] `backend/app/api/routes/items.py`、`backend/tests/api/routes/test_items.py` 删除;`api/main.py` 不再注册 items
+- [x] 新契约测试断言五个原端点默认 404,且 OpenAPI 无 items 路径
+- [x] 其余路由(login、users、private)不受影响
 
 **验证**:
-- [ ] RED:契约测试先跑,5 处断言失败(旧路由仍返回 200/404-by-id 等旧行为)
-- [ ] GREEN:`cd backend && uv run pytest` 全绿
-- [ ] `uv run ruff check app && uv run ruff format app --check`(等效 lint 的 uv 调用,见归档备注)
+- [x] RED:契约测试先跑,5 处断言失败(旧路由仍返回 200/404-by-id 等旧行为)
+- [x] GREEN:`cd backend && uv run pytest` 全绿
+- [x] `uv run ruff check app && uv run ruff format app --check`(等效 lint 的 uv 调用,见归档备注)
+
+**执行记录**(2026-11-23):
+- RED 先行:提交 `9d172ca`(新建 `test_items_removed.py`)。定向运行 **6 failed, 1 passed**——五个端点断言逐个失败:GET 列表 200、POST/PUT 422(路由已注册触发校验)、GET/DELETE by-id 404 但 body 为 `{"code": "ITEMS_NOT_FOUND"}`(非默认 404);OpenAPI 含 items 路径断言失败;`test_other_routes_still_registered` 基线通过。带有效 token 断言 404 同时证明未注册路由不进入认证层(旧路由匿名为 401)
+- GREEN:删除 `routes/items.py`(131 行)与旧 `test_items.py`(182 行);`api/main.py` 移除 items 导入与注册(净 -315/+1 行)。定向契约测试 **7 passed**
+- 全量 `uv run pytest` **70 passed**(5.4s);`uv run ruff check app` + `ruff format app --check` 全绿(16 files)
+- 备注:`ruff check tests` 在 `test_login.py` 有 2 个既有 ARG001 命中(经 `git stash` 对照 HEAD 确认为历史遗留,与本任务无关且不在本任务文件范围;任务验证命令仅要求 `app`)
+- 环境验证补充:删除前实测旧路由匿名 401 / 带有效 token 走 CRUD;未知路径(默认 JSON 客户端,无 `Accept: text/html`)返回 `404 {"detail": "Not Found"}`——SPA fallback 仅为浏览器导航请求(text/html)服务,JSON API 客户端与前端 HTTP 调用不受影响
+- E2E 环境说明:数据库容器沿用(healthy);本任务验证清单未列 E2E,未启动后端/前端服务
+- 提交:`9d172ca`(RED 契约测试,含 ruff format 修正)、`469012e`(GREEN 删路由与旧测试)
 
 **依赖**:Task 3(串行默认;后端实际不依赖前端任务)
 
