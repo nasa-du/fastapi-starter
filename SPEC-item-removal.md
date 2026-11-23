@@ -1,6 +1,6 @@
 # Spec: item-removal
 
-> 状态：待人工评审
+> 状态：已获人工评审确认（进入实施计划阶段）
 > 所属能力地图：`CAPABILITY-MAP.md` → `item-removal`
 > 本规格仅覆盖 Item 功能的移除；用户自助注销由独立模块规格处理。
 

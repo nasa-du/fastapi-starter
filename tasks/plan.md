@@ -1,116 +1,112 @@
-# 实施计划:简体中文支持(i18n 中英双语)
+# Implementation Plan: item-removal
 
-> 依据:`SPEC-i18n.md`(已评审通过)|任务明细见 `tasks/todo.md`
-> 状态:**已完成**(18/18 任务与 Checkpoint A–E 均完成,2026-11-23 人工终审通过)
-> 前计划(认证改造)已 100% 完成(原 `tasks/{plan,todo}.md` 77/77 勾选),归档至 `tasks/archive/auth-user-code/`,git 可恢复。
+> 依据：`SPEC-item-removal.md`（已确认）与 `CAPABILITY-MAP.md`
+> 状态：**待人工批准计划**，未开始功能代码修改
+> 任务清单：`tasks/todo.md`
+> 已完成的 i18n 计划归档至 `tasks/archive/i18n/`，未覆盖未完成任务。
 
-## 概述
+## Overview
 
-按 SPEC-i18n.md 的六个切片(S1–S6)实施中英双语改造:前端 i18next 脚手架 + 全量文案中文化、后端错误码契约(24 处 raise 点 → 17 个 code)、E2E 改造为 testid + 中文冒烟、四份文档中文重写。共 18 个任务、5 个阶段、5 个检查点。
+彻底移除 Item 页面、导航、后端 API、业务模型和客户端契约，并新增删除 `item` 表的 Alembic 迁移。共 13 个任务，按前端入口、后端实现、隔离迁移、用户回归和最终验收排序；每个任务最多修改 5 个源文件/测试文件，工具生成物另行记录。
 
-## 已验证的代码库事实(规划依据)
+用户自助注销不在本计划中。部署时必须先让所有运行中的应用版本停止读写 Item，再单独执行破坏性迁移；计划与测试均不直接操作当前开发库或生产库。
 
-- **错误契约面**:24 处 `raise HTTPException`(`items.py` 6、`deps.py` 4、`login.py` 3、`users.py` 11)→ 17 个去重 code;后端测试 ~20 处英文 `detail` 断言分布在 `test_items.py` / `test_users.py` / `test_login.py`。deps 类断言的归属文件需在 T14 用 grep 定位(可能跨 test_login.py)。
-- **错误漏斗单点**:`frontend/src/utils.ts::extractErrorMessage`(全部 mutation 走 `handleError.bind(showErrorToast)`);`main.tsx` 的 401/403 跳转按 status 判断,不受契约影响;后端成功响应 `Message.message` 不被前端渲染(`DeleteItem.tsx` 等使用自有文案)→ 契约只覆盖 `detail`。
-- **E2E 现状**:`auth.setup.ts` 以 `getByRole("button", { name: "Log In" })` 登录 → **登录按钮文案变更会打断全部 E2E 的 setup**,必须与登录页改造同任务处理;导航一律 `page.goto()`,侧边栏改名不影响导航;text 定位器密度:login 14 / items 33 / admin 36 / user-settings 17 处;user-settings.spec.ts 已有 23 处 `getByTestId` 基础。
-- **登录页可见组件**:`AuthLayout` 渲染 `Appearance`(Light/Dark/System/Appearance 英文)与 `Footer`(产品名+年份)→ 主题切换文案属 S1;Footer 为产品名(品牌词,保留原文,见架构决策 5)。
-- **切换器落点**:`AppSidebar` 的 `SidebarFooter` 已有 `SidebarAppearance` + `User`,语言切换器仿 `SidebarAppearance` 模式并列放入(spec Open Question 1 按建议执行)。
-- **路由标题**:5 处 `head: () => ({ meta: [{ title }] })` 静态定义 → 语言切换需 `router.invalidate()` 重求值(风险 2)。
-- **命令**:`bun run dev/build/lint/test`(根,bun workspace);E2E webServer 自动拉起前端,后端 + db 需先运行;`sh scripts/generate-client.sh` 导出 openapi.json → 再生成 client → 自动 lint。
+## 已验证的代码库事实
 
-## 架构决策
+- 当前 Alembic head 为 `7125f2112706`。删表前 Item 结构：UUID 主键、非空 `owner_id` 外键（`ON DELETE CASCADE`）、`VARCHAR(255)` 标题/描述、可空带时区 `created_at`。
+- `User.items`、`Item.owner`、`crud.create_item`、测试清理 fixture、User/Item UUID v7 联合断言和管理员删除用户时的 Item 清理构成同一模型依赖面。
+- 原 API 为 `/api/v1/items/` 的 GET/POST 和 `/api/v1/items/{id}` 的 GET/PUT/DELETE，移除后均应得到未匹配路由的默认 404。
+- TanStack Router 插件在构建时更新 `routeTree.gen.ts`；根级 Not Found 已有 `data-testid="not-found"`。
+- 双字典除 `items` 和 `ITEMS_*` 外，还有 `nav.items`；管理员删除用户文案也提到 Item，但管理员组件和端点必须保留。
+- `frontend/openapi.json` 与 `backend/app/frontend/` 被 Git 忽略；`frontend/src/client/` 与 `frontend/src/routeTree.gen.ts` 被跟踪。生成中间产物和构建产物不提交。
+- 根目录 `scripts/test.sh` 会执行 `docker compose down -v`，最终全栈测试需要单独确认，不能作为普通测试隐式执行。
 
-1. **字典文件是全局伴随文件**:每个任务都会 append `zh-CN.json` / `en.json`,**不计入单任务 ≤5 文件预算**(预算只数源/测试文件)。
-2. **zod 消息随文件内联翻译**:某文件在本次任务中本来就要改,其 zod message 同任务字典化;不做独立批量任务,改由 T12 做 grep 审计门禁(`message: "` 零字面量)。
-3. **E2E 随域配对改造**:哪个任务改某域文案,该任务同任务更新对应 spec 文件(定位器 testid 化 + 断言中文化)——保证每任务交付时代码树绿色,不出现「全红等 S5」;S5(T16)收口为审计而非批量转换。
-4. **契约试点先行(T13)**:仅 login 单点打通「后端 code → openapi 再生成 → utils.ts 回退链 → 中文 toast → 双测试绿」全链路,T14/T15 纯机械推广;先字典后后端(Always 边界)。
-5. **品牌/产品词保留原文**:Footer「Full Stack FastAPI Template」、社交 aria-label(GitHub/X/LinkedIn)、Logo 不入字典;S1「零英文残留」验收口径排除品牌词。**请评审确认**。
-6. **错误码契约**:`detail = {"code", "message"}`,message 固定英文兜底(语言中立);契约表见 SPEC-i18n.md,评审通过即冻结。
-7. **语言切换响应机制**:切换器 → `setAppLanguage(lang)`(localStorage + `i18n.changeLanguage` + `document.documentElement.lang`)→ 组件内 `router.invalidate()` 触发 `head()` 重求值;具体接线 T3 实现,S1 验收含「标题免硬刷新即时更新」。
-8. **线性执行为默认**:双 lane(前端清扫 ∥ 后端契约)理论可行,但双字典 JSON 会被两条 lane 同时编辑,合并冲突风险高;如需并行,字典编辑必须串行化。
+## Architecture Decisions
 
-## 依赖图
+1. **先停止读写，再 contract**：Task 1–6 移除应用代码与客户端中的 Item；Task 7 才新增删表迁移。真实部署先完成代码全量切换并停止旧版本，再备份、审批并执行迁移。
+2. **保留历史，新增一个迁移**：新迁移以 `7125f2112706` 为 `down_revision`。upgrade 删除 `item`；downgrade 重建上述最终空表结构，不能也不声称恢复数据。
+3. **迁移测试使用显式隔离 URL**：pytest fixture 要求 `ITEM_REMOVAL_TEST_DATABASE_URL` 指向专用 PostgreSQL 的管理数据库，自动创建随机名数据库并在 finally 中销毁。未配置时只跳过这组高风险测试，最终验收必须显式配置并执行。
+4. **Alembic 连接显式覆盖**：独立 `Config` 使用 `backend/alembic.ini`，设置自定义 `item_removal_database_url` 选项；`alembic/env.py` 仅在该选项存在时使用它，否则保持现有全局 Settings 行为。测试核对实际连接的 host/database，禁止把当前 `DATABASE_URL` 默认当隔离库。
+5. **生成物只由工具维护**：客户端由 `sh scripts/generate-client.sh` 生成；路由树由 Vite/TanStack 插件生成。禁止手改。
+6. **保留共享能力**：保留 `Message`、User UUID v7 和 `created_at`、通用 DataTable、管理员删除用户及权限保护。导航数组中通用的 `items` 变量或 Sidebar 的通用 `Item` 类型不是 Item 业务残留。
+7. **默认串行**：双字典、模型、测试 fixture、生成物和迁移链均为共享边界。`self-account-deletion-removal` 不在本计划中并行实施。
+
+## Dependency Graph
 
 ```
-T1: i18n 骨架 ── T2: 登录页双语(含 setup/spec)── T3: 切换器/响应 ── ◆CP-A(S1)
-                                                                      │
-              T4: 侧边栏 ── T5: Dashboard/全局 ── T6: Items 页 ── T7: Items 弹窗 ── ◆CP-B(S2, keys≤400)
-                                                                                      │
-              T8: Admin 页 ── T9: Admin 弹窗 ── T10: Settings ── T11: 清扫 ── T12: zod 审计 ── ◆CP-C(S3)
-                                                                                              │
-              T13: 契约试点(login)── T14: 推广 users+deps ── T15: 推广 items ── ◆CP-D(S4)
-                                                                                │
-              T16: E2E 审计(S5)── T17: 文档中文化(S6)── T18: 全量核对 ── ◆CP-E(完成)
+T1 路由/导航移除 ── T2 Item 组件删除 ── T3 文案/旧前端测试清理 ── ◆CP-A
+                                                               │
+T4 API 移除 ── T5 模型/CRUD/fixture 移除 ── T6 客户端与路由树再生成 ── ◆CP-B
+                                                               │
+                                      T7 删表迁移 + 隔离往返测试 ── ◆CP-C
+                                                               │
+T8 用户管理 API 回归 ── T9 双角色 UI 回归 ── T10 当前文档 ── T11 历史规格口径 ── ◆CP-D
+                                                               │
+                                             T12 残留审计 ── T13 全量验收 ── ◆CP-E
 ```
 
-- 严格线性(T13 依赖 T2 的登录页中文与 T11 的 utils.ts 归属);T17 理论上可与 P4 并行,默认仍线性。
+按 T1–T13 串行。新增或改写的移除断言先失败再删除实现；纯删除任务以引用扫描和构建失败/生成为 RED 证据，不保留已失效的 CRUD 行为测试。
 
-## 任务索引
+## Task List
 
-### Phase 1:S1 脚手架 + 登录页样板(高风险优先:i18next 集成摩擦在 T1–T3 暴露)
-- [x] Task 1:i18n 依赖与初始化骨架(i18n.ts + 双字典 + main.tsx 接线)(M)
-- [x] Task 2:登录页全量双语 + login.spec.ts 中文冒烟 + auth.setup.ts testid 化(M)
-- [x] Task 3:语言切换器 + `<html lang>`/标题响应 + language.spec.ts 冒烟(M)
+### Phase 1: 前端入口移除
+- [ ] Task 1: 删除 Item 路由、加载组件和侧边栏入口
+- [ ] Task 2: 删除 Item 组件目录
+- [ ] Task 3: 删除 Item 文案与失效前端测试
 
-### ◆ Checkpoint A(S1 验收)
-- [x] spec S1 清单逐项核对(双语渲染/持久化/html lang/标题即时更新/一天内跑通)
-- [x] `bun run lint` + `bun run build` + E2E 全绿;**人工评审后再进入 Phase 2**
+### ◆ Checkpoint A: 前端源码无 Item 业务入口
+- [ ] 前端 lint/build 通过，路由树无 `/items`
+- [ ] 双字典和现有测试不再依赖 Item 页面
 
-### Phase 2:S2 主框架 + Items
-- [x] Task 4:侧边栏与用户菜单(Sidebar/Main、User、AppSidebar + login.spec logout 定位器)(M)
-- [x] Task 5:Dashboard 与全局组件(index.tsx、ErrorComponent、NotFound)(S)
-- [x] Task 6:Items 页与表格(items.tsx、columns、PendingItems + items.spec 定位器)(M)
-- [x] Task 7:Items 弹窗与操作(Add/Edit/Delete、ItemActionsMenu,含 zod 内联)(M)
+### Phase 2: 后端与生成契约移除
+- [ ] Task 4: 删除 Item API 并添加未注册路由测试
+- [ ] Task 5: 删除 Item 模型、CRUD、关系及 fixture 引用
+- [ ] Task 6: 删除 Item 测试工具并再生成客户端/路由树
 
-### ◆ Checkpoint B(S2 验收)
-- [x] Dashboard/Items 域零英文残留(品牌词除外)
-- [x] **keys 统计 ≤400 检查点**(统计 zh-CN.json key 数;超限停下重估并回报)
-- [x] E2E 全绿
+### ◆ Checkpoint B: 应用不再读写 Item
+- [ ] 后端完整测试、前端 lint/build 通过
+- [ ] OpenAPI 和生成客户端无 Item API/schema
 
-### Phase 3:S3 Admin + Settings + 清扫
-- [x] Task 8:Admin 页与表格(admin.tsx、columns、PendingUsers + admin.spec 部分)(M)
-- [x] Task 9:Admin 弹窗与操作(Add/Edit/DeleteUser、UserActionsMenu、ResetPasswordDialog,含 zod 内联)(M)
-- [x] Task 10:Settings(settings.tsx 三 tab、四个组件 + user-settings.spec)(M,6 文件:测试文件为伴随)
-- [x] Task 11:隐蔽英文源清扫(useCustomToast、utils.ts 兜底、shadcn aria;处置清单)(S)
-- [x] Task 12:zod 字面量审计(grep 门禁:src 内 `message: "` 零残留)(S)
+### Phase 3: 数据库 contract
+- [ ] Task 7: 新增删表迁移与隔离 PostgreSQL 往返测试
 
-### ◆ Checkpoint C(S3 验收)
-- [x] Admin/Settings 零英文;aria 处置清单记录
-- [x] **双字典 key 集合 diff = 0**(en 缺口清零;en 全量决策复核点)
-- [x] E2E 全绿
+### ◆ Checkpoint C: 迁移安全验证
+- [ ] 空库、含数据旧库、downgrade 和再次 upgrade 均通过
+- [ ] User 数据保持不变；隔离库销毁；开发/生产库未操作
 
-### Phase 4:S4 后端错误码契约
-- [x] Task 13:login 单点试点(3 处 + test_login + utils.ts 回退链 + client 再生成)(M)
-- [x] Task 14:推广 users + deps(15 处 + 对应测试 + 字典 12 codes)(M)
-- [x] Task 15:推广 items(6 处 + test_items)+ 契约表 17 code 全量核对(S)
+### Phase 4: 用户路径与文档
+- [ ] Task 8: 回归用户管理和普通用户 API
+- [ ] Task 9: 回归管理员/普通用户导航和 Not Found
+- [ ] Task 10: 更新当前 README 并删除失效截图
+- [ ] Task 11: 标注历史规格中的 Item 失效口径
 
-### ◆ Checkpoint D(S4 验收)
-- [x] 契约表逐项核对(24 处 / 17 code,状态码不变);`uv run pytest` + E2E 全绿
-- [x] `sh scripts/generate-client.sh` 后 `frontend/src/client/` 零手改 diff
+### ◆ Checkpoint D: 用户和维护者路径一致
+- [ ] 管理员其余能力及普通用户设置/登录不受影响
+- [ ] 当前文档不再承诺 Item，历史记录保留
 
-### Phase 5:S5 + S6 收口
-- [x] Task 16:E2E 收口审计(英文文案断言清零、抽查「改文案不碎测试」演练)(S)
-- [x] Task 17:文档中文化(README / development / deployment ×2 + 继承说明)(S)
-- [x] Task 18:全量验证与 SPEC-i18n.md 总体验收逐条核对(XS)
+### Phase 5: 审计与验收
+- [ ] Task 12: 审计当前代码、生成物和历史资料边界
+- [ ] Task 13: 全量验证并逐条核对规格
 
-### ◆ Checkpoint E(完成)
-- [x] SPEC-i18n.md「Success Criteria」S1–S6 与总体两项全绿
-- [x] 人工终审(2026-11-23,用户确认)
+### ◆ Checkpoint E: 完成
+- [ ] 规格 10 条 Success Criteria 均有证据
+- [ ] 后端测试/lint、前端 lint/build、Playwright 全量通过
+- [ ] 全栈脚本经单独确认后执行，或记录未执行原因
+- [ ] 人工评审后才进入下一模块
 
-## 风险与缓解
+## Risks and Mitigations
 
-| 风险 | 影响 | 缓解 |
+| Risk | Impact | Mitigation |
 |---|---|---|
-| i18next × React 19/Vite/SWC 集成摩擦 | 高(脚手架重来) | T1–T3 最小面暴露;不通过则回退自研 context 方案需重新评审 |
-| `head:` 静态导致标题不随语言更新 | 中 | T3 用 `router.invalidate()`;S1 验收含免硬刷新断言 |
-| keys 膨胀 >400 | 中 | CP-B 统计检查点,超限停下重估(idea 假设 3) |
-| 契约破坏唯一消费方 | 高 | T13 login 单点先行,双测试全绿再推广(idea 假设 2) |
-| E2E setup 依赖登录 UI 文案 | 高(全 E2E 崩) | T2 同任务改造 auth.setup.ts(testid 化) |
-| 双字典漂移(en 缺 key) | 低 | Always 边界同 PR 双改;CP-C key 集合 diff 门禁 |
-| deps 断言归属文件不明 | 低 | T14 以 grep `detail` 定位后逐条改,不许删断言 |
+| 删表不可恢复 | 高 | 仅隔离库自动验证；真实环境先代码全量切换、备份、单独审批 |
+| downgrade 结构不完整 | 高 | 按最终旧结构逐列/约束断言，测试往返；不声称恢复数据 |
+| Alembic 误连开发库 | 高 | 测试专用环境变量、随机库名、独立 Config 和 URL 覆盖、连接目标断言、finally 清理 |
+| User→Item 残留破坏启动/管理员删除 | 高 | Task 5 同片清理模型、CRUD、关系、显式 delete 和 fixture；Task 8 回归 |
+| 生成文件误手改/误提交 | 中 | 仅用生成器，检查幂等和 Git 跟踪/忽略清单 |
+| E2E 双角色覆盖不足 | 中 | 管理员沿用 setup，普通用户用 private API 临时创建；/items 断言现有 Not Found |
+| 全栈脚本删除数据卷 | 高 | T13 前单独确认；普通 pytest/构建不调用该脚本 |
+| 历史 Item 引用误删或误留 | 低 | 历史事实保留；当前 README 与当前错误码口径明确指向新规格，语义审计而非全仓零字符串 |
 
-## Open Questions(评审时定,不阻塞)
+## Open Questions
 
-1. Footer 产品名与社交 aria-label 保留原文(架构决策 5)—— 请确认。
-2. T17 文档重写口径:README 是否保留英文 quick-start 摘要?(spec 决策「不维护英文版」,默认纯中文)
-3. 并行 lane(架构决策 8)是否启用?默认线性。
+无规格层未决问题。Task 13 的 Docker 全栈测试需执行前单独确认，因为其会销毁 Compose 数据卷。
