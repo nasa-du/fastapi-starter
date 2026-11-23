@@ -1,6 +1,6 @@
 # Spec: 简体中文支持(i18n 中英双语)
 
-> 状态:**待人工评审**
+> 状态:**已完成**(S1–S6 与总体验收通过,2026-11-23 人工终审通过)
 > 范围决策:六个切片共享同一消费者(应用最终用户)与同一数据资产(zh-CN/en 字典);错误码契约是 i18n 的支撑性子契约而非可独立裁剪的能力(裁掉它「错误提示全面中文化」即不成立),故作为单一能力域处理(**无 capability map**,与 `SPEC.md` 认证改造同例),验收标准按切片 S1–S6 分区。
 > 来源:`docs/ideas/i18n-zh-hans.md`(idea-refine 定稿,2026-11-19)
 
@@ -177,46 +177,46 @@ function extractErrorMessage(err: Error): string {
 ## Success Criteria
 
 **S1 脚手架 + 登录页样板**
-- [ ] 登录页在 zh-CN / en 下完整双语渲染(标题、占位符、按钮、错误提示)
-- [ ] 侧边栏语言切换器可用;localStorage 持久化(切换 → 刷新 → 语言保持)
-- [ ] `<html lang>` 随语言切换即时更新(免硬刷新)
-- [ ] 登录路由标题(`head:`)随语言切换即时更新
-- [ ] 一天内跑通(idea 假设 1:i18next × Vite+SWC+React 19 无集成摩擦)
-- [ ] 全套验证矩阵绿
+- [x] 登录页在 zh-CN / en 下完整双语渲染(标题、占位符、按钮、错误提示)
+- [x] 侧边栏语言切换器可用;localStorage 持久化(切换 → 刷新 → 语言保持)
+- [x] `<html lang>` 随语言切换即时更新(免硬刷新)
+- [x] 登录路由标题(`head:`)随语言切换即时更新
+- [x] 一天内跑通(idea 假设 1:i18next × Vite+SWC+React 19 无集成摩擦)
+- [x] 全套验证矩阵绿
 
 **S2 主框架 + Items**
-- [ ] 侧边栏、Dashboard、Items 页(含 CRUD 弹窗、actions menu、成功/失败 toast)可见文案零英文残留
-- [ ] 全部 5 处路由标题 + `index.html` title 中文化且随语言切换
-- [ ] ErrorComponent / NotFound 文案入字典
-- [ ] **检查点:统计 keys 总量,>400 则重估后续工作量(idea 假设 3)**
+- [x] 侧边栏、Dashboard、Items 页(含 CRUD 弹窗、actions menu、成功/失败 toast)可见文案零英文残留
+- [x] 全部 5 处路由标题 + `index.html` title 中文化且随语言切换
+- [x] ErrorComponent / NotFound 文案入字典
+- [x] **检查点:统计 keys 总量,>400 则重估后续工作量(idea 假设 3)**
 
 **S3 Admin + Settings + zod 消息**
-- [ ] Admin(含 columns、actions menu、增删改/重置密码弹窗)、Settings(三个 tab)、DeleteConfirmation 文案零英文残留
-- [ ] 6 个文件的 zod message 全部走字典(login / AddUser / EditUser / AddItem / EditItem / ChangePassword)
-- [ ] `useCustomToast` 标题(Success! / Something went wrong!)与 `utils.ts` 兜底文案入字典
-- [ ] Radix/shadcn 内置 aria-label(如 sidebar):尽量本地化,遗留项列清单记录
-- [ ] **检查点:en.json 全量 vs 核心路径 —— 决策并记录(预期:全量)**
+- [x] Admin(含 columns、actions menu、增删改/重置密码弹窗)、Settings(三个 tab)、DeleteConfirmation 文案零英文残留
+- [x] 6 个文件的 zod message 全部走字典(login / AddUser / EditUser / AddItem / EditItem / ChangePassword)
+- [x] `useCustomToast` 标题(Success! / Something went wrong!)与 `utils.ts` 兜底文案入字典
+- [x] Radix/shadcn 内置 aria-label(如 sidebar):尽量本地化,遗留项列清单记录
+- [x] **检查点:en.json 全量 vs 核心路径 —— 决策并记录(预期:全量)**
 
 **S4 后端错误码契约**
-- [ ] 24 处 raise 点全部返回 `{"code", "message"}`(对照契约表,状态码不变);首个落地为 login 单点试点,pytest + E2E 全绿后再推广(idea 假设 2)
-- [ ] `sh scripts/generate-client.sh` 再生成,`frontend/src/client/` 零手改
-- [ ] 前端错误 toast 走字典;未知 code 回退英文 message(有 E2E 或单测证据)
-- [ ] 后端测试 ~20 处断言改为 code 断言;`uv run pytest` 全绿
-- [ ] `bash scripts/lint.sh` 全绿
+- [x] 24 处 raise 点全部返回 `{"code", "message"}`(对照契约表,状态码不变);首个落地为 login 单点试点,pytest + E2E 全绿后再推广(idea 假设 2)
+- [x] `sh scripts/generate-client.sh` 再生成,`frontend/src/client/` 零手改
+- [x] 前端错误 toast 走字典;未知 code 回退英文 message(有 E2E 或单测证据)
+- [x] 后端测试 ~20 处断言改为 code 断言;`uv run pytest` 全绿
+- [x] `bash scripts/lint.sh` 全绿
 
 **S5 测试改造**
-- [ ] 登录 / Items / Admin / Settings 关键路径以 testid 定位;文案断言仅存于 login.spec.ts(中文冒烟)
-- [ ] 语言切换冒烟用例通过
-- [ ] E2E 全绿;抽查验证「改一个非登录文案,测试仍绿」
+- [x] 登录 / Items / Admin / Settings 关键路径以 testid 定位;文案断言仅存于 login.spec.ts(中文冒烟)
+- [x] 语言切换冒烟用例通过
+- [x] E2E 全绿;抽查验证「改一个非登录文案,测试仍绿」
 
 **S6 文档中文化**
-- [ ] README.md / development.md / deployment.md / deployment-docker-compose.md 中文重写,与 `SPEC.md` 口径一致
-- [ ] 根 README 保留模板继承说明:i18n 脚手架 + 错误码规范的使用方式(差异化价值)
-- [ ] typos(prek)通过
+- [x] README.md / development.md / deployment.md / deployment-docker-compose.md 中文重写,与 `SPEC.md` 口径一致
+- [x] 根 README 保留模板继承说明:i18n 脚手架 + 错误码规范的使用方式(差异化价值)
+- [x] typos(prek)通过
 
 **总体**
-- [ ] 全站中文为主,偶发英文用户可切换且未知错误有英文兜底
-- [ ] 模板继承资产成立:派生项目拷贝即得 i18n 脚手架 + 错误码契约
+- [x] 全站中文为主,偶发英文用户可切换且未知错误有英文兜底
+- [x] 模板继承资产成立:派生项目拷贝即得 i18n 脚手架 + 错误码契约
 
 ## 隐蔽英文源清单(实测盘点,S2/S3 清扫对象)
 

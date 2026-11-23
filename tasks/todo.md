@@ -588,7 +588,7 @@
 - 登录沿 AddUser/Settings 先例以 ref 守卫实际语言变化,仅重验当前错误字段,不 reset 表单;新增双向精确字典断言及密码必填/长度与双字段同显回归。root `head()` 提供 `documentTitle` 兜底,深层 5 路由标题正常覆盖;不修改 SPEC-i18n.md 冻结规范。
 - 二次独立审查对生产修复无 correctness/regression findings;建议加强测试后,登录断言改为目标语言字典精确值,避免只验证「文字变了」。新增语言测试显式隔离 auth storage,登录页用例清除继承 token,标题矩阵先验证登录再登录访问四个受保护路由。
 - 后端套件结束后按既有 Task 14/15 环境约定 `uv run python app/initial_data.py` 恢复开发管理员,再串行 E2E;未改测试隔离或服务配置。
-- Task 18 的「总体四项」与 SPEC 实际「总体两项」不一致,仅在本任务记录据实更正,不改历史 SPEC。最终**技术验收已满足,Checkpoint E 的人工终审未执行,保持未勾选**。
+- Task 18 的「总体四项」与 SPEC 实际「总体两项」不一致,已在本任务与计划记录据实更正。技术验收完成后,**Checkpoint E 于 2026-11-23 经用户人工终审通过**,SPEC 与计划验收状态同步收口。
 
 **文件**:`tasks/todo.md`(验收记录);审计修复 `frontend/index.html`、`frontend/src/i18n.ts`、双字典、`frontend/src/routes/{__root,login}.tsx`、`frontend/tests/{language,login}.spec.ts`
 
@@ -600,4 +600,4 @@
 
 ## ◆ Checkpoint E:完成
 
-- [ ] SPEC-i18n.md Success Criteria 全部达成,人工终审通过
+- [x] SPEC-i18n.md Success Criteria 全部达成,人工终审通过(2026-11-23,用户确认)

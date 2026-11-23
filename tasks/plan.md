@@ -1,7 +1,7 @@
 # 实施计划:简体中文支持(i18n 中英双语)
 
-> 依据:`SPEC-i18n.md`(待人工评审 → 以调用规划技能作为批准信号)|任务明细见 `tasks/todo.md`
-> 状态:**待人工评审**
+> 依据:`SPEC-i18n.md`(已评审通过)|任务明细见 `tasks/todo.md`
+> 状态:**已完成**(18/18 任务与 Checkpoint A–E 均完成,2026-11-23 人工终审通过)
 > 前计划(认证改造)已 100% 完成(原 `tasks/{plan,todo}.md` 77/77 勾选),归档至 `tasks/archive/auth-user-code/`,git 可恢复。
 
 ## 概述
@@ -48,54 +48,54 @@ T1: i18n 骨架 ── T2: 登录页双语(含 setup/spec)── T3: 切换器/�
 ## 任务索引
 
 ### Phase 1:S1 脚手架 + 登录页样板(高风险优先:i18next 集成摩擦在 T1–T3 暴露)
-- [ ] Task 1:i18n 依赖与初始化骨架(i18n.ts + 双字典 + main.tsx 接线)(M)
-- [ ] Task 2:登录页全量双语 + login.spec.ts 中文冒烟 + auth.setup.ts testid 化(M)
-- [ ] Task 3:语言切换器 + `<html lang>`/标题响应 + language.spec.ts 冒烟(M)
+- [x] Task 1:i18n 依赖与初始化骨架(i18n.ts + 双字典 + main.tsx 接线)(M)
+- [x] Task 2:登录页全量双语 + login.spec.ts 中文冒烟 + auth.setup.ts testid 化(M)
+- [x] Task 3:语言切换器 + `<html lang>`/标题响应 + language.spec.ts 冒烟(M)
 
 ### ◆ Checkpoint A(S1 验收)
-- [ ] spec S1 清单逐项核对(双语渲染/持久化/html lang/标题即时更新/一天内跑通)
-- [ ] `bun run lint` + `bun run build` + E2E 全绿;**人工评审后再进入 Phase 2**
+- [x] spec S1 清单逐项核对(双语渲染/持久化/html lang/标题即时更新/一天内跑通)
+- [x] `bun run lint` + `bun run build` + E2E 全绿;**人工评审后再进入 Phase 2**
 
 ### Phase 2:S2 主框架 + Items
-- [ ] Task 4:侧边栏与用户菜单(Sidebar/Main、User、AppSidebar + login.spec logout 定位器)(M)
-- [ ] Task 5:Dashboard 与全局组件(index.tsx、ErrorComponent、NotFound)(S)
-- [ ] Task 6:Items 页与表格(items.tsx、columns、PendingItems + items.spec 定位器)(M)
-- [ ] Task 7:Items 弹窗与操作(Add/Edit/Delete、ItemActionsMenu,含 zod 内联)(M)
+- [x] Task 4:侧边栏与用户菜单(Sidebar/Main、User、AppSidebar + login.spec logout 定位器)(M)
+- [x] Task 5:Dashboard 与全局组件(index.tsx、ErrorComponent、NotFound)(S)
+- [x] Task 6:Items 页与表格(items.tsx、columns、PendingItems + items.spec 定位器)(M)
+- [x] Task 7:Items 弹窗与操作(Add/Edit/Delete、ItemActionsMenu,含 zod 内联)(M)
 
 ### ◆ Checkpoint B(S2 验收)
-- [ ] Dashboard/Items 域零英文残留(品牌词除外)
-- [ ] **keys 统计 ≤400 检查点**(统计 zh-CN.json key 数;超限停下重估并回报)
-- [ ] E2E 全绿
+- [x] Dashboard/Items 域零英文残留(品牌词除外)
+- [x] **keys 统计 ≤400 检查点**(统计 zh-CN.json key 数;超限停下重估并回报)
+- [x] E2E 全绿
 
 ### Phase 3:S3 Admin + Settings + 清扫
-- [ ] Task 8:Admin 页与表格(admin.tsx、columns、PendingUsers + admin.spec 部分)(M)
-- [ ] Task 9:Admin 弹窗与操作(Add/Edit/DeleteUser、UserActionsMenu、ResetPasswordDialog,含 zod 内联)(M)
-- [ ] Task 10:Settings(settings.tsx 三 tab、四个组件 + user-settings.spec)(M,6 文件:测试文件为伴随)
-- [ ] Task 11:隐蔽英文源清扫(useCustomToast、utils.ts 兜底、shadcn aria;处置清单)(S)
-- [ ] Task 12:zod 字面量审计(grep 门禁:src 内 `message: "` 零残留)(S)
+- [x] Task 8:Admin 页与表格(admin.tsx、columns、PendingUsers + admin.spec 部分)(M)
+- [x] Task 9:Admin 弹窗与操作(Add/Edit/DeleteUser、UserActionsMenu、ResetPasswordDialog,含 zod 内联)(M)
+- [x] Task 10:Settings(settings.tsx 三 tab、四个组件 + user-settings.spec)(M,6 文件:测试文件为伴随)
+- [x] Task 11:隐蔽英文源清扫(useCustomToast、utils.ts 兜底、shadcn aria;处置清单)(S)
+- [x] Task 12:zod 字面量审计(grep 门禁:src 内 `message: "` 零残留)(S)
 
 ### ◆ Checkpoint C(S3 验收)
-- [ ] Admin/Settings 零英文;aria 处置清单记录
-- [ ] **双字典 key 集合 diff = 0**(en 缺口清零;en 全量决策复核点)
-- [ ] E2E 全绿
+- [x] Admin/Settings 零英文;aria 处置清单记录
+- [x] **双字典 key 集合 diff = 0**(en 缺口清零;en 全量决策复核点)
+- [x] E2E 全绿
 
 ### Phase 4:S4 后端错误码契约
-- [ ] Task 13:login 单点试点(3 处 + test_login + utils.ts 回退链 + client 再生成)(M)
-- [ ] Task 14:推广 users + deps(15 处 + 对应测试 + 字典 12 codes)(M)
-- [ ] Task 15:推广 items(6 处 + test_items)+ 契约表 17 code 全量核对(S)
+- [x] Task 13:login 单点试点(3 处 + test_login + utils.ts 回退链 + client 再生成)(M)
+- [x] Task 14:推广 users + deps(15 处 + 对应测试 + 字典 12 codes)(M)
+- [x] Task 15:推广 items(6 处 + test_items)+ 契约表 17 code 全量核对(S)
 
 ### ◆ Checkpoint D(S4 验收)
-- [ ] 契约表逐项核对(24 处 / 17 code,状态码不变);`uv run pytest` + E2E 全绿
-- [ ] `sh scripts/generate-client.sh` 后 `frontend/src/client/` 零手改 diff
+- [x] 契约表逐项核对(24 处 / 17 code,状态码不变);`uv run pytest` + E2E 全绿
+- [x] `sh scripts/generate-client.sh` 后 `frontend/src/client/` 零手改 diff
 
 ### Phase 5:S5 + S6 收口
-- [ ] Task 16:E2E 收口审计(英文文案断言清零、抽查「改文案不碎测试」演练)(S)
-- [ ] Task 17:文档中文化(README / development / deployment ×2 + 继承说明)(S)
-- [ ] Task 18:全量验证与 SPEC-i18n.md 总体验收逐条核对(XS)
+- [x] Task 16:E2E 收口审计(英文文案断言清零、抽查「改文案不碎测试」演练)(S)
+- [x] Task 17:文档中文化(README / development / deployment ×2 + 继承说明)(S)
+- [x] Task 18:全量验证与 SPEC-i18n.md 总体验收逐条核对(XS)
 
 ### ◆ Checkpoint E(完成)
-- [ ] SPEC-i18n.md「Success Criteria」总体四项全绿
-- [ ] 人工终审
+- [x] SPEC-i18n.md「Success Criteria」S1–S6 与总体两项全绿
+- [x] 人工终审(2026-11-23,用户确认)
 
 ## 风险与缓解
 
