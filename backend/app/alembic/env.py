@@ -31,6 +31,12 @@ target_metadata = SQLModel.metadata
 
 
 def get_url():
+    # Isolation override used by tests/migrations: honoured only when the custom
+    # option is explicitly set on the Alembic Config, otherwise the global
+    # Settings URL applies exactly as before.
+    custom_url = config.get_main_option("item_removal_database_url")
+    if custom_url:
+        return custom_url
     return str(settings.DATABASE_URL)
 
 
