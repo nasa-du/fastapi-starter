@@ -260,7 +260,7 @@
 
 - [x] 隔离库升级/降级/再升级全部通过;User 数据不变;downgrade 仅空表
 - [x] 历史迁移未修改;测试库销毁;开发/生产库零操作(执行记录核对)
-- [ ] 人工确认后进入 Phase 4
+- [x] 人工确认后进入 Phase 4
 
 **执行记录**(2026-11-24,代码状态 = Task 7 提交 `323d5e4`):
 - 证据即 Task 7 执行记录:pytest 四步往返 4 passed;CLI 三步往返 + 新 head 库 `alembic check` 零漂移;`git status` 确认历史迁移零改动;隔离容器已销毁;开发库全程旧 head、未执行任何删表(中途 user_code 事故已在 Task 7 记录如实还原,修复后运行零接触)
@@ -273,12 +273,25 @@
 **描述**:确认 Task 5 后管理员 `DELETE /users/{user_id}` 全链路正常(删除他人成功、404、删除自己 403 `USERS_SUPERUSER_DELETE_SELF`、普通用户 403);普通用户登录/资料/改密不受影响。仅在现有断言不足时补最小回归(如管理员删除用户后断言无 SQL 错误且用户消失)。
 
 **验收标准**:
-- [ ] `cd backend && uv run pytest` 全量绿,含 `test_users.py`/`test_login.py`/`test_private.py`/`test_models.py`
-- [ ] 如补充断言,不改既有断言、不降覆盖率
+- [x] `cd backend && uv run pytest` 全量绿,含 `test_users.py`/`test_login.py`/`test_private.py`/`test_models.py`
+- [x] 如补充断言,不改既有断言、不降覆盖率(结论:现有断言已充分,零补充,见执行记录)
 
 **验证**:
-- [ ] 全量 pytest 绿;新增断言(如有)先 RED 后 GREEN
-- [ ] `uv run bash scripts/test.sh` 的 coverage 流程暂不执行,留 Task 13
+- [x] 全量 pytest 绿;新增断言(如有)先 RED 后 GREEN(本任务无新增断言,纯回归)
+- [x] `uv run bash scripts/test.sh` 的 coverage 流程暂不执行,留 Task 13
+
+**执行记录**(2026-11-24,代码状态 = Checkpoint C 后 `36adfd4`,零源码改动):
+- 断言充分性核查(任务描述列举的全部路径,逐一比对 `test_users.py` 现有断言):
+  - 管理员删除他人成功:`test_delete_user_super_user` 断言 200 + `User deleted successfully` + 删除后 `db.exec(select(User).where(User.id == user_id)).first() is None`(用户消失,Task 5 移除显式 Item 清理后该断言即「无 SQL 错误且用户消失」的直接证明)
+  - 404:`test_delete_user_not_found`;删除自己 403 `USERS_SUPERUSER_DELETE_SELF`:`test_delete_user_current_super_user_error`(断言完整 detail code+message);普通用户 403:`test_delete_user_without_privileges`(断言 `AUTH_FORBIDDEN` detail)
+  - 普通用户登录/资料/改密:`test_login.py` 15 用例(含 user_code/full-name 登录、argon2 升级、错误凭证统一消息)+ `test_update_user_me`/`test_update_password_me*`/`test_delete_user_me*` 全绿
+  - 结论:现有断言完整覆盖任务范围,**不补充任何断言**(文件清单 0 文件,任务允许的 0 下限)
+- 定向回归:`uv run pytest tests/api/routes/test_users.py tests/api/routes/test_login.py tests/api/routes/test_private.py tests/test_models.py -v` — **48 passed**(test_users 29、test_login 15、test_private 1、test_models 2;含 UUID v7 断言)
+- 全量:`uv run pytest` — **70 passed, 4 skipped**(5.40s;4 skip 为 Task 7 迁移测试未配置 `ITEM_REMOVAL_TEST_DATABASE_URL` 的预期跳过);既有 `test_users.py:207-208` 的 `item` 命中经核对为分页数据循环变量,非 Item 业务
+- 实现复核:`users.py` `delete_user` 现为 `session.get` → 404/自删 403 检查 → `session.delete(user); session.commit()`,无 Item 引用,依赖 DB `ON DELETE CASCADE`(结构由历史迁移保证)
+- 覆盖率流程按约定未执行,留 Task 13;`uv run bash scripts/test.sh` 未运行(会销毁数据卷,Task 13 单独确认)
+- 开发库核查:pytest 前后均连 `DATABASE_URL=postgresql://postgres:***@localhost:5432/app`(开发库);pytest 清空 User 表为仓库已知行为,已按既有约定 `uv run python app/initial_data.py` 重建管理员(`admin`/superuser 实测确认);alembic_version 保持 `7125f2112706`(旧 head,零迁移操作)
+- 提交:仅本文件记录,无源码改动
 
 **依赖**:Task 7
 
