@@ -140,14 +140,24 @@
 **描述**:`models.py` 删除 `ItemBase/ItemCreate/ItemUpdate/Item/ItemPublic/ItemsPublic` 与 `User.items` 关系;`crud.py` 删除 `create_item` 与 Item 导入;`users.py` 的 `delete_user` 移除显式 Item 清理语句与 Item 导入(管理员删除用户本身保留,依赖数据库 CASCADE 行为由迁移 downgrade 结构保证);`tests/conftest.py` 清理 fixture 去掉 Item 删除;`tests/test_models.py` 保留 User UUID v7 断言、删除 Item 相关构造与断言。
 
 **验收标准**:
-- [ ] `backend/app` 中 `Item`、`ItemCreate`、`ItemUpdate`、`ItemPublic`、`ItemsPublic`、`create_item`、`items` 关系零引用
-- [ ] `test_models.py` 仍断言新建 User id 为 UUID v7
-- [ ] `Message`、`User.created_at`、UUID v7 等共享能力不受影响
+- [x] `backend/app` 中 `Item`、`ItemCreate`、`ItemUpdate`、`ItemPublic`、`ItemsPublic`、`create_item`、`items` 关系零引用
+- [x] `test_models.py` 仍断言新建 User id 为 UUID v7
+- [x] `Message`、`User.created_at`、UUID v7 等共享能力不受影响
 
 **验证**:
-- [ ] 引用扫描:`grep -rn "\bItem\b\|create_item" backend/app backend/tests --include="*.py"` 仅剩历史迁移与历史文档命中
-- [ ] `cd backend && uv run pytest` 全绿(含管理员删除用户、登录、密码重置)
-- [ ] `uv run mypy app && uv run ty check app && uv run ruff check app && uv run ruff format app --check` 全绿
+- [x] 引用扫描:`grep -rn "\bItem\b\|create_item" backend/app backend/tests --include="*.py"` 仅剩历史迁移与历史文档命中
+- [x] `cd backend && uv run pytest` 全绿(含管理员删除用户、登录、密码重置)
+- [x] `uv run mypy app && uv run ty check app && uv run ruff check app && uv run ruff format app --check` 全绿
+
+**执行记录**(2026-11-24):
+- 纯删除任务,按约定以引用扫描 + 测试/构建为 RED 证据:删除前 `grep -rn "\bItem\b\|create_item" backend/app backend/tests --include="*.py"` 命中恰好为 5 个任务文件(models.py 六个类 + `User.items` 关系、crud.py `create_item` 与导入、users.py Item 导入与显式清理语句、conftest.py fixture、test_models.py)加历史迁移与 `tests/utils/item.py`(Task 6 文件);删除前基线 `uv run pytest` **70 passed**(Task 4 后绿基线)
+- GREEN:五个文件按任务删除(净 -63/+6 行);连带清理因删除而悬空的导入(`models.py` 的 `Relationship`、`crud.py` 的 `uuid`、`users.py` 的 sqlmodel `delete`),均由 ruff/tsc 等价检查确认无未用导入
+- `delete_user` 移除显式 Item 清理后依赖数据库 `ON DELETE CASCADE`(迁移 `1a31ce608336` 建立的 `item_owner_id_fkey` 结构保证);管理员删除用户全链路由既有 `test_users.py` 六个 delete 用例覆盖,全量 **70 passed**(5.4s)
+- `test_models.py` 改写为 `test_new_user_ids_are_uuid7`(单文件定向 2 passed);`Message`/`Token`/`User.created_at`/UUID v7 等共享能力经全量测试与 mypy/ty 确认不受影响
+- 删除后引用扫描:`backend/app` 仅剩 2 个历史迁移文件中的 `Item` 注释/文档串(`fe56fa70289e`、`9c0a54914c78`,按约定保留);`backend/tests` 仅剩 `tests/utils/item.py`(Task 6 删除对象)与 `test_items_removed.py:29` 契约测试自身 docstring(历史文档性命中,允许)
+- `uv run mypy app`(16 files)+ `uv run ty check app` + `uv run ruff check app` + `uv run ruff format app --check` 全绿
+- E2E 环境说明:数据库容器 `docker compose up -d db` 启动并 healthy;本任务验证清单未列 E2E,未启动后端/前端服务
+- 提交:`5ddd60f`(纯删除 commit)
 
 **依赖**:Task 4
 
