@@ -200,9 +200,20 @@
 
 ## ◆ Checkpoint B:应用不再读写 Item
 
-- [ ] 后端完整测试、前端 lint/build 通过
-- [ ] OpenAPI 与生成客户端无 Item API/schema;路由树无 `/items`
+- [x] 后端完整测试、前端 lint/build 通过
+- [x] OpenAPI 与生成客户端无 Item API/schema;路由树无 `/items`
 - [ ] 当前开发库未执行删表;人工确认后进入 Task 7
+
+**执行记录**(2026-11-24,代码状态 = Task 6 提交 `637f064`,零未提交改动):
+- 静态证据(Task 6 已验,代码未变不重复跑):`uv run pytest` 70 passed;`bun run lint`(67 files)绿;`bun run --filter frontend build` 绿;`grep -rni "items" frontend/src/client frontend/src/routeTree.gen.ts` 零命中
+- 开发库核查(容器内 psql):`\dt` 显示 `item` 表仍存在(未删表);`alembic_version` = `7125f2112706` = repo head;`user` 表 0 行(pytest 清库),已 `uv run python app/initial_data.py` 重建管理员后再拉服务
+- 运行时实测(后端 uvicorn :8000 + 前端 vite :5173 后台运行,沿用显式 env 约定):
+  - live `/api/v1/openapi.json` 路径列表仅 8 条(login×2、private×1、users×5),无任何 items 路径
+  - `GET`/`POST /api/v1/items/` 与 `GET /api/v1/items/{uuid}`(JSON 客户端)均返回 FastAPI 默认 `404 {"detail":"Not Found"}`,非旧 CRUD 响应
+  - 浏览器导航 `GET /items`(Accept: text/html)仍走 SPA fallback 返回 200 HTML(前端路由层 Not Found 渲染,Task 9 将以 `data-testid="not-found"` 断言)
+  - 共享能力实测:管理员登录 token 获取成功,`GET /api/v1/users/me` 返回完整 UserPublic(admin/超级用户/UUID v7)
+  - 定向 E2E:`PLAYWRIGHT_BASE_URL=http://localhost:5173 VITE_API_URL=http://localhost:8000 bunx playwright test tests/login.spec.ts tests/language.spec.ts` — **28 passed**(29.2s)
+- 人工确认:环境保持运行(前端 http://localhost:5173 / 后端 http://localhost:8000/docs),待用户核对后勾选第三项并进入 Task 7
 
 ---
 
