@@ -202,7 +202,7 @@
 
 - [x] 后端完整测试、前端 lint/build 通过
 - [x] OpenAPI 与生成客户端无 Item API/schema;路由树无 `/items`
-- [ ] 当前开发库未执行删表;人工确认后进入 Task 7
+- [x] 当前开发库未执行删表;人工确认后进入 Task 7
 
 **执行记录**(2026-11-24,代码状态 = Task 6 提交 `637f064`,零未提交改动):
 - 静态证据(Task 6 已验,代码未变不重复跑):`uv run pytest` 70 passed;`bun run lint`(67 files)绿;`bun run --filter frontend build` 绿;`grep -rni "items" frontend/src/client frontend/src/routeTree.gen.ts` 零命中
@@ -222,16 +222,31 @@
 **描述**:新增迁移 `down_revision='7125f2112706'`:upgrade 仅 `op.drop_table("item")`;downgrade 按删表前最终结构重建空表(UUID 主键、非空 `owner_id` 外键 `ON DELETE CASCADE` → `user.id`、`title VARCHAR(255)` 非空、`description VARCHAR(255)` 可空、带时区 `created_at` 可空),注释明确不恢复数据。`alembic/env.py` 支持自定义选项 `item_removal_database_url`(仅存在时采用,否则维持全局 Settings)。新增 `backend/tests/migrations/test_drop_item_migration.py`:fixture 要求 `ITEM_REMOVAL_TEST_DATABASE_URL` 指向专用实例的管理库,随机库名建库/销毁,独立 `Config` 读 `backend/alembic.ini` 并注入 URL,连接前断言目标 host/database 非当前 `DATABASE_URL`;未配置该变量时 `pytest.skip`。
 
 **验收标准**:
-- [ ] 迁移文件存在且 upgrade/downgrade 均实现;`uv run alembic heads` 单一 head
-- [ ] 隔离库四步通过:空库 `upgrade head`(item 不存在)→ 旧 head 库含 User+Item 数据升级(item 表与数据消失,User 表行数/字段/主键不变)→ `downgrade -1`(空表结构逐列/约束符合)→ 再 `upgrade head`(item 再消失,User 数据保留)
-- [ ] `uv run alembic check` 无 Item 相关漂移;历史迁移文件零改动
-- [ ] 测试结束隔离库已销毁;当前开发库无任何变更
+- [x] 迁移文件存在且 upgrade/downgrade 均实现;`uv run alembic heads` 单一 head
+- [x] 隔离库四步通过:空库 `upgrade head`(item 不存在)→ 旧 head 库含 User+Item 数据升级(item 表与数据消失,User 表行数/字段/主键不变)→ `downgrade -1`(空表结构逐列/约束符合)→ 再 `upgrade head`(item 再消失,User 数据保留)
+- [x] `uv run alembic check` 无 Item 相关漂移;历史迁移文件零改动
+- [x] 测试结束隔离库已销毁;当前开发库无任何变更
 
 **验证**:
-- [ ] `ITEM_REMOVAL_TEST_DATABASE_URL=<专用测试实例> cd backend && uv run pytest tests/migrations -v` 全绿,日志记录实际连接目标与随机库名
-- [ ] `uv run alembic check` 输出记录(区分既有非 Item 差异)
-- [ ] `git diff backend/app/alembic/versions/` 仅新增文件
-- [ ] 未配置变量时:`uv run pytest tests/migrations` 全部 skip(证明不会误连)
+- [x] `ITEM_REMOVAL_TEST_DATABASE_URL=<专用测试实例> cd backend && uv run pytest tests/migrations -v` 全绿,日志记录实际连接目标与随机库名
+- [x] `uv run alembic check` 输出记录(区分既有非 Item 差异)
+- [x] `git diff backend/app/alembic/versions/` 仅新增文件
+- [x] 未配置变量时:`uv run pytest tests/migrations` 全部 skip(证明不会误连)
+
+**执行记录**(2026-11-24):
+- 隔离实例:专用一次性容器 `rs-template-mig-test-pg`(`postgres:18`,`127.0.0.1:5434→5432`,无数据卷,容器级销毁),与开发库(5432/app)、无关实例(5433)完全隔离;`ITEM_REMOVAL_TEST_DATABASE_URL=postgresql://postgres:…@127.0.0.1:5434/postgres`
+- RED 先行:提交 `f9fe0db`(tests/migrations/ 往返测试 + conftest + env.py 隔离分支)。RED 运行 **4 failed** 且失败原因全部正确:upgrade head 后 item 仍在(迁移缺失)、downgrade -1 从旧 head 掉到 `fe56fa70289e` 而非停在旧 head、降级后 user 行快照不符(退回带 email 旧结构);全部引擎 URL 为隔离库随机名
+- RED 环境事故(如实记录):首次 RED 运行时 env.py 尚未加入隔离分支,`command.downgrade/-upgrade` 经全局 `settings.DATABASE_URL` 打到开发库,开发库被降级至 `fe56fa70289e` 后又升级回来——净模式零变化(版本回到 head,7 列无 email),但 user_code 被迁移回填逻辑重新生成,管理员原码 `admin` 丢失;已用 `UPDATE "user" SET user_code='admin' WHERE is_superuser`(与 `.env` 的 FIRST_SUPERUSER_CODE 一致)还原,另一 E2E 临时用户码随全量清库惯例本即弃用。教训已制度化:env.py 隔离分支与测试同批提交;每个测试在任何破坏性 downgrade 前先断言隔离库的 `alembic_version`(`_assert_isolation_pinned`),误路由时在断言处失败且开发库只经历 no-op upgrade;修复后 RED 复跑与后续全部运行开发库零接触(逐次核对 version/user_code/行数)
+- 测试实现要点:`SQLAlchemy 2.0.51` 的 `str(URL)` 渲染**掩码密码**,注入 Alembic 的连接串必须用 `render_as_string(hide_password=False)`(admin 引擎用 URL 对象故未受影响);psycopg 3 需显式 `set(drivername="postgresql+psycopg")`;`tests/migrations/conftest.py` 影子化 session 级 autouse `db` fixture,保证该包绝不连开发库(含 teardown 清库);连接目标与随机库名经 `logger.info` 记录(`-o log_cli=true --log-cli-level=INFO` 可见)
+- GREEN:提交 `323d5e4`(迁移 `d464f5951cc0_drop_item_table.py`,down_revision=`7125f2112706`;upgrade 仅 `op.drop_table('item')`;downgrade 按开发库实测的删表前最终结构重建空表:列序 description/title/id/owner_id/created_at、varchar(255)×2、UUID pk `item_pkey`、FK `item_owner_id_fkey`→user.id `ON DELETE CASCADE`、timestamptz 可空、无默认值;注释明确只恢复结构、数据不可恢复)
+- 隔离库四步(pytest,4 个独立随机库各自往返):空库 upgrade head(item 不存在,版本=head)→ 旧 head+User2/Item3 数据升级(item 表与数据消失,user 列/类型/可空性/主键/行数据逐一快照相等)→ downgrade -1(空表逐列 data_type/长度/可空性 + PK + FK ondelete=CASCADE 符合,行数 0)→ downgrade 后再 upgrade head(item 再消失,user 数据保留)。最终 **4 passed**(1.2s)
+- CLI 三步往返(SPEC Commands 原样,隔离实例 `cli_roundtrip` 库):`alembic upgrade head`(日志含 `7125f2112706 -> d464f5951cc0, drop item table`,item=0)→ `downgrade -1`(item=1)→ `upgrade head`(item=0);`alembic check` 于新 head 库输出 **`No new upgrade operations detected.`**(零漂移,无任何非 Item 差异),库已销毁
+- 开发库上的 `alembic check` 输出 `FAILED: Target database is not up to date.`——符合设计:开发库按约定停留在旧 head `7125f2112706`,存在待执行迁移时 check 拒绝比较,不产生任何 Item schema 漂移评估;新 head 库上的 check 即权威结论
+- `uv run alembic heads` 单一 head `d464f5951cc0`;`git status app/alembic/versions/` 仅新增文件,既有 6 个历史迁移零改动
+- 未配置变量时 `uv run pytest tests/migrations -v` — **4 skipped**(0.09s),普通 pytest 不会误连;全量 `uv run pytest` — **70 passed, 4 skipped**(新增 4 skip 即本模块)
+- `uv run ruff check app tests/migrations`、`ruff format app tests/migrations --check`、`uv run mypy app`(16 files)、`uv run ty check app` 全绿(中途修复 ruff T201:print→logging;长行 format)
+- 开发库终态:alembic_version=`7125f2112706`(旧 head,未执行删表),item 0 行;全量 pytest 后按既有约定 `uv run python app/initial_data.py` 重建管理员(`admin`/superuser;全量 pytest 清空 User 表为仓库已知行为,非本任务迁移所致);隔离容器 `docker rm -f` 销毁,`docker ps` 仅剩开发库与无关实例
+- 提交:`f9fe0db`(RED 测试基础设施)、`323d5e4`(GREEN 迁移)
 
 **依赖**:Task 6
 
@@ -243,9 +258,13 @@
 
 ## ◆ Checkpoint C:迁移安全验证
 
-- [ ] 隔离库升级/降级/再升级全部通过;User 数据不变;downgrade 仅空表
-- [ ] 历史迁移未修改;测试库销毁;开发/生产库零操作(执行记录核对)
+- [x] 隔离库升级/降级/再升级全部通过;User 数据不变;downgrade 仅空表
+- [x] 历史迁移未修改;测试库销毁;开发/生产库零操作(执行记录核对)
 - [ ] 人工确认后进入 Phase 4
+
+**执行记录**(2026-11-24,代码状态 = Task 7 提交 `323d5e4`):
+- 证据即 Task 7 执行记录:pytest 四步往返 4 passed;CLI 三步往返 + 新 head 库 `alembic check` 零漂移;`git status` 确认历史迁移零改动;隔离容器已销毁;开发库全程旧 head、未执行任何删表(中途 user_code 事故已在 Task 7 记录如实还原,修复后运行零接触)
+- 待人工核对后勾选第三项进入 Phase 4(Task 8)
 
 ---
 
