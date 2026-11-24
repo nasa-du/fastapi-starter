@@ -172,14 +172,23 @@
 **描述**:删除 `backend/tests/utils/item.py`(Task 4 后已无消费者);运行 `sh scripts/generate-client.sh` 再生成 OpenAPI 与 `frontend/src/client/`;前端构建刷新 `routeTree.gen.ts`。生成后核对无 Item service/DTO,且二次运行零 diff(幂等)。
 
 **验收标准**:
-- [ ] `backend/tests/utils/item.py` 删除;`backend/tests` 无 Item 引用
-- [ ] `frontend/src/client/` 无 `ItemsService`、`ItemPublic`、`ItemCreate`、`ItemUpdate`、`items*` 类型与路径
-- [ ] 生成与路由树更新全部由工具完成,`git diff` 无手改痕迹
+- [x] `backend/tests/utils/item.py` 删除;`backend/tests` 无 Item 引用
+- [x] `frontend/src/client/` 无 `ItemsService`、`ItemPublic`、`ItemCreate`、`ItemUpdate`、`items*` 类型与路径
+- [x] 生成与路由树更新全部由工具完成,`git diff` 无手改痕迹
 
 **验证**:
-- [ ] `sh scripts/generate-client.sh` 成功;再跑一次零 diff
-- [ ] `grep -rn "items" frontend/src/client frontend/src/routeTree.gen.ts` 零命中(大小写不敏感)
-- [ ] `cd backend && uv run pytest` + `bun run lint` + `bun run --filter frontend build` 全绿
+- [x] `sh scripts/generate-client.sh` 成功;再跑一次零 diff
+- [x] `grep -rni "items" frontend/src/client frontend/src/routeTree.gen.ts` 零命中(exit 1)
+- [x] `cd backend && uv run pytest`(70 passed)+ `bun run lint`(67 files 绿)+ `bun run --filter frontend build` 全绿
+
+**执行记录**(2026-11-24):
+- RED 证据(删除前状态):`tests/utils/item.py` 悬空(导入 Task 5 已删的 `Item`/`ItemCreate`/`create_item`,因无消费者未被收集);生成物过期——`frontend/openapi.json` 40 处、`sdk.gen.ts` 27 处、`types.gen.ts` 45 处、`index.ts` 2 处 item 命中(Task 4 删路由前生成);消费者扫描 `utils.item`/`create_random_item` 于 `backend/tests`/`backend/app` 零命中
+- GREEN:`git rm backend/tests/utils/item.py`;`sh scripts/generate-client.sh` 重生成 `frontend/src/client/`(index.ts/sdk.gen.ts/types.gen.ts 净 -300/+3 行,`ItemsService`/`Item*`/`items*` 导出全部移除,biome 格式化为脚本自带 lint 步骤);`routeTree.gen.ts` 无变化(Task 1 构建后已无 `/items`),构建产物无 items chunk
+- 幂等性:生成脚本连续三次运行,第二、三次后 `md5sum -c` 四个生成文件哈希全部一致(biome "Fixed N files" 为格式化计数,内容稳定)
+- 后端 `uv run pytest` **70 passed**(6.2s,删除 item.py 后运行;后续仅前端生成物变化,后端代码未动);`bun run lint`(67 files)绿;`bun run --filter frontend build` 绿(1.77s)
+- 剩余命中归类:`backend/tests` 仅剩 `test_users.py` 通用循环变量 `item` 与 `test_items_removed.py` 契约测试自身(允许);再生成后 `frontend/openapi.json` 仅 3 处大小写不敏感命中,均为 JSON Schema 通用 `"items"` 数组关键字(`ValidationError`/`UserPublic`/anyOf 分页参数),非 Item 业务
+- 范围外观察(未动):`frontend/src/client/client/` 嵌套目录为旧生成器配置遗留,git 跟踪且 0 处 item 命中,留待 Task 12 审计归类
+- 提交:`3f15bb9`
 
 **依赖**:Task 5
 
