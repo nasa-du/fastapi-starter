@@ -21,6 +21,7 @@ Isolation contract (tasks/plan.md, Architecture Decisions 3 and 4):
   plain ``uv run pytest`` can never reach an isolation instance by accident.
 """
 
+import logging
 import os
 import secrets
 from collections.abc import Generator
@@ -38,6 +39,8 @@ from app.core.config import settings
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
+
+logger = logging.getLogger(__name__)
 
 ADMIN_URL = os.getenv("ITEM_REMOVAL_TEST_DATABASE_URL", "")
 OLD_HEAD = "7125f2112706"  # last revision where the item table still exists
@@ -89,7 +92,12 @@ def isolated_config() -> Generator[tuple[Config, str]]:
 
     target_url = admin_url.set(database=db_name).render_as_string(hide_password=False)
     config.set_main_option("item_removal_database_url", target_url)
-    print(f"[item-removal] isolation target: {admin_url.host}:{admin_url.port}/{db_name}")
+    logger.info(
+        "item-removal isolation target: %s:%s/%s",
+        admin_url.host,
+        admin_url.port,
+        db_name,
+    )
 
     try:
         yield config, target_url
@@ -142,7 +150,11 @@ def _table_names(engine: Engine) -> set[str]:
 
 def _user_column_snapshot(engine: Engine) -> list[dict[str, object]]:
     return [
-        {"name": column["name"], "type": str(column["type"]), "nullable": column["nullable"]}
+        {
+            "name": column["name"],
+            "type": str(column["type"]),
+            "nullable": column["nullable"],
+        }
         for column in inspect(engine).get_columns("user")
     ]
 
@@ -195,7 +207,9 @@ def _seed_user_and_item_data(engine: Engine) -> None:
         )
 
 
-def test_upgrade_head_on_empty_database_drops_item(isolated_config: tuple[Config, str]) -> None:
+def test_upgrade_head_on_empty_database_drops_item(
+    isolated_config: tuple[Config, str],
+) -> None:
     config, url = isolated_config
     head = _single_head(config)
 
@@ -223,7 +237,9 @@ def test_upgrade_from_old_head_with_data_drops_item_and_keeps_users(
         assert item_rows == 3
         assert user_rows == 2
         columns_before = _user_column_snapshot(engine)
-        primary_key_before = inspect(engine).get_pk_constraint("user")["constrained_columns"]
+        primary_key_before = inspect(engine).get_pk_constraint("user")[
+            "constrained_columns"
+        ]
         rows_before = _user_rows(engine)
 
     command.upgrade(config, "head")
@@ -259,7 +275,11 @@ def test_downgrade_recreates_empty_item_table_with_previous_structure(
         assert columns == {"id", "title", "description", "owner_id", "created_at"}
         assert _pg_column(engine, "item", "id") == ("uuid", None, "NO")
         assert _pg_column(engine, "item", "title") == ("character varying", 255, "NO")
-        assert _pg_column(engine, "item", "description") == ("character varying", 255, "YES")
+        assert _pg_column(engine, "item", "description") == (
+            "character varying",
+            255,
+            "YES",
+        )
         assert _pg_column(engine, "item", "owner_id") == ("uuid", None, "NO")
         assert _pg_column(engine, "item", "created_at") == (
             "timestamp with time zone",
@@ -282,13 +302,17 @@ def test_downgrade_then_reupgrade_drops_item_again_and_preserves_users(
     isolated_config: tuple[Config, str],
 ) -> None:
     config, url = isolated_config
-    command.upgrade(config, "head")
-    _assert_isolation_pinned(url, _single_head(config))
+    head = _single_head(config)
+    command.upgrade(config, OLD_HEAD)
+    _assert_isolation_pinned(url, OLD_HEAD)
 
     with _engine(url) as engine:
         _seed_user_and_item_data(engine)
         rows_before = _user_rows(engine)
         assert len(rows_before) == 2
+
+    command.upgrade(config, "head")
+    _assert_isolation_pinned(url, head)
 
     command.downgrade(config, "-1")
 
