@@ -6,7 +6,7 @@ import { logInUser, logOutUser } from "./utils/user"
 
 test.use({ locale: "zh-CN" })
 
-const tabs = ["my-profile", "password", "danger-zone"]
+const tabs = ["my-profile", "password"]
 
 async function switchToChinese(page: Parameters<typeof logInUser>[0]) {
   await page.getByTestId("language-button").click()
@@ -54,6 +54,41 @@ test("All tabs are visible", async ({ page }) => {
   for (const tab of tabs) {
     await expect(page.getByTestId(`settings-tab-${tab}`)).toBeVisible()
   }
+})
+
+test.describe("Self-service account deletion is removed", () => {
+  async function expectNoSelfDeletionEntry(
+    page: Parameters<typeof logInUser>[0],
+  ) {
+    await expect(page.getByRole("tablist").getByRole("tab")).toHaveCount(2)
+    for (const tab of tabs) {
+      await expect(page.getByTestId(`settings-tab-${tab}`)).toBeVisible()
+    }
+    await expect(page.getByTestId("settings-tab-danger-zone")).toHaveCount(0)
+    await expect(page.getByTestId("delete-account")).toHaveCount(0)
+    await expect(page.getByTestId("confirm-delete-account")).toHaveCount(0)
+    await expect(page.getByTestId("account-deleted-toast")).toHaveCount(0)
+  }
+
+  test("Admin settings page has no delete-account entry", async ({ page }) => {
+    await page.goto("/settings")
+    await expectNoSelfDeletionEntry(page)
+  })
+
+  test.describe("as regular user", () => {
+    test.use({ storageState: { cookies: [], origins: [] } })
+
+    test("Regular user settings page has no delete-account entry", async ({
+      page,
+    }) => {
+      const userCode = randomUserCode()
+      const password = randomPassword()
+      await createUser({ user_code: userCode, password })
+      await logInUser(page, userCode, password)
+      await page.goto("/settings")
+      await expectNoSelfDeletionEntry(page)
+    })
+  })
 })
 
 test.describe("Edit user profile", () => {
