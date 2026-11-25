@@ -252,15 +252,20 @@
 **描述**:新增 `frontend/tests/account-preservation.spec.ts`(或并入 user-settings.spec.ts,视断言规模):受控测试用户(`createUser`)登录 → 设置页确认资料/改密 tab 正常 → `logOutUser` 登出回到 `/login` → 监听确认全程无 `DELETE **/api/v1/users/me` 请求 → 用原凭证重新登录成功(证明账号记录未被删除)。资料、改密、语言切换由既有 user-settings 用例覆盖,本任务不重复,只补「登出 ≠ 注销」的账号保留证明。RED 不可行(功能移除后即 GREEN),按 item-removal Task 9 先例直接 GREEN 并注明。
 
 **验收标准**:
-- [ ] 新测试证明:登出后回到登录页、无 DELETE me 请求、原凭证可重新登录
-- [ ] 既有 user-settings 资料/改密/语言用例继续通过(全量回归确认)
+- [x] 新测试证明:登出后回到登录页、无 DELETE me 请求、原凭证可重新登录 —— commit `fed989d`,`account-preservation.spec.ts` 单用例覆盖全部环节
+- [x] 既有 user-settings 资料/改密/语言用例继续通过(全量回归确认)—— 全量 **71 passed (45.5s)**,既有用例零删减零跳过
 
 **验证**:
-- [ ] 定向:`bunx playwright test tests/account-preservation.spec.ts`(或并入后的 user-settings.spec.ts)全绿
-- [ ] 全量:`PLAYWRIGHT_BASE_URL=... VITE_API_URL=... bun run test`(frontend/ 内)全绿,记录通过数,既有用例零删减
+- [x] 定向:`bunx playwright test tests/account-preservation.spec.ts` 全绿 —— **2 passed (5.3s)**(auth setup + 用例)
+- [x] 全量:`PLAYWRIGHT_BASE_URL=http://localhost:5173 VITE_API_URL=http://localhost:8000 bun run test`(frontend/ 内)全绿 —— **71 passed (45.5s)**,零删减
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25):
+
+- 文件选择:断言规模小(单用例),按任务默认新建 `account-preservation.spec.ts`,不并入 `user-settings.spec.ts`。
+- 用例流程(与任务描述一致):`createUser` 受控用户 → `logInUser`(user_code)→ `/settings` 确认 profile/password 双 tab 可见(资料/改密/语言的深行为由既有 user-settings 用例覆盖,本任务不重复)→ `logOutUser` 回到 `/login` → 请求监听全程无 `DELETE **/api/v1/users/me`(正则锚定 `/api/v1/users/me$`,排除 `/me/password` 等同前缀路径)→ 原凭证重新 `logInUser` 成功(账号记录未被删除的直接证明)。
+- RED 不可行:断言对象为「功能移除后的保留行为 + 零请求」,无旧契约可复现失败;按 item-removal Task 9 先例直接 GREEN 并注明。
+- 环境:db healthy + backend:8000 + frontend:5173;`frontend/` 内显式传 `PLAYWRIGHT_BASE_URL`/`VITE_API_URL`(沿用归档踩坑记录);lint 67 files exit 0。
+- 提交序列:`fed989d`(test:账号保留证明)→ 本记录独立 docs 提交。
 
 **依赖**:Task 5(可与 Task 6 并行,默认串行)
 
@@ -277,7 +282,7 @@
 - [ ] 全量 Playwright 通过,未跳过或削弱管理员测试
 
 **执行记录**:
-- (待实施)
+- (2026-11-25 21:14)Task 6(commit `105c34a`/记录 `95a9bb1`)与 Task 7(commit `fed989d`)已完成,定向与全量证据见各任务节(全量 Playwright 71 passed,管理员用例零删减零削弱)。Checkpoint C 三项待人工确认后勾选,确认前不进入 Task 8。
 
 ---
 
