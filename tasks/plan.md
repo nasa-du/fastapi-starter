@@ -1,7 +1,7 @@
 # Implementation Plan: self-account-deletion-removal
 
 > 依据：`SPEC-self-account-deletion-removal.md`（已评审，契约决定见「Open Questions（2026-11-25 人工答复记录）」）与已批准的 `CAPABILITY-MAP.md`
-> 状态：**Tasks 1–9 全部完成（Task 9 残留审计与全量验收完成，2026-11-25）；Open Questions 1–3 均获人工答复（OQ3：backend coverage 脚本执行、根全栈脚本不执行并记录原因，见 Open Questions 节）；待人工终审**
+> 状态：**已完成**（Tasks 1–9 与 Checkpoint A–E 全部达成，2026-11-25 人工终审通过；Open Questions 1–3 均获人工答复——OQ3：backend coverage 脚本执行、根全栈脚本不执行并记录原因，见 Open Questions 节）
 > 任务清单：`tasks/todo.md`（Tasks 1–9；完成状态与验证证据记录在 todo.md）
 > 2026-11-25 人工答复已显式批准路由契约（405 + `{user_id:uuid}`）与测试数据清理边界（开发库 + 限制清理范围），记录见 Open Questions 节。
 > 前计划：`item-removal` 已 100% 完成并通过人工终审，原文件完整归档至 `tasks/archive/item-removal/`，未删除任何未完成任务。

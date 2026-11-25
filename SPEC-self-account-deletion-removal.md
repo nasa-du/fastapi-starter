@@ -1,6 +1,6 @@
 # Spec: self-account-deletion-removal
 
-> 状态：实现完成（Tasks 1–9，2026-11-25；10 条 Success Criteria 核对证据见 `tasks/todo.md` Task 9）；契约决定（含 Open Question 3 处置）见文末「契约决定记录」；待人工终审
+> 状态：实现完成并通过人工终审（Tasks 1–9 与 Checkpoint A–E 全部达成，2026-11-25；10 条 Success Criteria 核对证据见 `tasks/todo.md` Task 9）；契约决定（含 Open Question 3 处置）见文末「契约决定记录」
 > 所属能力地图：`CAPABILITY-MAP.md` → `self-account-deletion-removal`
 > 本规格仅移除用户删除自己账号的自助流程，不改变管理员侧用户管理。
 
