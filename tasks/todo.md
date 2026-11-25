@@ -179,18 +179,24 @@
 **描述**:Task 4 后端路由已变,运行 `sh scripts/generate-client.sh` 再生成 OpenAPI 与 `frontend/src/client/`。核对生成结果:`UsersService.deleteUserMe`、`usersDeleteUserMeData/Response(s)` 类型与 `/api/v1/users/me` delete operation 全部消失;`readUserMe`、`updateUserMe`、`updatePasswordMe`、`deleteUser`、`readUserById`、`updateUser`、`resetUserPassword` 等保留方法完整。二次运行零 diff(幂等)。`routeTree.gen.ts` 本模块无路由增删,预期无变化(如有变化逐项说明)。
 
 **验收标准**:
-- [ ] `frontend/src/client/` 无 `deleteUserMe`、`usersDeleteUserMe`;其余 UsersService 方法保留
-- [ ] 生成与路由树更新全部由工具完成,`git diff` 无手改痕迹
-- [ ] 二次运行生成器零 diff
+- [x] `frontend/src/client/` 无 `deleteUserMe`、`usersDeleteUserMe`;其余 UsersService 方法保留 —— commit `922e121`;生成后 grep 零命中(exit 1);`sdk.gen.ts` 保留 `readUserMe`(L96)/`updateUserMe`(L110)/`updatePasswordMe`(L128)/`deleteUser`(L146,管理员)/`readUserById`(L160)/`updateUser`(L174)/`resetUserPassword`(L192)及 `readUsers`/`createUser`/private `createUser`
+- [x] 生成与路由树更新全部由工具完成,`git diff` 无手改痕迹 —— `git status` 仅生成器产出的 3 文件(index.ts/sdk.gen.ts/types.gen.ts,+2/−32),全部由 `openapi-ts` 写出、脚本自带 lint 归一;`routeTree.gen.ts` 零变化(Task 1 预判「本模块无路由增删」成立);`frontend/openapi.json` 为忽略产物未入库
+- [x] 二次运行生成器零 diff —— 第 1→2 次运行后 `git diff --stat` 完全一致(+2/−32);另做第 3 次运行,与第 2 次运行后的 `git diff` 快照逐字节相同(diff -q 报 IDEMPOTENT)
 
 **验证**:
-- [ ] `sh scripts/generate-client.sh` 成功;再跑一次零 diff
-- [ ] `grep -rn "deleteUserMe\|usersDeleteUserMe" frontend/src/client` 零命中(exit 1)
-- [ ] `grep -n "readUserMe\|updateUserMe\|updatePasswordMe\|deleteUser\b\|resetUserPassword" frontend/src/client/sdk.gen.ts` 保留方法均在
-- [ ] `cd backend && uv run pytest`(确认生成过程不影响后端)+ `bun run lint` + `bun run --filter frontend build` 全绿
+- [x] `sh scripts/generate-client.sh` 成功;再跑一次零 diff —— 共 3 次运行全部 exit 0(backend 导出 `app.openapi()` → `@hey-api/openapi-ts v0.97.3` 生成 4 files → 脚本自带 lint 通过);每次运行后 diff 均为同一纯删除内容
+- [x] `grep -rn "deleteUserMe\|usersDeleteUserMe" frontend/src/client` 零命中(exit 1)
+- [x] `grep -n "readUserMe\|updateUserMe\|updatePasswordMe\|deleteUser\b\|resetUserPassword" frontend/src/client/sdk.gen.ts` 保留方法均在 —— 上列方法及 `readUsers`/`createUser` 全部在位(见验收第 1 条行号)
+- [x] `cd backend && uv run pytest`(确认生成过程不影响后端)+ `bun run lint` + `bun run --filter frontend build` 全绿 —— pytest:**70 passed, 4 skipped**(与 Task 4 基线一致,4 skip 为既有环境门控迁移测试);lint:66 files exit 0(生成器脚本末步执行,其后无代码改动不重复跑);build:含 tsc 类型检查,vite ✓ built in 703ms,exit 0
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25):
+
+- RED(纯生成器任务,以生成前扫描为证):生成前 `frontend/src/client` 仍含 Task 4 删除路由前的陈旧产物 —— `types.gen.ts:351/358/365`(`usersDeleteUserMeData/Responses/Response`)、`index.ts:4`(类型导出)、`sdk.gen.ts:5/96/97`(import + 方法),3 文件 7 处命中。
+- GREEN(commit `922e121`):`sh scripts/generate-client.sh` 重新生成 —— backend 直连 `app.main.app.openapi()` 导出(`FASTAPI_ENV=development`,无需运行中的服务),openapi-ts 生成 4 files;diff 为纯删除:`deleteUserMe` 方法体(-13 行)、`usersDeleteUserMe*` 三类型(-16 行)、`index.ts` 类型导出行同步收缩;零手改、零新增。
+- openapi.json 核对(忽略产物,未提交):`/api/v1/users/me` 仅剩 `get`/`patch`;`/api/v1/users/{user_id}` 保留 `delete`/`get`/`patch` —— Task 1 预判「`{user_id:uuid}` 与 `{user_id}` 的 OpenAPI 输出相同,无 admin 路由契约变化」成立。
+- 幂等证据:第 2 次运行后与第 3 次运行后的 `git diff` 快照逐字节相同;3 次运行脚本均以 lint exit 0 收尾。
+- 全程未执行任何迁移或用户数据清理;pytest 按 OQ2 冻结答复连接开发库 `app`。
+- 提交序列:`922e121`(feat:生成客户端同步)→ 本记录独立 docs 提交。
 
 **依赖**:Task 4
 
