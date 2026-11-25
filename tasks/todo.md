@@ -147,22 +147,26 @@
 **描述**:RED 先行:改写 `backend/tests/api/routes/test_users.py` —— 删除 `test_delete_user_me`(成功自删)与 `test_delete_user_me_as_superuser`(403 旧契约)两个旧测试;新增移除契约测试:在经批准的隔离测试库创建随机普通用户并登录,快照其 `id/user_code/full_name/is_active/is_superuser/hashed_password/created_at`,分别以匿名、该用户 token、超级用户 token 调用 `DELETE /api/v1/users/me`,断言 Task 1 冻结的目标响应(404 或修订后的 405/422)且响应体不含 `USERS_SUPERUSER_DELETE_SELF` 旧业务错误;两次请求后 `db.refresh`/重查,逐字段比对用户记录未被改变;超级用户请求后管理员自身记录同样未变。另断言 OpenAPI `paths` 不含 `/api/v1/users/me` 的 delete operation。跑 RED(旧路由仍返回 200/403)。GREEN:删除 `users.py` 的 `delete_user_me` 整个 handler;若 Task 1 批准了路由结构调整(如 converter),一并实施并逐项回归管理端点。不增加任何替代 handler、兼容响应或占位。
 
 **验收标准**:
-- [ ] `users.py` 无 `delete_user_me`;按批准契约实现,无新增替代/兼容 handler
-- [ ] 新契约测试覆盖三种凭证 + 数据不变 + OpenAPI 无 delete operation
-- [ ] `test_delete_user_me`、`test_delete_user_me_as_superuser` 旧测试删除;其余全部用例(含管理员删除四例)保留且通过
-- [ ] 若实施批准的路由结构调整:每个管理端点(GET/PATCH/DELETE `/{user_id}`、reset-password)授权与错误行为逐项验证不变
+- [x] `users.py` 无 `delete_user_me`;按批准契约实现,无新增替代/兼容 handler —— commit `38ed235`:整个 handler(含超管 403 分支)删除,零替代/兼容代码
+- [x] 新契约测试覆盖三种凭证 + 数据不变 + OpenAPI 无 delete operation —— `test_self_service_account_deletion_removed`:匿名/普通用户 token/超管 token 统一 405、响应体不含 `USERS_SUPERUSER_DELETE_SELF`、用户与超管记录 7 字段快照逐一相等、`openapi.json` 的 `/api/v1/users/me` 无 `delete` operation
+- [x] `test_delete_user_me`、`test_delete_user_me_as_superuser` 旧测试删除;其余全部用例(含管理员删除四例)保留且通过 —— 两个旧测试删除;管理员删除四例(super_user/not_found/current_super_user_error/without_privileges)原样保留,全绿
+- [x] 若实施批准的路由结构调整:每个管理端点(GET/PATCH/DELETE `/{user_id}`、reset-password)授权与错误行为逐项验证不变 —— 四路由改 `{user_id:uuid}`;合法 UUID 行为由既有用例回归(GET 200/404/403,PATCH 200/404/409,DELETE 200/404/403/403,reset-password 200/404/403/200 全部通过);新增 `test_admin_dynamic_routes_reject_non_uuid_paths` 锁定批准副作用(非 UUID 段超管凭证仍路由层 404)
 
 **验证**:
-- [ ] RED 证据:新契约测试先跑,断言失败于旧路由行为(200/403),记录于本文件
-- [ ] GREEN:`cd backend && uv run pytest` 全绿(隔离测试库;旧用例零删减除两个自助注销测试)
-- [ ] `uv run bash scripts/lint.sh` 全绿
-- [ ] 引用扫描:`grep -n "delete_user_me" backend/app backend/tests` 零命中
-- [ ] 数据不变证据:测试输出/断言中临时用户与管理员记录字段快照逐一相等
+- [x] RED 证据:新契约测试先跑,断言失败于旧路由行为,记录于本文件 —— commit `c358233` 后运行:契约测试失败于 `anonymous: expected 405, got 401`(旧路由存在,认证依赖先行);非 UUID 测试失败于 `422 == 404`(旧 `{user_id}` 路由命中 handler 后 uuid 解析 422)
+- [x] GREEN:`cd backend && uv run pytest` 全绿(按 OQ2 批准连接开发库 `app`,非隔离库,见执行记录;旧用例零删减除两个自助注销测试)—— commit `38ed235` 后运行:**70 passed, 4 skipped**(4 个 skip 均为既有 `test_drop_item_migration.py` 环境门控迁移测试,`ITEM_REMOVAL_TEST_DATABASE_URL` 未配置,与本任务无关)
+- [x] `uv run bash scripts/lint.sh` 全绿 —— mypy(16 files)+ ty + ruff check + ruff format --check 全部通过,exit 0
+- [x] 引用扫描:`grep -n "delete_user_me" backend/app backend/tests` 零命中 —— 新契约测试命名曾含该子串,已改名为 `test_self_service_account_deletion_removed` 并 amend 进 RED 提交;源文件扫描 exit 1 零命中
+- [x] 数据不变证据:测试输出/断言中临时用户与管理员记录字段快照逐一相等 —— `_user_fingerprint` 对 `id/user_code/full_name/is_active/is_superuser/hashed_password/created_at` 七字段,三次凭证请求后 `db.get` + `db.refresh` 重查比对相等(用户与管理员各一)
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25):
 
-**依赖**:Task 1(契约决定)、Task 3(前端完成后端切片;后端技术上仅依赖 Task 1)
+- 环境:db 容器 healthy;按 OQ2 冻结答复,pytest 连接开发库 `app`(localhost:5432),未新建隔离库 —— 本条验证项原文「隔离测试库」为 OQ2 答复前的残留表述,以 Task 1 执行记录的 OQ2 答复为准。
+- 范围补充:conftest.py 一并重写(OQ2 答复明文「现有 conftest 会话级 fixture 行为,Task 4 重写为按会话登记清理」);实际 3 文件而非计划 2 文件,增量即此处。原 `delete(User)` 全表清空连 first superuser `admin` 一起删除(下次会话由 init_db 重建);重写后会话启动快照全部既有 `user_code`,teardown 仅删除会话内新建用户。
+- OQ2 边界实证:全量套件跑完后直接查询开发库 —— `admin`(超管)与 21 个既有 E2E 受控用户(`test_*` 前缀)全部完好;pytest 会话创建的 32 位随机用户码用户已全部清理;受控 `test-user` 会话前不存在,由 fixture 创建、按批准范围在会话末删除。
+- 提交序列:RED `c358233`(test:conftest 登记清理 + 契约/副作用测试,旧测试删除)→ GREEN `38ed235`(feat:删除 handler + 四路由 uuid converter)→ 本记录独立 docs 提交。
+
+**依赖**:Task 1(契约决定;已完成)、Task 3(前端完成后端切片;已完成)
 
 **文件**:`backend/app/api/routes/users.py`、`backend/tests/api/routes/test_users.py`
 
