@@ -128,25 +128,7 @@ def read_user_me(current_user: CurrentUser) -> Any:
     return current_user
 
 
-@router.delete("/me", response_model=Message)
-def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
-    """
-    Delete own user.
-    """
-    if current_user.is_superuser:
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "USERS_SUPERUSER_DELETE_SELF",
-                "message": "Super users are not allowed to delete themselves",
-            },
-        )
-    session.delete(current_user)
-    session.commit()
-    return Message(message="User deleted successfully")
-
-
-@router.get("/{user_id}", response_model=UserPublic)
+@router.get("/{user_id:uuid}", response_model=UserPublic)
 def read_user_by_id(
     user_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
 ) -> Any:
@@ -173,7 +155,7 @@ def read_user_by_id(
 
 
 @router.patch(
-    "/{user_id}",
+    "/{user_id:uuid}",
     dependencies=[Depends(get_current_active_superuser)],
     response_model=UserPublic,
 )
@@ -213,7 +195,7 @@ def update_user(
     return db_user
 
 
-@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete("/{user_id:uuid}", dependencies=[Depends(get_current_active_superuser)])
 def delete_user(
     session: SessionDep, current_user: CurrentUser, user_id: uuid.UUID
 ) -> Message:
@@ -240,7 +222,7 @@ def delete_user(
 
 
 @router.post(
-    "/{user_id}/reset-password",
+    "/{user_id:uuid}/reset-password",
     dependencies=[Depends(get_current_active_superuser)],
     response_model=ResetPasswordResponse,
 )
