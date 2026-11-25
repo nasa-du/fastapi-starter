@@ -1,8 +1,8 @@
 # Implementation Plan: item-removal
 
 > 依据：`SPEC-item-removal.md`（已确认）与 `CAPABILITY-MAP.md`
-> 状态：**待人工批准计划**，未开始功能代码修改
-> 任务清单：`tasks/todo.md`
+> 状态：**已完成**（T1–T13 与 Checkpoint A–E 全部达成，2026-11-25 人工终审通过；全栈 Docker 测试经用户单独确认执行）
+> 任务清单：`tasks/todo.md`（含逐任务 RED/GREEN 证据与 SPEC 10 条 Success Criteria 核对表）
 > 已完成的 i18n 计划归档至 `tasks/archive/i18n/`，未覆盖未完成任务。
 
 ## Overview
@@ -50,49 +50,49 @@ T8 用户管理 API 回归 ── T9 双角色 UI 回归 ── T10 当前文档
 ## Task List
 
 ### Phase 1: 前端入口移除
-- [ ] Task 1: 删除 Item 路由、加载组件和侧边栏入口
-- [ ] Task 2: 删除 Item 组件目录
-- [ ] Task 3: 删除 Item 文案与失效前端测试
+- [x] Task 1: 删除 Item 路由、加载组件和侧边栏入口
+- [x] Task 2: 删除 Item 组件目录
+- [x] Task 3: 删除 Item 文案与失效前端测试
 
 ### ◆ Checkpoint A: 前端源码无 Item 业务入口
-- [ ] 前端 lint/build 通过，路由树无 `/items`
-- [ ] 双字典和现有测试不再依赖 Item 页面
+- [x] 前端 lint/build 通过，路由树无 `/items`
+- [x] 双字典和现有测试不再依赖 Item 页面
 
 ### Phase 2: 后端与生成契约移除
-- [ ] Task 4: 删除 Item API 并添加未注册路由测试
-- [ ] Task 5: 删除 Item 模型、CRUD、关系及 fixture 引用
-- [ ] Task 6: 删除 Item 测试工具并再生成客户端/路由树
+- [x] Task 4: 删除 Item API 并添加未注册路由测试
+- [x] Task 5: 删除 Item 模型、CRUD、关系及 fixture 引用
+- [x] Task 6: 删除 Item 测试工具并再生成客户端/路由树
 
 ### ◆ Checkpoint B: 应用不再读写 Item
-- [ ] 后端完整测试、前端 lint/build 通过
-- [ ] OpenAPI 和生成客户端无 Item API/schema
+- [x] 后端完整测试、前端 lint/build 通过
+- [x] OpenAPI 和生成客户端无 Item API/schema
 
 ### Phase 3: 数据库 contract
-- [ ] Task 7: 新增删表迁移与隔离 PostgreSQL 往返测试
+- [x] Task 7: 新增删表迁移与隔离 PostgreSQL 往返测试
 
 ### ◆ Checkpoint C: 迁移安全验证
-- [ ] 空库、含数据旧库、downgrade 和再次 upgrade 均通过
-- [ ] User 数据保持不变；隔离库销毁；开发/生产库未操作
+- [x] 空库、含数据旧库、downgrade 和再次 upgrade 均通过
+- [x] User 数据保持不变；隔离库销毁；开发/生产库未操作
 
 ### Phase 4: 用户路径与文档
-- [ ] Task 8: 回归用户管理和普通用户 API
-- [ ] Task 9: 回归管理员/普通用户导航和 Not Found
-- [ ] Task 10: 更新当前 README 并删除失效截图
-- [ ] Task 11: 标注历史规格中的 Item 失效口径
+- [x] Task 8: 回归用户管理和普通用户 API
+- [x] Task 9: 回归管理员/普通用户导航和 Not Found
+- [x] Task 10: 更新当前 README 并删除失效截图
+- [x] Task 11: 标注历史规格中的 Item 失效口径
 
 ### ◆ Checkpoint D: 用户和维护者路径一致
-- [ ] 管理员其余能力及普通用户设置/登录不受影响
-- [ ] 当前文档不再承诺 Item，历史记录保留
+- [x] 管理员其余能力及普通用户设置/登录不受影响
+- [x] 当前文档不再承诺 Item，历史记录保留
 
 ### Phase 5: 审计与验收
-- [ ] Task 12: 审计当前代码、生成物和历史资料边界
-- [ ] Task 13: 全量验证并逐条核对规格
+- [x] Task 12: 审计当前代码、生成物和历史资料边界
+- [x] Task 13: 全量验证并逐条核对规格
 
 ### ◆ Checkpoint E: 完成
-- [ ] 规格 10 条 Success Criteria 均有证据
-- [ ] 后端测试/lint、前端 lint/build、Playwright 全量通过
-- [ ] 全栈脚本经单独确认后执行，或记录未执行原因
-- [ ] 人工评审后才进入下一模块
+- [x] 规格 10 条 Success Criteria 均有证据
+- [x] 后端测试/lint、前端 lint/build、Playwright 全量通过
+- [x] 全栈脚本经单独确认后执行，或记录未执行原因
+- [x] 人工评审后才进入下一模块
 
 ## Risks and Mitigations
 
@@ -109,4 +109,4 @@ T8 用户管理 API 回归 ── T9 双角色 UI 回归 ── T10 当前文档
 
 ## Open Questions
 
-无规格层未决问题。Task 13 的 Docker 全栈测试需执行前单独确认，因为其会销毁 Compose 数据卷。
+无规格层未决问题。原待确认项已闭环：Task 13 的 Docker 全栈测试已于 2026-11-25 经用户单独确认执行——栈 build/prestart/up 与前端服务 200 全绿，容器内 pytest 腿因预存打包缺陷失败（Dockerfile 自基线不含 `backend/tests/`，本仓库 CI 不使用该路径，与本计划无关），详见 `tasks/todo.md` Task 13 执行记录与范围外发现。
