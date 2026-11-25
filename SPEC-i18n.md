@@ -3,7 +3,7 @@
 > 状态:**已完成**(S1–S6 与总体验收通过,2026-11-23 人工终审通过)
 > 范围决策:六个切片共享同一消费者(应用最终用户)与同一数据资产(zh-CN/en 字典);错误码契约是 i18n 的支撑性子契约而非可独立裁剪的能力(裁掉它「错误提示全面中文化」即不成立),故作为单一能力域处理(**无 capability map**,与 `SPEC.md` 认证改造同例),验收标准按切片 S1–S6 分区。
 > 来源:`docs/ideas/i18n-zh-hans.md`(idea-refine 定稿,2026-11-19)
-> **失效口径标注(2026-11-25)**:本 spec 完成后,item-removal(见 `SPEC-item-removal.md`)已移除 Item 功能;文中 Items 页、`ITEMS_*` 错误码等描述仅为历史记录,关键条目已就地标注,当前错误码契约不含任何 `ITEMS_*` code。
+> **失效口径标注(2026-11-25)**:本 spec 完成后,item-removal(见 `SPEC-item-removal.md`)已移除 Item 功能;文中 Items 页、`ITEMS_*` 错误码等描述仅为历史记录,关键条目已就地标注,当前错误码契约不含任何 `ITEMS_*` code。同日,self-account-deletion-removal(见 `SPEC-self-account-deletion-removal.md`)移除了用户自助注销(`DELETE /users/me`):文中 Settings「三个 tab」(含危险区)与 `DeleteConfirmation` 描述仅为历史记录;`USERS_SUPERUSER_DELETE_SELF` 的自助注销触发点已随之移除,该 code 仍由管理员删除自己保护使用。
 
 ## 写作前假设(评审时一并确认)
 
@@ -58,7 +58,7 @@
 | `USERS_CODE_ALREADY_EXISTS` | 400 | The user with this user_code already exists in the system. | users.py:65 |
 | `USERS_PASSWORD_INCORRECT` | 400 | Incorrect password | users.py:99 |
 | `USERS_PASSWORD_UNCHANGED` | 400 | New password cannot be the same as the current one | users.py:101 |
-| `USERS_SUPERUSER_DELETE_SELF` | 403 | Super users are not allowed to delete themselves | users.py:125, 198 |
+| `USERS_SUPERUSER_DELETE_SELF` **(自助注销触发点已随 self-account-deletion-removal 移除,见 `SPEC-self-account-deletion-removal.md`;该 code 仍用于管理员删除自己保护)** | 403 | Super users are not allowed to delete themselves | users.py:125, 198 |
 | `USERS_FORBIDDEN` | 403 | The user doesn't have enough privileges | users.py:144 |
 | `USERS_NOT_FOUND` | 404 | User not found | users.py:149, 196, 219 |
 | `USERS_ID_NOT_FOUND` | 404 | The user with this id does not exist in the system | users.py:170 |
@@ -192,7 +192,7 @@ function extractErrorMessage(err: Error): string {
 - [x] **检查点:统计 keys 总量,>400 则重估后续工作量(idea 假设 3)**
 
 **S3 Admin + Settings + zod 消息**
-- [x] Admin(含 columns、actions menu、增删改/重置密码弹窗)、Settings(三个 tab)、DeleteConfirmation 文案零英文残留
+- [x] Admin(含 columns、actions menu、增删改/重置密码弹窗)、Settings(三个 tab)、DeleteConfirmation 文案零英文残留(**历史标注:Settings 第三 tab 危险区与 DeleteConfirmation 已随 self-account-deletion-removal 移除,见 `SPEC-self-account-deletion-removal.md`**)
 - [x] 6 个文件的 zod message 全部走字典(login / AddUser / EditUser / AddItem / EditItem / ChangePassword)
 - [x] `useCustomToast` 标题(Success! / Something went wrong!)与 `utils.ts` 兜底文案入字典
 - [x] Radix/shadcn 内置 aria-label(如 sidebar):尽量本地化,遗留项列清单记录
