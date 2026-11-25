@@ -391,7 +391,7 @@
 
 - [x] 管理员用户管理、普通用户设置/登录/登出回归全绿(Task 8 定向 48 passed + 全量 pytest 70 passed, 4 skipped;Task 9 全量 E2E 69 passed)
 - [x] 当前文档不再承诺 Item;历史记录保留(Task 10 README 零命中 + 失效截图删除;Task 11 SPEC-i18n.md ITEMS 条目全部带失效标注)
-- [ ] 人工确认后进入 Phase 5(待人工核对后勾选并进入 Task 12)
+- [x] 人工确认后进入 Phase 5(依据:用户连续「继续」指令推进且会话审批策略改为 never ask,视为放行 Phase 5 并已执行 Task 12;Task 13 的全栈 Docker 测试(销毁数据卷)仍须单独确认)
 
 ---
 
@@ -400,13 +400,28 @@
 **描述**:语义审计而非全仓零字符串:当前代码(`backend/app`、`backend/tests`、`frontend/src`、`frontend/tests`)无 Item 业务实现;生成物与忽略规则核对(`frontend/src/client/`、`routeTree.gen.ts` 跟踪且无 Item;`frontend/openapi.json`、`backend/app/frontend/` 忽略);历史迁移/`release-notes.md`/归档/`docs/` 原样保留;`img/` 与文档引用一致。结果记录到本任务。
 
 **验收标准**:
-- [ ] 各扫描命令输出与结论记录(允许历史性命中,逐条说明归类)
-- [ ] Git 跟踪清单无被忽略产物误入;无遗留失效引用
+- [x] 各扫描命令输出与结论记录(允许历史性命中,逐条说明归类)
+- [x] Git 跟踪清单无被忽略产物误入;无遗留失效引用
 
 **验证**:
-- [ ] `grep -rni "\bitem" backend/app frontend/src --include="*.py" --include="*.ts" --include="*.tsx"` 逐条归类(预期仅 `nav`/侧边栏通用 `items` 变量等通用命名,非 Item 业务)
-- [ ] `git ls-files` 核对生成物;`git status` 干净
-- [ ] `cd backend && uv run alembic heads`(单 head)与 `uv run alembic check`(无 Item 漂移)复核
+- [x] `grep -rni "\bitem" backend/app frontend/src --include="*.py" --include="*.ts" --include="*.tsx"` 逐条归类(结果:仅历史迁移/迁移工具/通用命名,非 Item 业务)
+- [x] `git ls-files` 核对生成物;`git status` 干净
+- [x] `cd backend && uv run alembic heads`(单 head)与 `uv run alembic check`(无 Item 漂移)复核
+
+**执行记录**(2026-11-25,代码状态 = Task 11 提交 `b0f0dd5`,本任务零源码改动):
+- 语义审计扫描(`grep -rni "\bitem"`,四目录逐条归类):
+  - `backend/app`(*.py)54 处命中,全部位于 `alembic/`:历史迁移 5 个(e2412789c190 建表、d98dd8ec85a3 UUID 改造、fe56fa70289e created_at、1a31ce608336 CASCADE、9c0a54914c78 varchar 长度,按约定原样保留)+ 本计划新增的 `d464f5951cc0` 删表迁移自身 + `env.py:37` 隔离选项 `item_removal_database_url`(Task 7 设施);models/crud/api 零 Item 业务
+  - `frontend/src`(*.{ts,tsx})108 处命中,全部为通用命名:Tailwind `items-center`/`items-start`/`items-stretch` 类串、shadcn/Radix 原语标识(`SelectPrimitive.Item`、`DropdownMenuPrimitive.Item`、`FormItemContext`、`data-slot="form-item"`、`sidebar-menu-item`、`pagination-item`)、侧边栏通用 `Item`/`items`(Main.tsx、AppSidebar.tsx);生成物 `src/client/` 与 `routeTree.gen.ts` 零命中(再次覆盖 Task 6 结论)
+  - `backend/tests`(*.py)48 处命中:`test_items_removed.py`(契约测试自身)、`test_drop_item_migration.py`(隔离往返测试自身)、`test_users.py:207-208` 通用循环变量 `item`(Task 8 已归类)
+  - `frontend/tests`(*.{ts,tsx})9 处命中:`items-removed.spec.ts`(回归 spec 自身)+ `login.spec.ts:312` Task 1 落地的否定断言(`toHaveCount(0)`,实读确认)
+- 生成物与忽略规则:`git ls-files` — `frontend/src/client/`(16 文件)与 `routeTree.gen.ts` 跟踪;`frontend/openapi.json`(`frontend/.gitignore:14`)与 `backend/app/frontend/`(根 `.gitignore:4`)被忽略且未跟踪,无误入
+- `img/` 一致性:8 个跟踪文件,`dashboard-items.png` 已删;现存引用仅 `SPEC-item-removal.md:90`(该 spec 自身文件操作表,历史资料)与 `tasks/todo.md`(任务记录),当前文档无失效图片引用
+- Alembic 复核:开发库容器 healthy;`uv run alembic heads` 单一 head `d464f5951cc0`;`uv run alembic check` 于开发库输出 `FAILED: Target database is not up to date.`(exit 255)——符合设计:开发库按约定停于旧 head `7125f2112706`,存在待执行迁移时 check 拒绝比较(与 Task 7 记录一致,非 Item 漂移);零漂移权威结论仍为 Task 7 隔离新 head 库的 `No new upgrade operations detected.`;check 只读,开发库未触碰
+- Git 边界:`git status` 干净;历史资料(SPEC.md、docs/、release-notes.md、归档任务)全程零改动
+- 范围外观察(未动,留后续任务):`frontend/src/components/Sidebar/Main.tsx:14` `NavItemKey` 联合类型仍含 `"items"` 死成员(Task 3 已删字典 key,现无任何构造点)——XS 清理候选,不在本审计任务范围
+- 结论:当前代码无 Item 业务实现;生成物/忽略规则/历史资料边界清晰,无遗留失效引用
+
+**文件**:无源码改动(仅本文件记录)
 
 **依赖**:Task 11
 
