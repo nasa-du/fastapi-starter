@@ -387,6 +387,36 @@ test.describe("Admin user management", () => {
     ).not.toBeVisible()
   })
 
+  test("Cancel user deletion keeps the row", async ({ page }) => {
+    await page.goto("/admin")
+
+    const userCode = randomUserCode()
+    const password = randomPassword()
+
+    await page.getByTestId("add-user").click()
+    await page.getByTestId("user-code-input").fill(userCode)
+    await page.getByTestId("user-password-input").fill(password)
+    await page.getByTestId("user-confirm-password-input").fill(password)
+    await page.getByTestId("save-user").click()
+
+    await expect(page.getByTestId("user-created-toast")).toBeVisible()
+    await expect(page.getByRole("dialog")).not.toBeVisible()
+
+    const userRow = page.getByRole("row").filter({ hasText: userCode })
+    await userRow.getByTestId("user-actions").click()
+    await page.getByTestId("delete-user").click()
+
+    const dialog = page.getByRole("dialog")
+    await expect(dialog.getByRole("heading")).toBeVisible()
+    await page.getByTestId("cancel-delete-user").click()
+
+    // The actions menu stays open beneath the closed dialog (same as the
+    // edit-dialog flow); dismiss it before checking the table again.
+    await expect(page.getByRole("dialog")).not.toBeVisible()
+    await page.keyboard.press("Escape")
+    await expect(userRow).toBeVisible()
+  })
+
   test("Cancel user creation", async ({ page }) => {
     await page.goto("/admin")
 
