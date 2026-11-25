@@ -331,20 +331,51 @@
 **描述**:语义审计(非全仓零字符串):当前代码(`backend/app`、`backend/tests`、`frontend/src`、`frontend/tests`)无自助注销业务实现——`deleteUserMe`、`usersDeleteUserMe`、`DeleteAccount`、`DeleteConfirmation`、`danger-zone`、`settings.deleteAccount` 零命中;历史资料(`release-notes.md`、归档任务)中的命中逐条归类为历史事实并保留。Git 跟踪清单核对:生成物无被忽略产物误入。Alembic 复核:单一 head `d464f5951cc0` 不变、无新增迁移文件。运行全部验证命令:后端 `uv run pytest` + `uv run bash scripts/test.sh`(coverage)+ `uv run bash scripts/lint.sh`;前端 `bun run lint` + `bun run --filter frontend build` + 全量 E2E;`sh scripts/generate-client.sh` 后零 diff。逐条核对 SPEC 10 条 Success Criteria 并记录证据。**根 `sh scripts/test.sh`(会 `docker compose down -v` 销毁数据卷)必须在执行前按 Open Question 3 单独获得授权**;未获授权则如实记录「未执行及原因」,不得静默跳过或宣称全绿。
 
 **验收标准**:
-- [ ] 各扫描命令输出与结论记录(允许历史性命中,逐条归类)
-- [ ] Alembic 单一 head 不变、`git status` 干净、无新增迁移
-- [ ] SPEC 10 条 Success Criteria 逐条勾选并附证据
-- [ ] 全部验证命令结果与日期记录;根全栈脚本已按授权执行并记录,或如实记录未执行原因(不以基线缺陷/重跑代替规格要求)
+- [x] 各扫描命令输出与结论记录(允许历史性命中,逐条归类) —— 语义扫描 1 处命中 = Task 2 移除断言自身;git 跟踪清单与 Alembic 核对见执行记录第 2/9 条
+- [x] Alembic 单一 head 不变、`git status` 干净、无新增迁移 —— `uv run alembic heads` = `d464f5951cc0 (head)` 唯一;versions 目录 7 个既有迁移文件零新增;验证期间工作树零源码改动
+- [x] SPEC 10 条 Success Criteria 逐条勾选并附证据 —— 见本任务执行记录第 6 条核对表
+- [x] 全部验证命令结果与日期记录;根全栈脚本按 OQ3 2026-11-25 人工答复处置:不执行并如实记录原因(不以基线缺陷/重跑代替规格要求;预存缺陷单独报告见执行记录第 3/7 条)
 
 **验证**:
-- [ ] `grep -rn "deleteUserMe\|usersDeleteUserMe\|DeleteAccount\|DeleteConfirmation\|danger-zone" backend/app backend/tests frontend/src frontend/tests` 零命中(历史资料除外)
-- [ ] `cd backend && uv run pytest` + `uv run bash scripts/lint.sh`;`bun run lint` + `bun run --filter frontend build`;全量 E2E 全绿
-- [ ] `uv run alembic heads` 单一 head;`sh scripts/generate-client.sh` 后 `git diff` 零输出
-- [ ] `uv run bash scripts/test.sh`(coverage 版)执行并记录(需 Open Question 3 授权)
-- [ ] 根 `sh scripts/test.sh` 按 Open Question 3 处置:授权则执行并记录,未授权则记录原因
+- [x] `grep -rn "deleteUserMe\|usersDeleteUserMe\|DeleteAccount\|DeleteConfirmation\|danger-zone" backend/app backend/tests frontend/src frontend/tests` —— 唯一命中 `frontend/tests/user-settings.spec.ts:67` `settings-tab-danger-zone` `toHaveCount(0)` = Task 2 移除断言自身(以字面 testid 证明不存在,非残留实现;与 Task 2/3 记录一致)
+- [x] `cd backend && uv run pytest` + `uv run bash scripts/lint.sh`;`bun run lint` + `bun run --filter frontend build`;全量 E2E 全绿 —— pytest **70 passed, 4 skipped**(5.51s;4 skip = 既有环境门控迁移测试);backend lint mypy 16 files + ty + ruff check/format 全过;`bun run lint` 67 files exit 0;build tsc + vite ✓ 689ms exit 0;全量 E2E **71 passed (46.0s)** 零删减零跳过
+- [x] `uv run alembic heads` 单一 head;`sh scripts/generate-client.sh` 后 `git diff` 零输出 —— heads = `d464f5951cc0` 唯一;两次生成均 exit 0 且 `git diff`/`git status` 零输出(与已提交状态一致,幂等)
+- [x] `uv run bash scripts/test.sh`(coverage 版)执行并记录 —— 2026-11-25 经 OQ3 专项询问获人工批准执行:**70 passed, 4 skipped,TOTAL 95%**,`app/api/routes/users.py` **100%**(exit 0;与 pytest 同开发库数据面,无 docker/卷操作)
+- [x] 根 `sh scripts/test.sh` 按 Open Question 3 处置 —— 2026-11-25 人工答复「不执行,记录原因」,见执行记录第 3 条;未静默跳过,未宣称全栈全绿
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25,代码状态 = Task 8 后 `2fa74f5`,验证期间零源码改动):
+
+1. **OQ3 处置(ask_user_question 逐题显式确认,2026-11-25 Task 9 执行中、根脚本执行前)**:backend coverage 脚本 = **执行**;根全栈脚本 = **不执行、记录原因**。依据 plan.md 架构决定第 11 条,工具审批策略「不询问用户」不构成对该处置的批准;本处置为人工显式答复。
+2. **验证命令逐条**(全部 2026-11-25):
+   1. `grep -rn "deleteUserMe\|usersDeleteUserMe\|DeleteAccount\|DeleteConfirmation\|danger-zone" backend/app backend/tests frontend/src frontend/tests` — 唯一命中 `user-settings.spec.ts:67`(移除断言自身);历史资料(`release-notes.md`、`tasks/archive/`)按 plan.md 分域保留为历史事实,不在当前代码扫描范围
+   2. `git ls-files`/`git check-ignore` — 跟踪清单仅 `frontend/src/routeTree.gen.ts`(按约定被跟踪的生成物);`frontend/openapi.json`(frontend/.gitignore:14)与 `backend/app/frontend/`(.gitignore:4)确认为忽略产物,零误入
+   3. `cd backend && uv run pytest` — **70 passed, 4 skipped**(5.51s,exit 0;与 Task 4/5 基线一致)
+   4. `cd backend && uv run bash scripts/lint.sh` — mypy 16 files no issues + ty All checks passed + ruff check passed + ruff format 16 files already formatted(exit 0)
+   5. `cd backend && uv run bash scripts/test.sh`(OQ3 批准执行)— **70 passed, 4 skipped** + `coverage report` **TOTAL 95%**、`users.py` **100%**(exit 0;未降低任何门槛,未跳过测试)
+   6. `bun run lint` — 67 files,exit 0;`bun run --filter frontend build` — tsc 类型检查 + vite ✓ built 689ms,exit 0(产物写入被忽略的 `backend/app/frontend/`)
+   7. 全量 E2E(frontend/ 内显式 `PLAYWRIGHT_BASE_URL=http://localhost:5173 VITE_API_URL=http://localhost:8000`)— **71 passed (46.0s)**,exit 0,零删减零跳过(与 Task 7 基线一致)
+   8. `sh scripts/generate-client.sh` ×2 — 均 exit 0,每次运行后 `git diff`/`git status` 零输出(生成物与已提交状态逐字节一致,幂等);`grep -rn "deleteUserMe\|usersDeleteUserMe" frontend/src/client` 零命中(exit 1)
+   9. `cd backend && uv run alembic heads` — `d464f5951cc0 (head)` 唯一;`app/alembic/versions/` 7 个既有迁移文件零新增
+3. **根全栈脚本不执行的记录原因**(OQ3 人工答复):① plan.md 明文该脚本 `docker compose down -v --remove-orphans` 与「保留开发库数据」要求存在实际冲突,须单独批准;② plan.md 已记录预存基线缺陷——backend/Dockerfile 不 COPY `backend/tests/`(容器内 pytest 腿自基线即失败,`set -e` 中断)与 `/api/v1/utils/health-check` 不存在——全栈腿无法全绿,且该缺陷属范围外、本规格禁止顺手修复(item-removal Task 13 同款记录为证);③ 用户选择零数据风险路径。两项基线缺陷另立任务请求决定(见第 7 条范围外发现);未以基线缺陷、重跑或部分通过代替全栈测试结论。
+4. **环境附记**:db 容器 healthy(11 小时,未执行任何迁移或用户数据清理);上会话遗留 8000 端口 uvicorn 为 Task 4 前旧代码(实测匿名 `DELETE /users/me` 返回 401),已终止并以当前代码重启——重启后实测 `DELETE /api/v1/users/me` 匿名 **405**(Allow 头无 DELETE)、`GET /users/me` 匿名 **401**(认证要求保留),与冻结契约一致;5173 vite dev 为当前源码。E2E 全程沿用 `PLAYWRIGHT_BASE_URL`/`VITE_API_URL` 显式传递。
+5. **数据不变证据(OQ2 边界)**:全部测试运行后开发库核对 — 总用户 74、`admin` 超管在(`user_code='admin'` 计 1)、`test_*` 受控用户 73 个完好;pytest/coverage 清理仅触及会话内随机新建用户(沿用 Task 4 重写的登记清理),E2E 受控用户按既有约定保留。
+6. **SPEC 10 条 Success Criteria 核对**(2026-11-25,证据锚点 = 各任务提交):
+   1. ✔ 双角色设置页无危险 tab/删除入口/确认弹窗,资料密码 tab 正常 — Task 2(`26335a8`)双角色两 tab + 四 testid `toHaveCount(0)`;全量 E2E user-settings 场景全绿
+   2. ✔ `DeleteAccount.tsx`/`DeleteConfirmation.tsx` 及专属逻辑、双语文案删除,无未使用引用 — Task 2(`26335a8`)+ Task 3(`9ec9e11`);本任务语义扫描仅剩移除断言自身
+   3. ✔ `DELETE /api/v1/users/me` 三凭证统一 405(`{user_id:uuid}`,原 404 作废),请求前后数据不变 — Task 4(`38ed235`)契约测试(三凭证 405 + 七字段快照逐一相等)+ 本任务实测(匿名 405、GET 匿名 401)
+   4. ✔ OpenAPI 与生成客户端无 `deleteUserMe` 及相关请求/响应类型 — Task 5(`922e121`)+ 本任务再生成零 diff + grep 零命中
+   5. ✔ `GET/PATCH /users/me`、修改密码、主动登出正常 — pytest `test_users.py` 全绿 + E2E `user-settings.spec.ts` 与 `account-preservation.spec.ts`(登出回登录页、无 DELETE me 请求、原凭证重登成功)
+   6. ✔ 管理员删他人 200、删自己 403(`USERS_SUPERUSER_DELETE_SELF`)、目标不存在 404、普通用户 403 契约不变 — Task 4 管理员四用例 + Task 6(`105c34a`)admin E2E 22 passed
+   7. ✔ 管理员创建/查看/编辑/重置密码不受影响 — Task 6 admin E2E 全绿(创建/编辑/重置密码/编辑对话框语言校验等既有场景零删减)
+   8. ✔ 无新增迁移,未因本模块删除、回填或修改任何已有用户数据 — 本任务 alembic 核对 + 全程零迁移零清理 + 第 5 条数据核对
+   9. ✔ 后端测试/coverage/lint、前端 lint/build、Playwright 全部通过;根全栈脚本按 OQ3 2026-11-25 人工答复**不执行**并记录原因,预存 Dockerfile/health-check 基线缺陷单独报告(见第 3/7 条)——全栈测试结论如实记录为「未执行(经批准)」,不以任何替代口径宣称通过
+   10. ✔ 当前文档不再承诺用户自助注销,历史资料保留为历史事实 — Task 8(`76d71b7`)README 当前口径 + SPEC-i18n 失效标注;`release-notes.md`、`tasks/archive/`、`docs/` 零改动
+7. **范围外发现(未动,建议后续任务)**:
+   - `backend/Dockerfile` 不 COPY `backend/tests/` → 根 `scripts/test.sh` 容器内 pytest 腿自基线失败(`file or directory not found: tests/`);候选修复:镜像补 COPY tests + dev 依赖组,或裁剪 test.sh/CI 口径(item-removal Task 13 已记录同款)
+   - `/api/v1/utils/health-check` 端点不存在(本变体 routes 仅 login/private/users),Docker Compose CI 的 health-check 腿自基线 404
+   - (沿用 item-removal Task 13 记录,本任务未复验)`frontend/src/components/Sidebar/Main.tsx` `NavItemKey` 死成员 `"items"`
+8. **检查点状态**:Checkpoint E 第 1–4 项随本记录勾选(证据见上);第 5 项人工终审保持未勾选。运行环境(前端 5173/后端 8000)保持运行供终审核查。
+9. **提交序列**:docs `2454e37`(plan.md 状态/OQ3 答复 + SPEC 状态/契约决定记录)→ 本记录独立 docs 提交。
 
 **依赖**:Task 8
 
@@ -356,11 +387,11 @@
 
 ## ◆ Checkpoint E:完成
 
-- [ ] SPEC-self-account-deletion-removal.md 10 条 Success Criteria 均有证据
-- [ ] 后端测试/coverage/lint、前端 lint/build、Playwright 全量通过;coverage 门槛不降低
-- [ ] 客户端再生成幂等,无手改生成物、无新增迁移、无未经授权的数据操作
-- [ ] 根全栈脚本已按明确批准执行并记录结果;任何数据风险或预存缺陷均单独报告,不以基线问题、重跑或部分通过代替规格要求的全栈测试通过
+- [x] SPEC-self-account-deletion-removal.md 10 条 Success Criteria 均有证据 —— Task 9 执行记录第 6 条核对表(证据锚点 = 各任务提交 + 本任务复验)
+- [x] 后端测试/coverage/lint、前端 lint/build、Playwright 全量通过;coverage 门槛不降低 —— pytest 70 passed/4 skipped;coverage 脚本 TOTAL 95%、`users.py` 100%(既有脚本原样运行,未调门槛);backend lint 全过;前端 lint/build 全过;全量 E2E 71 passed(2026-11-25,见 Task 9 执行记录)
+- [x] 客户端再生成幂等,无手改生成物、无新增迁移、无未经授权的数据操作 —— generate-client ×2 零 diff;跟踪清单仅约定生成物;alembic head `d464f5951cc0` 不变、零新增迁移;全程零迁移零清理,开发库数据核对完好
+- [x] 根全栈脚本已按明确批准执行并记录结果;任何数据风险或预存缺陷均单独报告,不以基线问题、重跑或部分通过代替规格要求的全栈测试通过 —— OQ3 2026-11-25 人工答复为「不执行」,原因与数据风险已如实记录(Task 9 执行记录第 3 条);预存 Dockerfile/health-check 基线缺陷单独报告(第 7 条),全栈测试结论未以任何替代口径宣称通过
 - [ ] 人工终审通过后才标记完成
 
 **执行记录**:
-- (待实施)
+- (2026-11-25 23:10)Task 9 完成(前置 docs 提交 `2454e37`,本记录随后独立 docs 提交)。Checkpoint E 第 1–4 项证据见 Task 9 执行记录;第 5 项待人工终审 —— 建议终审时于运行环境(前端 5173/后端 8000,均为当前代码)抽查双角色设置页两 tab、管理员用户管理、登出重登,并复核 Task 9 执行记录第 3 条(根脚本不执行原因)与第 7 条(范围外缺陷)是否需另立任务。
