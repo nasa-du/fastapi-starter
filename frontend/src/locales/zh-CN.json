@@ -47,8 +47,7 @@
     "description": "管理您的账户设置和偏好",
     "tabs": {
       "profile": "个人资料",
-      "password": "密码",
-      "danger": "危险操作"
+      "password": "密码"
     },
     "profile": {
       "title": "用户信息",
@@ -72,19 +71,6 @@
       "doNotMatch": "两次输入的密码不一致",
       "submit": "更新密码",
       "updatedToast": "密码更新成功"
-    },
-    "deleteAccount": {
-      "title": "删除账户",
-      "description": "永久删除您的账户及所有关联数据。",
-      "toast": "您的账户已成功删除"
-    },
-    "deleteConfirmation": {
-      "title": "需要确认",
-      "descriptionStart": "您的所有账户数据将被",
-      "descriptionEmphasis": "永久删除。",
-      "descriptionEnd": "确定要继续吗?此操作无法撤销。",
-      "cancel": "取消",
-      "confirm": "删除"
     }
   },
   "error": {
