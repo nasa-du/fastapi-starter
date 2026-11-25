@@ -1,7 +1,7 @@
 # 任务清单:self-account-deletion-removal(移除用户自助注销)
 
-> 依据 `SPEC-self-account-deletion-removal.md`(待人工评审)与 `tasks/plan.md`。每完成一项即勾选并在本文件记录验证证据。
-> **当前状态:计划已编制,实现未开始。Tasks 1–9 全部被 Open Questions 1–3 阻塞,不得在人工答复前开始任何产品代码修改。**
+> 依据 `SPEC-self-account-deletion-removal.md`(已评审,2026-11-25 契约批准)与 `tasks/plan.md`。每完成一项即勾选并在本文件记录验证证据。
+> **当前状态:Open Questions 1–2 已于 2026-11-25 获人工答复(405 + uuid converter;开发库 + 限制清理范围),契约已冻结,Task 1 完成,Tasks 2–8 解除阻塞。Open Question 3(根脚本数据卷销毁)推迟至 Task 9 前决定。**
 > 环境前提:后端测试需 PostgreSQL;E2E 需后端 + 数据库运行(在 `frontend/` 内运行并显式传 `PLAYWRIGHT_BASE_URL`/`VITE_API_URL`,沿用归档计划的踩坑记录)。
 > 约定:
 > - 工具生成物(`frontend/src/client/`、`frontend/src/routeTree.gen.ts`)与被忽略产物(`frontend/openapi.json`、`backend/app/frontend/`)不计入文件预算,只由生成器/构建更新,禁止手改。
@@ -17,18 +17,49 @@
 **描述**:无产品代码改动。把 Open Question 1 的人工答复固化为契约决定:三种凭证(匿名、普通用户 token、超级用户 token)请求 `DELETE /api/v1/users/me` 的目标响应(404/405/422 之一)及实现方式(经批准的路由结构调整或 spec 契约修订),同步更新 `SPEC-self-account-deletion-removal.md` 的 Testing Strategy 与 Success Criterion 3 和本计划。同时记录 Open Question 2 的答复:隔离测试数据库 URL、允许清理的测试用户范围、pytest 清库作用的边界。逐项核对保留路径清单(`GET/PATCH /users/me`、`PATCH /users/me/password`、`DELETE /users/{user_id}` 及其 403/404 保护、登出)在批准的契约下行为不变。
 
 **验收标准**:
-- [ ] `SPEC-self-account-deletion-removal.md` 的响应契约与人工答复一致(404 或修订后的 405/422),文件被修改
-- [ ] `tasks/plan.md` 的 Verified Codebase Facts、Architecture Decision 1 与 Open Questions 反映该决定,无遗留矛盾
-- [ ] 隔离测试库与测试用户清理边界以书面形式记录在本任务执行记录中
+- [x] `SPEC-self-account-deletion-removal.md` 的响应契约与人工答复一致(404 或修订后的 405/422),文件被修改 —— 已修订为统一 405(Testing Strategy、Success Criterion 3、契约决定记录,见该文件文末)
+- [x] `tasks/plan.md` 的 Verified Codebase Facts、Architecture Decision 1 与 Open Questions 反映该决定,无遗留矛盾 —— VCF 路由冲突条目、AD1/AD6/AD11、依赖图 H1/H2、风险表、Open Questions 节均已更新为批准契约
+- [x] 隔离测试库与测试用户清理边界以书面形式记录在本任务执行记录中 —— 见下(人工选择「保留开发库,限制清理范围」)
 
 **验证**:
-- [ ] `grep -n "默认 404\|405\|422" SPEC-self-account-deletion-removal.md` 输出与人工答复一致
-- [ ] 本文件与 plan.md 无互相矛盾的响应契约表述
+- [x] `grep -n "默认 404\|405\|422" SPEC-self-account-deletion-removal.md` 输出与人工答复一致 —— 「默认 404」零命中,405 契约条目齐全(输出见执行记录末尾)
+- [x] 本文件与 plan.md 无互相矛盾的响应契约表述 —— 本文件、plan.md、SPEC 一律表述为「三种凭证统一 405 + {user_id:uuid}」
 
-**执行记录**:
-- 待人工答复 Open Questions 1–3 后填写
+**执行记录**(2026-11-25):
 
-**依赖**:人工答复(阻塞项)
+**人工答复**(本会话逐题显式记录,非工具审批策略推定):
+
+- OQ1 响应契约:**405 + uuid converter**。删除 `delete_user_me` 后,管理员动态路由(GET/PATCH/DELETE `/{user_id}`、POST `/{user_id}/reset-password`)改为 `{user_id:uuid}`,三种凭证(匿名/普通用户 token/超级用户 token)统一 405;不新增替代 handler/兼容占位。已批准副作用:管理员端点对非 UUID 路径段一律路由层 404(原按凭证 401/403/422)。
+- OQ2 测试数据边界:**保留开发库,限制清理范围**(未选择隔离 app_test 库)。
+- OQ3 根 `sh scripts/test.sh`:**推迟到 Task 9 前决定**;未决定前不得执行。
+
+**隔离探针证据**(2026-11-25,内存内 FastAPI 路由探针,无 DB、无产品代码改动):
+
+- 纯删除 + 普通 `{user_id}`:`DELETE /api/v1/users/me` → 匿名 401 / 普通用户 403 / 超级用户 422(uuid_parsing)——认证依赖先于路径参数校验,响应按凭证分叉(修正 plan.md 原「纯删除为 422」的不完整表述)。
+- 纯删除 + `{user_id:uuid}`:三种凭证统一 405;`GET /users/me` 带 token 仍 200;管理员 `DELETE /users/<合法uuid>` 路由命中不变;`DELETE /users/not-a-uuid` → 404(原 422)。
+
+**保留路径逐项核对**(批准契约下行为不变;最终由 Task 2/4/6/7 测试回归证明):
+
+| 保留路径 | 核对结论 |
+|---|---|
+| `GET /users/me`、`PATCH /users/me`、`PATCH /users/me/password` | 字面路由不动,行为不变(探针:GET /me 带 token 200;认证要求不变) |
+| `DELETE /users/{user_id}` 管理员端点 | 合法 UUID 行为不变:不存在 404(USERS_NOT_FOUND)、删自己 403(USERS_SUPERUSER_DELETE_SELF)、普通用户 403(USERS_FORBIDDEN)、成功 200 |
+| 既有后端测试 | `test_users.py` 全部 id 断言使用合法 `uuid.uuid4()`,无非法 id/422 断言,converter 改动零影响(已核对) |
+| 非法非 UUID id(已批准副作用) | 管理员端点原按凭证 401/403/422 → 一律路由层 404;无既有断言依赖旧行为 |
+| 登出 | 纯前端能力(Sidebar 用户菜单),路由契约不涉及;Task 2/7 回归 |
+
+**测试数据清理边界**(OQ2 答复,Task 4 落地):
+
+- pytest 继续连接开发库 `app`(localhost:5432,`DATABASE_URL` 来自根 `.env`),不新建隔离库。
+- 允许清理:仅本次测试会话中由测试代码创建的用户(`create_random_user` 随机用户;fixture 创建的 `test-user` 受控用户)。
+- 禁止:`delete(User)` 全表清空(现有 conftest 会话级 fixture 行为,Task 4 重写为按会话登记清理);删除 first superuser `admin` 或任何非测试创建的既有用户。
+- `test-user` 若为库中既有用户:保留其密码被 fixture 重置的既有约定,但会话结束不得删除。
+
+**文档同步**:SPEC(状态、Project Structure、Code Style、Testing Strategy、Success Criterion 3、契约决定记录)与 plan.md(状态、VCF 路由冲突条目、AD1/AD6/AD11、依赖图 H1/H2、风险表、Open Questions、Task 1 勾选)已更新。生成物说明:FastAPI 的 OpenAPI 路径模板对 `{user_id:uuid}` 与 `{user_id}` 输出相同(均为 `/users/{user_id}` + uuid schema),Task 5 生成器预期无 admin 路由契约变化;`routeTree.gen.ts` 不涉及。
+
+**验证输出**(`grep -n "默认 404\|405\|422" SPEC-self-account-deletion-removal.md`):「默认 404」零命中;命中行均为 405 契约/已批准 404 副作用/原 401-403-422 对照表述,与人工答复一致。
+
+**依赖**:人工答复(已获,2026-11-25)
 
 **文件**:`SPEC-self-account-deletion-removal.md`、`tasks/plan.md`、`tasks/todo.md`(仅记录)
 

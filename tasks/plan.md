@@ -1,9 +1,9 @@
 # Implementation Plan: self-account-deletion-removal
 
-> 依据：`SPEC-self-account-deletion-removal.md`（待人工评审）与已批准的 `CAPABILITY-MAP.md`
-> 状态：**计划已编制，待人工批准；实现未开始，且被 Open Questions 1–3 阻塞**
-> 任务清单：`tasks/todo.md`（Tasks 1–9；所有复选框故意保持未完成）
-> “继续”仅用于继续本次规划工作，不被解释为批准规格冲突、数据清理或开始实现。
+> 依据：`SPEC-self-account-deletion-removal.md`（已评审，契约决定见「Open Questions（2026-11-25 人工答复记录）」）与已批准的 `CAPABILITY-MAP.md`
+> 状态：**Open Questions 1–2 已于 2026-11-25 获人工答复，契约已冻结，Task 1 完成；Tasks 2–8 解除阻塞；Open Question 3 推迟至 Task 9 前决定**
+> 任务清单：`tasks/todo.md`（Tasks 1–9；完成状态与验证证据记录在 todo.md）
+> 2026-11-25 人工答复已显式批准路由契约（405 + `{user_id:uuid}`）与测试数据清理边界（开发库 + 限制清理范围），记录见 Open Questions 节。
 > 前计划：`item-removal` 已 100% 完成并通过人工终审，原文件完整归档至 `tasks/archive/item-removal/`，未删除任何未完成任务。
 
 ## Overview
@@ -22,27 +22,27 @@
 - 当前生成物确有 `UsersService.deleteUserMe`、`usersDeleteUserMeData/Response(s)`。`sh scripts/generate-client.sh` 导出 OpenAPI、运行 openapi-ts 并调用前端 lint；`frontend/src/client/` 只能由该工具修改。
 - `frontend/openapi.json` 和 `backend/app/frontend/` 被忽略；`frontend/src/client/` 和 `routeTree.gen.ts` 被跟踪。此变更不要求手改路由树。
 - 当前 Alembic head 为 `d464f5951cc0`；本计划应保持迁移文件与 head 不变。此事实用于验证“无迁移”，不是要求执行迁移。
-- **路由冲突（规划阶段只读/隔离探针已实测，无产品代码或数据库改动）**：仅删除 `DELETE /users/me` 后，`DELETE /users/{user_id}` 会匹配字面值 `me`；原类型为 `uuid.UUID`，因此返回 422，而非规格要求的默认 404。将动态路径改为 `{user_id:uuid}` 后，保留的 GET/PATCH `/me` 仍参与 method 匹配，实测返回 405，也不是 404。不能忽略这一差异，也不能暗中增加规格禁止的替代处理函数、禁用占位或兼容 API。
+- **路由冲突（隔离探针实测，无产品代码或数据库改动；2026-11-25 复测并修正）**：仅删除 `DELETE /users/me`、保留普通 `{user_id}` 时，该 URL 按凭证分叉——匿名 401、普通用户 403（USERS_FORBIDDEN，认证依赖先于路径参数校验）、超级用户 422（uuid_parsing），并非单一 422。将管理员动态路由改为 `{user_id:uuid}` 后，三种凭证统一在路由层返回 405（Allow: GET, PATCH；不进入认证流程）。已批准采用后者（405 + uuid converter），见 Open Questions 节；不暗中增加规格禁止的替代处理函数、禁用占位或兼容 API。
 - 上一模块已记录两个范围外基线问题：`backend/Dockerfile` 不复制 `backend/tests/`，根 `scripts/test.sh` 的容器内 pytest 腿因此失败；Docker Compose CI 使用的 `/api/v1/utils/health-check` 不存在。它们不在本规格范围内，不能混入本次删除工作；若阻塞最终验收，单独报告并请求决定。
 
 ## Architecture Decisions
 
-1. **先冻结路由契约，再实施删除。** Open Question 1 未解决前，所有产品代码任务保持未开始。已批准的契约决定须同步到 spec 和本计划，不能通过降低断言或把 422/405 称为 404 来完成任务。
+1. **路由契约已冻结（2026-11-25 人工批准）。** `DELETE /api/v1/users/me` 对匿名、普通用户 token、超级用户 token 一律返回 **405**，实现方式为删除 handler 并把管理员动态路由（GET/PATCH/DELETE `/{user_id}`、POST `/{user_id}/reset-password`）改为 `{user_id:uuid}`；不新增替代 handler、禁用占位或兼容 API。已批准副作用：管理员端点对非 UUID 路径段一律路由层 404（原按凭证 401/403/422），合法 UUID 的既有授权与错误行为不变。Task 4 按此实施并逐项回归管理端点；契约测试断言 405，不得改写为 404/422。
 2. **不保留后门或僵尸代码。** 删除整个自助 handler、组件、mutation 和专属文案；不以隐藏按钮、无操作函数、403 占位或兼容接口替代。管理员端点、组件和 `USERS_SUPERUSER_DELETE_SELF` 例外保留。
 3. **能力删除采用小垂直切片。** 前端入口和专属组件（Task 2）与后端路由及数据保留契约（Task 4）分别形成可验证切片；客户端仅在真实后端 OpenAPI 改变后生成（Task 5），避免手改或生成陈旧契约。专属双语文案在 UI 引用删除后由 Task 3 单独清理，确保每项任务最多五个源文件/测试文件，且中间状态不出现未翻译文案。
 4. **管理员能力作为跨切片不变量。** 每个相关测试阶段都保留并运行 `DELETE /users/{user_id}` 的授权、自删保护、404 和成功删除测试；前端 admin 组件和场景不得误删。若路由契约决策需要改变动态路由结构，须先单独证明各管理端点行为不变。
 5. **测试先行且忠于旧行为。** 新“已移除”断言在实现前按批准后的响应契约运行并记录 RED；旧成功自删与 superuser 403 测试由新契约测试替换，不跳过。保留能力测试原则上不改断言；确需适配经批准的路由结构时，逐项说明并维持等价行为。
-6. **数据保护优先于脚本便利。** 不新增迁移，不手动清理开发/生产用户。pytest 的会话级 autouse fixture 会 `delete(User)`，因此实现阶段须先确认隔离测试数据库和明确允许清理的测试用户范围；不能把现有 `docker compose up -d db` 自动视为满足规格的数据保留承诺。
+6. **数据保护优先于脚本便利。** 不新增迁移，不手动清理开发/生产用户。pytest 继续连接现有开发库（2026-11-25 批准），但清理范围收紧为**仅删除本次测试会话创建的用户**：Task 4 须把会话级 autouse fixture 的 `delete(User)` 全表清空改为按会话登记清理；禁止删除 first superuser `admin` 及任何非测试创建的既有用户；fixture 为既有 `test-user` 受控用户重置密码的既有约定保留，但会话结束不得删除该既有用户。
 7. **测试数据以可控用户为单位验证。** 后端在专用测试库创建随机普通用户，快照其 `id/user_code/full_name/is_active/is_superuser/hashed_password/created_at`，对匿名、普通 token 和 superuser token 的移除请求逐一断言批准后的默认错误响应，并刷新/重查后逐字段比对。普通请求使用临时用户自己的 token；超级用户请求不得误删该临时用户，管理员自身记录也须保留。
 8. **生成物只由工具维护。** Task 5 运行生成脚本，核对目标 operation、方法和类型消失，其他 UsersService 能力保留；再次生成后跟踪文件零额外 diff。忽略的中间 OpenAPI/构建产物不提交。
 9. **文档语义区分当前与历史。** README 明确账号由管理员管理且不提供自助注销。`release-notes.md` 和 `tasks/archive/` 原样保留；`SPEC-i18n.md` 仅在 README 继续将其作为当前错误码契约时，修正其当前错误码位置并为历史 Settings/DeleteConfirmation 描述增加失效说明，不改写历史成果。
 10. **默认串行，避免共享文件竞争。** `users.py`、`test_users.py`、`user-settings.spec.ts`、双字典和生成物均为共享边界。前端与后端前期任务技术上可独立，但当前有契约阻塞且仓库采用单清单证据记录，因此按 Task 1–9 串行；如未来并行，后端测试与路由文件归后端 lane，前端组件与测试归前端 lane，字典/文档/生成物由集成者独占。
-11. **已执行的环境管理假设仅在人工批准后生效。** 本计划当前采用的“审批策略不询问用户”只描述工具权限，不代表用户批准了规格冲突、数据破坏或实现方案。计划评审与数据删除授权必须显式记录。
+11. **已执行的环境管理假设仅在人工批准后生效。** “审批策略不询问用户”只描述工具权限，不代表用户批准了规格冲突、数据破坏或实现方案。2026-11-25 人工答复已显式批准 OQ1（405 + uuid converter）与 OQ2（开发库 + 限制清理范围），记录见 Open Questions 节；OQ3（根脚本数据卷销毁）未授权，Task 9 前单独决定。
 
 ## Dependency Graph
 
 ```
-H1 人工确认路由契约 + 批准本计划；H2 批准隔离测试库与可控测试用户范围
+H1/H2 已于 2026-11-25 人工答复（405 + uuid converter；开发库 + 限制清理范围）
   │
   └─ T1 冻结契约与测试数据安全基线
         │
@@ -69,7 +69,7 @@ Tasks 6 与 7 可在实现阶段只读并行规划，但均依赖 Task 5 且共�
 
 ### Phase 1: Contract and Removal
 
-- [ ] Task 1: 冻结已批准的路由契约、保留路径和测试数据安全基线
+- [x] Task 1: 冻结已批准的路由契约、保留路径和测试数据安全基线（2026-11-25，证据见 todo.md 执行记录）
 - [ ] Task 2: 删除自助注销 UI 和组件，添加双角色入口移除断言
 - [ ] Task 3: 删除自助注销专属双语文案，保留共享与管理员文案
 - [ ] Task 4: 删除自助 DELETE 业务逻辑，添加移除契约和用户数据不变测试
@@ -125,7 +125,7 @@ Tasks 6 与 7 可在实现阶段只读并行规划，但均依赖 Task 5 且共�
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| 删除静态 DELETE 后动态路由返回 422/405 | 高 | Open Question 1 在实现前解决；隔离探针已证明纯删除/UUID converter 均不满足 404 |
+| 删除静态 DELETE 后动态路由返回 422/405 | 高 | 已解决（2026-11-25 批准 405 + `{user_id:uuid}`）；探针证实纯删除按凭证分叉 401/403/422，不采用 |
 | 为满足 404 引入被禁止的兼容 handler 或改变管理员路由 | 高 | 只实施明确批准的路由设计；所有管理端点授权与行为逐项回归 |
 | pytest fixture 或根全栈脚本清空开发数据 | 高 | 隔离测试库与测试用户范围先审批；根 `down -v` 单独授权，失败时手动清理也须同一授权覆盖 |
 | 误删管理员自删保护、组件或错误码 | 高 | 跨阶段不变量；保留 `DeleteUser.tsx`、`DELETE /{user_id}`、`USERS_SUPERUSER_DELETE_SELF` 及完整测试 |
@@ -137,11 +137,11 @@ Tasks 6 与 7 可在实现阶段只读并行规划，但均依赖 Task 5 且共�
 | 基线 Docker 测试/health-check 缺陷造成假绿 | 中 | 预先记录已知基线；不顺手修复、不降低门槛，Task 9 单独报告并请求范围决定 |
 | 全局 lint/format 改写并发或范围外文件 | 低 | 执行前后检查 `git status/diff`，只提交本任务授权文件；格式化改动逐项复核 |
 
-## Open Questions (Blocking)
+## Open Questions（2026-11-25 人工答复记录，阻塞解除）
 
-1. **如何实现三种请求均为默认 404，同时满足“不增加替代 handler/兼容 API”？** 已实测纯删除为 422，`{user_id:uuid}` 为 405。请明确批准一种不违反边界的设计，或将响应契约修订为经过确认的 405/422，并同步修改 spec 的 Testing Strategy 和 Success Criterion 3。此题未答前不得开始 Tasks 1–9 的产品实现；不能由执行者自行放宽断言。
-2. **测试数据隔离和允许清理的边界是什么？** 请提供/批准专用测试数据库，确认 pytest 清库只作用于该测试库；或明确哪些可控测试用户允许清理。不得以当前开发库已有用户为代价满足测试。
-3. **根 `sh scripts/test.sh` 的 `docker compose down -v --remove-orphans` 是否获准在专用可丢弃 Compose 项目/卷上执行？** 请指定隔离方式并明确是否授权运行；不能将之前的 Item-removal 授权继承到本次。若批准修复其预存 Dockerfile/health-check 缺陷，应另立任务，不纳入本规格的九项任务。
+1. **响应契约（已答复）**：批准「405 + uuid converter」——删除 `delete_user_me` 并把管理员动态路由改为 `{user_id:uuid}`，三种凭证（匿名/普通用户 token/超级用户 token）统一返回 405；不新增替代 handler/兼容占位。副作用已批准：管理员端点对非 UUID 路径段一律路由层 404（原按凭证 401/403/422）。spec 的 Testing Strategy、Success Criterion 3 已同步修订。
+2. **测试数据边界（已答复）**：批准「保留开发库，限制清理范围」——pytest 继续连接开发库 `app`；清理仅限测试会话中创建的用户（随机 `create_random_user` 用户及 fixture 创建的 `test-user`）；Task 4 重写 conftest fixture，禁止 `delete(User)` 全表清空，禁止删除 first superuser `admin` 及任何非测试创建的既有用户。
+3. **根 `sh scripts/test.sh`（已答复：推迟）**：保持开放，进入 Task 9 前以专用可丢弃 Compose 项目/卷方式单独决定；未决定前不得执行该脚本，也不能将 Item-removal 的授权继承到本次。其预存 Dockerfile/health-check 缺陷仍另立任务，不纳入本规格。
 
 ## Planning Notes
 

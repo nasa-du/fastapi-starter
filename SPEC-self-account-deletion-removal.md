@@ -1,6 +1,6 @@
 # Spec: self-account-deletion-removal
 
-> 状态：待人工评审
+> 状态：路由契约与测试数据边界已获人工批准（2026-11-25，见文末「契约决定记录」）；实现未开始
 > 所属能力地图：`CAPABILITY-MAP.md` → `self-account-deletion-removal`
 > 本规格仅移除用户删除自己账号的自助流程，不改变管理员侧用户管理。
 
@@ -55,7 +55,7 @@ CAPABILITY-MAP.md                                  # 已批准的能力地图
 SPEC-self-account-deletion-removal.md             # 本模块规格
 backend/
   app/
-    api/routes/users.py                            # 仅删除 DELETE /me 路由
+    api/routes/users.py                            # 删除 DELETE /me 路由；管理员动态路由加 {user_id:uuid}（2026-11-25 批准）
   tests/
     api/routes/test_users.py                       # 替换自助注销测试，保留管理员测试
 frontend/
@@ -89,9 +89,10 @@ def read_user_me(current_user: CurrentUser) -> Any:
 
 # PATCH /me 与 PATCH /me/password 保留。
 # DELETE /me 整个删除，不增加替代处理函数或兼容响应。
+# 管理员动态路由改为 {user_id:uuid}（2026-11-25 批准），使 DELETE /users/me 在路由层统一返回 405。
 
 # 以下管理员端点保留，不因路径包含 delete 而误删：
-# DELETE /{user_id}，依赖 get_current_active_superuser。
+# DELETE /{user_id:uuid}，依赖 get_current_active_superuser。
 ```
 
 ```tsx
@@ -112,11 +113,12 @@ const tabsConfig = [
 **后端路由与数据保留测试（pytest，`backend/tests/api/routes/test_users.py`）**
 
 - 删除原“普通用户通过 `DELETE /users/me` 成功删除自己”和“超级用户调用该接口返回 403”的测试。
-- 新增路由移除契约测试：
-  - 创建普通用户并登录，带有效 token 调用 `DELETE /api/v1/users/me` 返回默认 404。
-  - 同一用户使用超级用户 token 调用也返回默认 404，不再返回旧的 403 业务错误。
+- 新增路由移除契约测试（2026-11-25 批准的契约：三种凭证统一 405，经批准的 `{user_id:uuid}` 路由结构调整实现，不新增替代 handler）：
+  - 创建普通用户并登录，带有效 token 调用 `DELETE /api/v1/users/me` 返回 405（该路径仅剩 GET/PATCH，Allow 头不含 DELETE）。
+  - 同一用户使用超级用户 token 调用同样返回 405，不再返回旧的 403 业务错误。
   - 两次调用后查询数据库，目标用户记录仍存在，`user_code`、姓名、激活状态、密码哈希等未被该请求改变。
-  - 不带 token 调用同一 URL 同样得不到原自助注销结果；以未匹配路由的默认 404 为契约。
+  - 不带 token 调用同一 URL 同样返回 405（路由层拒绝，不进入认证流程）；三种凭证统一以 405 为契约。
+  - 管理员动态路由（GET/PATCH/DELETE `/{user_id}`、POST `/{user_id}/reset-password`）改为 `{user_id:uuid}`：合法 UUID 的既有行为不变；非 UUID 路径段一律在路由层返回 404（原按凭证 401/403/422），该副作用已于 2026-11-25 随契约一并批准。
 - OpenAPI 不包含 `DELETE /api/v1/users/me` 的 operation；客户端生成结果不包含 `deleteUserMe` 及 `usersDeleteUserMe*` 类型。
 - 保留并验证 `GET /users/me`、`PATCH /users/me`、`PATCH /users/me/password` 的现有行为。
 - 保留并验证管理员用户管理：
@@ -170,7 +172,7 @@ const tabsConfig = [
 
 1. 普通用户和管理员的设置页均没有危险操作 tab、删除账号按钮或自助注销确认弹窗；资料和密码 tab 正常。
 2. `DeleteAccount.tsx`、`DeleteConfirmation.tsx` 及其专属前端逻辑和中英文案被删除，没有未使用的引用。
-3. `DELETE /api/v1/users/me` 对有效普通用户 token、有效超级用户 token 和匿名请求均返回默认 404；请求前后对应用户数据不变。
+3. `DELETE /api/v1/users/me` 对有效普通用户 token、有效超级用户 token 和匿名请求均返回 405（2026-11-25 修订：经批准的 `{user_id:uuid}` 路由结构调整，原 404 要求作废）；请求前后对应用户数据不变。
 4. OpenAPI 和生成客户端不再包含 `deleteUserMe` 或相关请求/响应类型。
 5. `GET/PATCH /users/me`、修改密码和主动登出继续工作。
 6. 管理员仍可删除其他用户；管理员删除自己、普通用户删除他人、目标不存在时的原权限与错误契约保持不变。
@@ -182,3 +184,9 @@ const tabsConfig = [
 ## Open Questions
 
 无。自助注销彻底移除、已有用户数据保留，以及管理员用户管理能力不受影响均已确认。
+
+## 契约决定记录（2026-11-25 人工答复）
+
+- **响应契约（Open Question 1）**：`DELETE /api/v1/users/me` 对匿名、普通用户 token、超级用户 token 统一返回 **405**；实现方式为删除 handler 并将管理员动态路由改为 `{user_id:uuid}`，不新增替代 handler 或兼容占位。副作用已批准：管理员端点对非 UUID 路径段的请求在路由层返回 404（原按凭证 401/403/422）。
+- **测试数据边界（Open Question 2）**：pytest 继续连接现有开发库；清理范围仅限测试会话中创建的用户，禁止 `delete(User)` 全表清空，禁止删除 first superuser `admin` 及任何非测试创建的既有用户。
+- **根 `scripts/test.sh`（Open Question 3）**：推迟到 Task 9 前单独决定，未决定前不得执行。
