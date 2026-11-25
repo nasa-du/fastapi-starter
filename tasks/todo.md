@@ -135,10 +135,10 @@
 - [x] 双角色设置页只有两个 tab;自助组件、旧交互测试和专属双语文案已删除,无悬空引用 —— Task 2(commit `26335a8`)+ Task 3(commit `9ec9e11`);移除断言双角色通过,引用扫描零命中,key diff = 0
 - [x] 资料、改密、语言切换和登出相关定向 E2E 通过,前端 lint/build 通过 —— Task 3 定向 `tests/language.spec.ts tests/user-settings.spec.ts`:25 passed + 1 已知时序 flake(零改动复跑 2 passed);lint/build exit 0
 - [x] 管理员文案、`menu.logout` 与 `USERS_SUPERUSER_DELETE_SELF` 翻译保留 —— Task 3 逐项脚本核对双字典均存在
-- [ ] 人工确认该阶段后进入后端删除
+- [x] 人工确认该阶段后进入后端删除
 
 **执行记录**:
-- (2026-11-25)前三项已由 Task 2/3 完成并附证据如上;第四项人工确认待用户给出,确认前不开始 Task 4(后端删除)。
+- (2026-11-25 19:21)用户明确确认「checkpointA已确认」,Checkpoint A 通过,进入后端删除(Task 4)。
 
 ---
 
