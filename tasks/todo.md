@@ -335,12 +335,20 @@
 **描述**:`README.md` 删除「Items 页」截图小节与 `img/dashboard-items.png`;「账号与数据约定」中「新建的 User 与 Item 使用 UUID v7」改为仅 User;如正文仍有 Item 功能描述一并清除。历史 `release-notes.md` 不动。
 
 **验收标准**:
-- [ ] 当前 README 不再展示/承诺 Item 功能;失效截图删除
-- [ ] UUID v7 描述仅保留 User;文档内链接与图片引用有效
+- [x] 当前 README 不再展示/承诺 Item 功能;失效截图删除
+- [x] UUID v7 描述仅保留 User;文档内链接与图片引用有效
 
 **验证**:
-- [ ] `grep -n "Item\|items" README.md` 逐条核对(仅允许历史性提及且明确已移除,或无命中)
-- [ ] `uv run prek run typos --files README.md` 通过;图片引用检查无断链
+- [x] `grep -n "Item\|items" README.md` 零命中(exit 1,连历史性提及也无)
+- [x] `uv run prek run typos --files README.md` 通过;图片引用检查无断链
+
+**执行记录**(2026-11-25):
+- 删除前扫描:`README.md` 共 3 处 Item 命中——L126–128「Items 页」截图小节(含 `img/dashboard-items.png` 引用)、L64 错误码前缀示例 `ITEMS_`、L79「新建的 User 与 Item 使用 UUID v7」;另有 `img/dashboard-items.png` 被引用于 SPEC-item-removal.md(任务清单自身,历史资料不动)与 todo.md
+- GREEN:`git rm img/dashboard-items.png`;README 删「Items 页」小节;L79 改为「新建的 User 使用 Python 3.14 标准库的 UUID v7」;L64 前缀示例列表去掉 `ITEMS_`(当前契约中该前缀已无任何错误码,SPEC-i18n.md 的 ITEMS 条目失效标注属 Task 11 范围)
+- 验证:`grep -n "Item\|items" README.md` **零命中**(exit 1);`uv run prek run typos --files ../README.md` — **Passed**;链接检查——4 个本地图片引用(login/dashboard/dashboard-dark/docs)全部存在,9 个相对链接文档全部存在,仅 2 处 GitHub badge 相对路径(`../../actions/workflows/…`)本地不存在,属 GitHub 平台渲染的标准 badge 写法且对应 workflow 文件(`test-docker-compose.yml`/`test-backend.yml`)均在 `.github/workflows/` 存在,非断链
+- `img/` 目录终态:8 个跟踪文件,`dashboard-items.png` 已移除,其余图片均有或属历史文档引用(release-notes.md 不动,mailpit/react-email 等为既有保留)
+- 历史 `release-notes.md` 未改动(`git status` 仅 README.md 与删除的截图)
+- 提交:README + 截图删除一个 commit,本文件记录一个 commit
 
 **依赖**:Task 8(可与 Task 9 并行,默认串行)
 
