@@ -348,22 +348,6 @@ export type usersCreateUserResponses = {
 
 export type usersCreateUserResponse = usersCreateUserResponses[keyof usersCreateUserResponses];
 
-export type usersDeleteUserMeData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/users/me';
-};
-
-export type usersDeleteUserMeResponses = {
-    /**
-     * Successful Response
-     */
-    200: Message;
-};
-
-export type usersDeleteUserMeResponse = usersDeleteUserMeResponses[keyof usersDeleteUserMeResponses];
-
 export type usersReadUserMeData = {
     body?: never;
     path?: never;

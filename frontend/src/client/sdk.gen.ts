@@ -2,7 +2,7 @@
 
 import { type Client, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserMeData, usersDeleteUserMeResponses, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersResetUserPasswordData, usersResetUserPasswordErrors, usersResetUserPasswordResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses } from './types.gen';
+import type { loginLoginAccessTokenData, loginLoginAccessTokenErrors, loginLoginAccessTokenResponses, loginTestTokenData, loginTestTokenResponses, privateCreateUserData, privateCreateUserErrors, privateCreateUserResponses, usersCreateUserData, usersCreateUserErrors, usersCreateUserResponses, usersDeleteUserData, usersDeleteUserErrors, usersDeleteUserResponses, usersReadUserByIdData, usersReadUserByIdErrors, usersReadUserByIdResponses, usersReadUserMeData, usersReadUserMeResponses, usersReadUsersData, usersReadUsersErrors, usersReadUsersResponses, usersResetUserPasswordData, usersResetUserPasswordErrors, usersResetUserPasswordResponses, usersUpdatePasswordMeData, usersUpdatePasswordMeErrors, usersUpdatePasswordMeResponses, usersUpdateUserData, usersUpdateUserErrors, usersUpdateUserMeData, usersUpdateUserMeErrors, usersUpdateUserMeResponses, usersUpdateUserResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -85,20 +85,6 @@ export class UsersService {
                 'Content-Type': 'application/json',
                 ...options.headers
             }
-        });
-    }
-    
-    /**
-     * Delete User Me
-     *
-     * Delete own user.
-     */
-    public static deleteUserMe<ThrowOnError extends boolean = true>(options?: Options<usersDeleteUserMeData, ThrowOnError>) {
-        return (options?.client ?? client).delete<usersDeleteUserMeResponses, unknown, ThrowOnError>({
-            responseType: 'json',
-            security: [{ scheme: 'bearer', type: 'http' }],
-            url: '/api/v1/users/me',
-            ...options
         });
     }
     
