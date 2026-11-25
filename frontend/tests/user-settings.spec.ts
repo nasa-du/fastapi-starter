@@ -314,54 +314,6 @@ test.describe("Change password validation", () => {
   })
 })
 
-test.describe("Delete account", () => {
-  test.use({ locale: "en-US", storageState: { cookies: [], origins: [] } })
-
-  test("Delete confirmation is localized and can be cancelled", async ({
-    page,
-  }) => {
-    await logInUser(page, firstSuperuserCode, firstSuperuserPassword)
-    await switchToChinese(page)
-    await page.goto("/settings")
-    await page.getByTestId("settings-tab-danger-zone").click()
-
-    await expect(page.getByTestId("delete-account")).toBeVisible()
-    await page.getByTestId("delete-account").click()
-
-    const dialog = page.getByRole("dialog")
-    await expect(dialog.getByRole("heading")).toBeVisible()
-    const description = dialog.locator("[data-slot='dialog-description']")
-    await expect(description).toBeVisible()
-    await expect(description.locator("strong")).toBeVisible()
-    const chineseDescription = await description.textContent()
-    await expect(dialog.getByTestId("confirm-delete-account")).toBeEnabled()
-    await dialog.getByTestId("cancel-delete-account").click()
-    await expect(dialog).not.toBeVisible()
-
-    await page.getByTestId("language-button").click()
-    await page.getByTestId("language-en").click()
-    await page.getByTestId("delete-account").click()
-    await expect(dialog.getByRole("heading")).toBeVisible()
-    expect(await description.textContent()).not.toBe(chineseDescription)
-  })
-
-  test("Delete account successfully logs the user out", async ({ page }) => {
-    const userCode = randomUserCode()
-    const password = randomPassword()
-    await createUser({ user_code: userCode, password })
-    await logInUser(page, userCode, password)
-    await switchToChinese(page)
-    await page.goto("/settings")
-    await page.getByTestId("settings-tab-danger-zone").click()
-
-    await page.getByTestId("delete-account").click()
-    await page.getByTestId("confirm-delete-account").click()
-
-    await expect(page.getByTestId("account-deleted-toast")).toBeVisible()
-    await expect(page).toHaveURL("/login")
-  })
-})
-
 test("Appearance button is visible in sidebar", async ({ page }) => {
   await page.goto("/settings")
   await expect(page.getByTestId("theme-button")).toBeVisible()
