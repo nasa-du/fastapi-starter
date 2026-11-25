@@ -208,13 +208,13 @@
 
 ## ◆ Checkpoint B:API 与客户端契约一致
 
-- [ ] 三种凭证情形下旧 URL 均符合人工批准的响应契约,临时用户与管理员数据未改变
-- [ ] GET/PATCH me、改密和管理员 API 回归通过;生成客户端无自删方法且保留管理方法
-- [ ] `uv run pytest`、`uv run bash scripts/lint.sh`、前端 lint/build 和定向 E2E 均通过
-- [ ] 人工确认该阶段后进入保留能力回归
+- [x] 三种凭证情形下旧 URL 均符合人工批准的响应契约,临时用户与管理员数据未改变 —— Task 4 `test_self_service_account_deletion_removed`:匿名/普通用户 token/超管 token 统一 405,用户与超管记录 7 字段快照逐一相等,响应体不含旧业务错误(commit `38ed235`)
+- [x] GET/PATCH me、改密和管理员 API 回归通过;生成客户端无自删方法且保留管理方法 —— pytest **70 passed, 4 skipped**(Task 4/5 两次运行基线一致,管理员四用例含删他人 200/404/403/403 全绿);Task 5(commit `922e121`):`deleteUserMe` 零命中,7 保留方法在位,`openapi.json` `/users/me` 仅 `get`/`patch`
+- [x] `uv run pytest`、`uv run bash scripts/lint.sh`、前端 lint/build 和定向 E2E 均通过 —— pytest 与前端 lint/build(Task 5 当日复跑);backend `lint.sh` 于 Task 4 GREEN 全绿,其后 `backend/` 零改动(本阶段仅动生成物)无需重跑;定向 E2E:Task 2 `user-settings.spec.ts` 20 passed、Task 3 `language + user-settings` 25 passed + 1 已知时序 flake(零改动复跑绿);admin E2E 属 Task 6 保留能力回归范畴,紧随其后执行
+- [x] 人工确认该阶段后进入保留能力回归
 
 **执行记录**:
-- (待实施)
+- (2026-11-25 20:52)用户明确确认「checkpointB已确认」,Checkpoint B 通过,进入保留能力回归(Task 6)。
 
 ---
 
