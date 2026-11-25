@@ -306,18 +306,27 @@
 **描述**:新增 `frontend/tests/items-removed.spec.ts`:管理员(现有 setup)与临时普通用户(`privateApi.createUser`)侧边栏均无 Items 链接;两角色访问 `/items` 均呈现现有 Not Found(`data-testid="not-found"`),无重定向、无 Item 页面痕迹。运行全量 E2E 回归。注意:全量 pytest 后 User 表被清空,先 `cd backend && uv run python app/initial_data.py` 重建开发管理员再跑 E2E(沿用归档环境备注)。
 
 **验收标准**:
-- [ ] 双角色侧边栏无 Items;`/items` → Not Found 断言通过
-- [ ] 全量 E2E(`bun run test`)绿,既有用例零删减(除 Task 1 已处理的失效用例)
+- [x] 双角色侧边栏无 Items;`/items` → Not Found 断言通过
+- [x] 全量 E2E(`bun run test`)绿,既有用例零删减(除 Task 1 已处理的失效用例)
 
 **验证**:
-- [ ] RED:新 spec 先在未改 UI 前不可行——本任务在 Task 1–3 完成后执行,直接 GREEN;若意外失败按缺陷处理
-- [ ] `PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test`(frontend/ 内)全量绿,记录通过数
+- [x] RED:新 spec 先在未改 UI 前不可行——本任务在 Task 1–3 完成后执行,直接 GREEN(定向 3 passed,含 setup;若意外失败按缺陷处理,本次无失败)
+- [x] `PLAYWRIGHT_BASE_URL=http://localhost:5173 bun run test`(frontend/ 内)全量绿,记录通过数(**69 passed**,42.0s)
+
+**执行记录**(2026-11-25):
+- 新 spec `frontend/tests/items-removed.spec.ts`(2 用例,`locale: "zh-CN"`):管理员用例走既有 setup storageState,断言侧边栏无「项目」链接、有「仪表盘/管理」;普通用户用例以 `storageState: { cookies: [], origins: [] }` 隔离 + `createUser`(privateApi)建临时用户经 `logInUser` 登录,断言无「项目」、有「仪表盘」、无「管理」(非超用户);两用例均 `goto("/items")` 后断言 `not-found` testid 可见且 URL 停留在 `/items`(无重定向)
+- RED 说明:按任务约定本任务在 Task 1–3 完成后执行,新断言(UI 已无 Items)直接 GREEN;沿用 Task 1 在 login.spec.ts 已落地的「项目链接不存在」断言模式(RED→GREEN 证据见 Task 1 执行记录)
+- 环境:开发库容器 `docker compose up -d db` healthy(alembic_version=`7125f2112706` 旧 head,item 表未删,符合约定);`uv run python app/initial_data.py` 重建管理员(幂等,admin 已存在);后端 `uv run uvicorn app.main:app`(8000,dev 模式含 `/api/v1/private/users/`)与前端 `bun run dev`(5173)以后台任务运行,`PLAYWRIGHT_BASE_URL`/`VITE_API_URL` 显式传递(沿用归档踩坑记录:须在 `frontend/` 内运行)
+- 定向:`bunx playwright test tests/items-removed.spec.ts` — **3 passed**(5.9s,setup + 2 新用例)
+- 全量:`PLAYWRIGHT_BASE_URL=http://localhost:5173 VITE_API_URL=http://localhost:8000 bun run test` — **69 passed**(42.0s)= 既有 67(admin 20 + language 6 + login 21 + user-settings 19 + setup 1)+ 新增 2;既有用例零删减
+- `bun run lint`(68 files)绿(新 spec 经 biome 格式化);E2E 后 uvicorn/vite 已停止(5173/8000 端口释放),开发库容器保留运行
+- 提交:spec 提交 + 本文件记录
 
 **依赖**:Task 8
 
-**文件**:`frontend/tests/items-removed.spec.ts`(新;必要时 `frontend/tests/utils/user.ts` 微调)
+**文件**:`frontend/tests/items-removed.spec.ts`(新;`frontend/tests/utils/user.ts` 无需微调,`logInUser` 现有签名已满足)
 
-**规模**:S(1–2 文件)
+**规模**:S(1 文件)
 
 ---
 
