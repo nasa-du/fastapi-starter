@@ -292,17 +292,21 @@
 **描述**:`README.md`「账号与数据约定」明确:账号由管理员创建和管理,系统不提供用户自助注销;用户可修改资料、密码并主动登出。`SPEC-i18n.md` 仅做当前契约口径修正:`USERS_SUPERUSER_DELETE_SELF` 契约表行与 S3 清单中的「Settings 三个 tab」「DeleteConfirmation」描述,参照 item-removal Task 11 先例加失效标注(「已随 self-account-deletion-removal 移除,见 SPEC-self-account-deletion-removal.md」),不改写历史成果数据。`release-notes.md`、`tasks/archive/`、`docs/` 零改动。
 
 **验收标准**:
-- [ ] README 明确管理员管理账号、不提供自助注销
-- [ ] SPEC-i18n.md 中受影响条目均有失效标注与指向;历史数据(契约表状态码、勾选结果)零改写
-- [ ] `release-notes.md`、`tasks/archive/`、`docs/` 零改动(`git status` 确认)
+- [x] README 明确管理员管理账号、不提供自助注销 —— commit `76d71b7`:「账号与数据约定」新增当前口径「账号由管理员创建和管理,系统不提供用户自助注销;用户可在设置页修改资料与密码,并主动登出」
+- [x] SPEC-i18n.md 中受影响条目均有失效标注与指向;历史数据(契约表状态码、勾选结果)零改写 —— commit `76d71b7`:L6 头部总注追加 self-account-deletion-removal 口径;L61 契约表行 Code 列加粗标注(循 item-removal Task 11 格式);L195 S3 条目尾注历史标注(循 S2/S5 格式);403 状态码、detail message、位置列与 [x] 勾选结果原样未动
+- [x] `release-notes.md`、`tasks/archive/`、`docs/` 零改动(`git status` 确认) —— `git status --short release-notes.md tasks/archive docs` 零输出
 
 **验证**:
-- [ ] `grep -n "自助注销\|self-account" README.md` 有明确的当前口径表述
-- [ ] `grep -n "USERS_SUPERUSER_DELETE_SELF\|DeleteConfirmation\|三个 tab" SPEC-i18n.md` 逐条核对标注
-- [ ] `git status` 仅 README.md 与 SPEC-i18n.md 修改
+- [x] `grep -n "自助注销\|self-account" README.md` 有明确的当前口径表述 —— 命中 L76 即新增当前口径句
+- [x] `grep -n "USERS_SUPERUSER_DELETE_SELF\|DeleteConfirmation\|三个 tab" SPEC-i18n.md` 逐条核对标注 —— 3 处命中(L6/L61/L195)全部带失效标注与指向,无裸命中
+- [x] `git status` 仅 README.md 与 SPEC-i18n.md 修改 —— 提交前工作树恰为 `M README.md` + `M SPEC-i18n.md`(前置记录提交后)
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25):
+
+- RED(标注前基线,引用扫描证据):`grep -n "自助注销\|self-account" README.md` exit 1 零命中(当前口径缺失);`grep -n "USERS_SUPERUSER_DELETE_SELF\|DeleteConfirmation\|三个 tab" SPEC-i18n.md` 仅命中 L61 契约表行与 L195 S3 条目,均无任何失效标注(以未标注口径描述已移除功能)。
+- 事实核对:`USERS_SUPERUSER_DELETE_SELF` 仍由 `backend/app/api/routes/users.py:215`(管理员删除自己保护)触发,`SPEC-self-account-deletion-removal.md` 明文要求保留该 code —— 故 L61 标注表述为「自助注销触发点已随 self-account-deletion-removal 移除」而非整个 code 移除,避免与现状矛盾。
+- GREEN(commit `76d71b7`):README L76 单条扩写;SPEC-i18n L6 总注追加、L61/L195 就地标注;历史成果数据零改写。`uv run prek run typos --files README.md SPEC-i18n.md` Passed(exit 0)。
+- 提交序列:前置 Checkpoint C 确认记录 `c0e865e` → `76d71b7`(docs:双文档当前口径与失效标注)→ 本记录独立 docs 提交。
 
 **依赖**:Task 7(可与 Task 6/7 并行,默认串行)
 
@@ -314,11 +318,11 @@
 
 ## ◆ Checkpoint D:文档与行为一致
 
-- [ ] README 明确管理员管理账号且不提供自助注销
-- [ ] 当前错误码契约不指向已删除 handler;历史发布与归档文件零改写
+- [x] README 明确管理员管理账号且不提供自助注销 —— README L76 当前口径(commit `76d71b7`)
+- [x] 当前错误码契约不指向已删除 handler;历史发布与归档文件零改写 —— SPEC-i18n L61 标注明示自助注销触发点已移除(code 仍用于管理员保护),L6/L195 同步标注;`release-notes.md`、`tasks/archive/`、`docs/` `git status` 零改动
 
 **执行记录**:
-- (待实施)
+- (2026-11-25 21:57)Task 8 完成(交付 commit `76d71b7`),证据见 Task 8 节。Checkpoint D 两项待人工复核确认后进入 Task 9;Task 9 根 `sh scripts/test.sh`(会销毁数据卷)另需 Open Question 3 单独授权(尚未决定,未执行)。
 
 ---
 
