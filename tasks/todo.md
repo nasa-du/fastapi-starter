@@ -363,12 +363,21 @@
 **描述**:`SPEC-i18n.md` 仍被 README 引用为当前错误码契约:在 `ITEMS_NOT_FOUND`/`ITEMS_FORBIDDEN` 契约表行与相关叙述处标注「随 item-removal 移除,见 SPEC-item-removal.md」;S2/S5 清单中的 Items 描述加历史标注。`SPEC.md`、`docs/`、归档任务为历史资料,不改写事实。
 
 **验收标准**:
-- [ ] 当前契约文档(SPEC-i18n.md)的 ITEMS 条目均有失效标注与指向
-- [ ] 历史文档未被改写
+- [x] 当前契约文档(SPEC-i18n.md)的 ITEMS 条目均有失效标注与指向
+- [x] 历史文档未被改写
 
 **验证**:
-- [ ] `grep -n "ITEMS_" SPEC-i18n.md` 逐条核对标注
-- [ ] `uv run prek run typos --files SPEC-i18n.md` 通过
+- [x] `grep -n "ITEMS_" SPEC-i18n.md` 逐条核对标注
+- [x] `uv run prek run typos --files SPEC-i18n.md` 通过
+
+**执行记录**(2026-11-25):
+- RED 证据(标注前基线):`grep -n "ITEMS_\|Items 页\|Items CRUD" SPEC-i18n.md` 命中 5 处均无失效标注——L42 模块前缀叙述、L65/L66 契约表 `ITEMS_NOT_FOUND`/`ITEMS_FORBIDDEN` 两行、L151 Testing Strategy「Items CRUD」、L188 S2 清单「Items 页」;旁证:README L71/L114 仍引用 SPEC-i18n.md 为当前错误码契约,`SPEC-item-removal.md` 存在
+- GREEN:5 处就地追加标注,历史事实零改写(spec 状态「已完成」、契约表数据、S2/S5 勾选结果均保持原样):
+  - 头部 blockquote 新增「失效口径标注(2026-11-25)」总注:Item 功能已随 item-removal 移除、当前契约不含任何 `ITEMS_*` code,统一覆盖叙述性命中(user story L23、Testing Strategy L151、隐蔽英文源清单 L230 等)
+  - L43 模块前缀括注失效指向;L66/L67 契约表两行 Code 列加粗标注「已随 item-removal 移除,见 SPEC-item-removal.md」;L189(S2)与 L209(S5)清单条目尾注「历史标注」
+- 验证:`grep -n "ITEMS_" SPEC-i18n.md` — **4 处命中(L6 总注、L43 前缀、L66/L67 表行)全部带失效标注与指向**;`uv run prek run typos --files SPEC-i18n.md` — **Passed**
+- 历史资料核查:`git status` 仅 `SPEC-i18n.md` 修改;`SPEC.md`、`docs/`、归档任务、`release-notes.md` 零改动(按约定不改写事实)
+- 提交:SPEC-i18n.md 标注一个 commit,本文件记录一个 commit
 
 **依赖**:Task 10
 
@@ -380,9 +389,9 @@
 
 ## ◆ Checkpoint D:用户与维护者路径一致
 
-- [ ] 管理员用户管理、普通用户设置/登录/登出回归全绿
-- [ ] 当前文档不再承诺 Item;历史记录保留
-- [ ] 人工确认后进入 Phase 5
+- [x] 管理员用户管理、普通用户设置/登录/登出回归全绿(Task 8 定向 48 passed + 全量 pytest 70 passed, 4 skipped;Task 9 全量 E2E 69 passed)
+- [x] 当前文档不再承诺 Item;历史记录保留(Task 10 README 零命中 + 失效截图删除;Task 11 SPEC-i18n.md ITEMS 条目全部带失效标注)
+- [ ] 人工确认后进入 Phase 5(待人工核对后勾选并进入 Task 12)
 
 ---
 
