@@ -1,112 +1,149 @@
-# Implementation Plan: item-removal
+# Implementation Plan: self-account-deletion-removal
 
-> 依据：`SPEC-item-removal.md`（已确认）与 `CAPABILITY-MAP.md`
-> 状态：**已完成**（T1–T13 与 Checkpoint A–E 全部达成，2026-11-25 人工终审通过；全栈 Docker 测试经用户单独确认执行）
-> 任务清单：`tasks/todo.md`（含逐任务 RED/GREEN 证据与 SPEC 10 条 Success Criteria 核对表）
-> 已完成的 i18n 计划归档至 `tasks/archive/i18n/`，未覆盖未完成任务。
+> 依据：`SPEC-self-account-deletion-removal.md`（待人工评审）与已批准的 `CAPABILITY-MAP.md`
+> 状态：**计划已编制，待人工批准；实现未开始，且被 Open Questions 1–3 阻塞**
+> 任务清单：`tasks/todo.md`（Tasks 1–9；所有复选框故意保持未完成）
+> “继续”仅用于继续本次规划工作，不被解释为批准规格冲突、数据清理或开始实现。
+> 前计划：`item-removal` 已 100% 完成并通过人工终审，原文件完整归档至 `tasks/archive/item-removal/`，未删除任何未完成任务。
 
 ## Overview
 
-彻底移除 Item 页面、导航、后端 API、业务模型和客户端契约，并新增删除 `item` 表的 Alembic 迁移。共 13 个任务，按前端入口、后端实现、隔离迁移、用户回归和最终验收排序；每个任务最多修改 5 个源文件/测试文件，工具生成物另行记录。
+彻底移除用户自助注销的设置入口、前端组件和 mutation、后端 `DELETE /api/v1/users/me`、OpenAPI operation 及生成客户端方法，同时保留已有用户数据、个人资料、改密、登出和管理员用户管理。采用九个按依赖排序的任务，在前后端能力删除后立即验证保留路径，再更新文档、审计残留并完成全量验收。
 
-用户自助注销不在本计划中。部署时必须先让所有运行中的应用版本停止读写 Item，再单独执行破坏性迁移；计划与测试均不直接操作当前开发库或生产库。
+本次实现**无 schema 或 Alembic 变化，无用户数据清理、回填或替代注销流程**。Task 4 的测试只能使用经批准的隔离测试数据库和规格明确授权的 pytest 测试夹具，不能把它解释为允许清空或修改开发库中的已有用户。根 `scripts/test.sh` 会执行 `docker compose down -v --remove-orphans`，与该数据保留要求存在实际冲突；其执行方式和范围必须在 Task 9 前单独批准（见 Open Question 3）。
 
-## 已验证的代码库事实
+## Verified Codebase Facts
 
-- 当前 Alembic head 为 `7125f2112706`。删表前 Item 结构：UUID 主键、非空 `owner_id` 外键（`ON DELETE CASCADE`）、`VARCHAR(255)` 标题/描述、可空带时区 `created_at`。
-- `User.items`、`Item.owner`、`crud.create_item`、测试清理 fixture、User/Item UUID v7 联合断言和管理员删除用户时的 Item 清理构成同一模型依赖面。
-- 原 API 为 `/api/v1/items/` 的 GET/POST 和 `/api/v1/items/{id}` 的 GET/PUT/DELETE，移除后均应得到未匹配路由的默认 404。
-- TanStack Router 插件在构建时更新 `routeTree.gen.ts`；根级 Not Found 已有 `data-testid="not-found"`。
-- 双字典除 `items` 和 `ITEMS_*` 外，还有 `nav.items`；管理员删除用户文案也提到 Item，但管理员组件和端点必须保留。
-- `frontend/openapi.json` 与 `backend/app/frontend/` 被 Git 忽略；`frontend/src/client/` 与 `frontend/src/routeTree.gen.ts` 被跟踪。生成中间产物和构建产物不提交。
-- 根目录 `scripts/test.sh` 会执行 `docker compose down -v`，最终全栈测试需要单独确认，不能作为普通测试隐式执行。
+- 后端仅一个自助删除处理函数：`backend/app/api/routes/users.py` 的 `delete_user_me`（当前 L131–146）。`GET /me`、`PATCH /me`、`PATCH /me/password` 和 `DELETE /{user_id}` 均在同一文件中，后者是管理员能力，必须保留。
+- 管理员删除自己仍在管理员处理函数中返回 `403` 和 `USERS_SUPERUSER_DELETE_SELF`；双字典中的同名翻译也仍被使用。删除自助处理函数时不得全局删除此错误码。
+- 自助删除前端边界明确：`settings.tsx` 引入 `DeleteAccount`，两个专属组件调用 `UsersService.deleteUserMe()` 并注销本地会话；`UserInformation`、`ChangePassword` 和 `Admin/DeleteUser.tsx` 是独立且须保留的能力。
+- 当前 `user-settings.spec.ts` 的共享 `tabs` 数组含三个 tab，并含两个真实自助删除交互测试。现有测试已有资料、改密、登出、语言和外观回归；`login.spec.ts` 亦有登出场景。
+- 现有后端 `test_users.py` 已覆盖 GET/PATCH me、改密，以及管理员删除他人、不存在目标、删除自己和普通用户 403。保留并运行这些用例，不能为让移除测试通过而削弱它们。
+- 当前生成物确有 `UsersService.deleteUserMe`、`usersDeleteUserMeData/Response(s)`。`sh scripts/generate-client.sh` 导出 OpenAPI、运行 openapi-ts 并调用前端 lint；`frontend/src/client/` 只能由该工具修改。
+- `frontend/openapi.json` 和 `backend/app/frontend/` 被忽略；`frontend/src/client/` 和 `routeTree.gen.ts` 被跟踪。此变更不要求手改路由树。
+- 当前 Alembic head 为 `d464f5951cc0`；本计划应保持迁移文件与 head 不变。此事实用于验证“无迁移”，不是要求执行迁移。
+- **路由冲突（规划阶段只读/隔离探针已实测，无产品代码或数据库改动）**：仅删除 `DELETE /users/me` 后，`DELETE /users/{user_id}` 会匹配字面值 `me`；原类型为 `uuid.UUID`，因此返回 422，而非规格要求的默认 404。将动态路径改为 `{user_id:uuid}` 后，保留的 GET/PATCH `/me` 仍参与 method 匹配，实测返回 405，也不是 404。不能忽略这一差异，也不能暗中增加规格禁止的替代处理函数、禁用占位或兼容 API。
+- 上一模块已记录两个范围外基线问题：`backend/Dockerfile` 不复制 `backend/tests/`，根 `scripts/test.sh` 的容器内 pytest 腿因此失败；Docker Compose CI 使用的 `/api/v1/utils/health-check` 不存在。它们不在本规格范围内，不能混入本次删除工作；若阻塞最终验收，单独报告并请求决定。
 
 ## Architecture Decisions
 
-1. **先停止读写，再 contract**：Task 1–6 移除应用代码与客户端中的 Item；Task 7 才新增删表迁移。真实部署先完成代码全量切换并停止旧版本，再备份、审批并执行迁移。
-2. **保留历史，新增一个迁移**：新迁移以 `7125f2112706` 为 `down_revision`。upgrade 删除 `item`；downgrade 重建上述最终空表结构，不能也不声称恢复数据。
-3. **迁移测试使用显式隔离 URL**：pytest fixture 要求 `ITEM_REMOVAL_TEST_DATABASE_URL` 指向专用 PostgreSQL 的管理数据库，自动创建随机名数据库并在 finally 中销毁。未配置时只跳过这组高风险测试，最终验收必须显式配置并执行。
-4. **Alembic 连接显式覆盖**：独立 `Config` 使用 `backend/alembic.ini`，设置自定义 `item_removal_database_url` 选项；`alembic/env.py` 仅在该选项存在时使用它，否则保持现有全局 Settings 行为。测试核对实际连接的 host/database，禁止把当前 `DATABASE_URL` 默认当隔离库。
-5. **生成物只由工具维护**：客户端由 `sh scripts/generate-client.sh` 生成；路由树由 Vite/TanStack 插件生成。禁止手改。
-6. **保留共享能力**：保留 `Message`、User UUID v7 和 `created_at`、通用 DataTable、管理员删除用户及权限保护。导航数组中通用的 `items` 变量或 Sidebar 的通用 `Item` 类型不是 Item 业务残留。
-7. **默认串行**：双字典、模型、测试 fixture、生成物和迁移链均为共享边界。`self-account-deletion-removal` 不在本计划中并行实施。
+1. **先冻结路由契约，再实施删除。** Open Question 1 未解决前，所有产品代码任务保持未开始。已批准的契约决定须同步到 spec 和本计划，不能通过降低断言或把 422/405 称为 404 来完成任务。
+2. **不保留后门或僵尸代码。** 删除整个自助 handler、组件、mutation 和专属文案；不以隐藏按钮、无操作函数、403 占位或兼容接口替代。管理员端点、组件和 `USERS_SUPERUSER_DELETE_SELF` 例外保留。
+3. **能力删除采用小垂直切片。** 前端入口和专属组件（Task 2）与后端路由及数据保留契约（Task 4）分别形成可验证切片；客户端仅在真实后端 OpenAPI 改变后生成（Task 5），避免手改或生成陈旧契约。专属双语文案在 UI 引用删除后由 Task 3 单独清理，确保每项任务最多五个源文件/测试文件，且中间状态不出现未翻译文案。
+4. **管理员能力作为跨切片不变量。** 每个相关测试阶段都保留并运行 `DELETE /users/{user_id}` 的授权、自删保护、404 和成功删除测试；前端 admin 组件和场景不得误删。若路由契约决策需要改变动态路由结构，须先单独证明各管理端点行为不变。
+5. **测试先行且忠于旧行为。** 新“已移除”断言在实现前按批准后的响应契约运行并记录 RED；旧成功自删与 superuser 403 测试由新契约测试替换，不跳过。保留能力测试原则上不改断言；确需适配经批准的路由结构时，逐项说明并维持等价行为。
+6. **数据保护优先于脚本便利。** 不新增迁移，不手动清理开发/生产用户。pytest 的会话级 autouse fixture 会 `delete(User)`，因此实现阶段须先确认隔离测试数据库和明确允许清理的测试用户范围；不能把现有 `docker compose up -d db` 自动视为满足规格的数据保留承诺。
+7. **测试数据以可控用户为单位验证。** 后端在专用测试库创建随机普通用户，快照其 `id/user_code/full_name/is_active/is_superuser/hashed_password/created_at`，对匿名、普通 token 和 superuser token 的移除请求逐一断言批准后的默认错误响应，并刷新/重查后逐字段比对。普通请求使用临时用户自己的 token；超级用户请求不得误删该临时用户，管理员自身记录也须保留。
+8. **生成物只由工具维护。** Task 5 运行生成脚本，核对目标 operation、方法和类型消失，其他 UsersService 能力保留；再次生成后跟踪文件零额外 diff。忽略的中间 OpenAPI/构建产物不提交。
+9. **文档语义区分当前与历史。** README 明确账号由管理员管理且不提供自助注销。`release-notes.md` 和 `tasks/archive/` 原样保留；`SPEC-i18n.md` 仅在 README 继续将其作为当前错误码契约时，修正其当前错误码位置并为历史 Settings/DeleteConfirmation 描述增加失效说明，不改写历史成果。
+10. **默认串行，避免共享文件竞争。** `users.py`、`test_users.py`、`user-settings.spec.ts`、双字典和生成物均为共享边界。前端与后端前期任务技术上可独立，但当前有契约阻塞且仓库采用单清单证据记录，因此按 Task 1–9 串行；如未来并行，后端测试与路由文件归后端 lane，前端组件与测试归前端 lane，字典/文档/生成物由集成者独占。
+11. **已执行的环境管理假设仅在人工批准后生效。** 本计划当前采用的“审批策略不询问用户”只描述工具权限，不代表用户批准了规格冲突、数据破坏或实现方案。计划评审与数据删除授权必须显式记录。
 
 ## Dependency Graph
 
 ```
-T1 路由/导航移除 ── T2 Item 组件删除 ── T3 文案/旧前端测试清理 ── ◆CP-A
-                                                               │
-T4 API 移除 ── T5 模型/CRUD/fixture 移除 ── T6 客户端与路由树再生成 ── ◆CP-B
-                                                               │
-                                      T7 删表迁移 + 隔离往返测试 ── ◆CP-C
-                                                               │
-T8 用户管理 API 回归 ── T9 双角色 UI 回归 ── T10 当前文档 ── T11 历史规格口径 ── ◆CP-D
-                                                               │
-                                             T12 残留审计 ── T13 全量验收 ── ◆CP-E
+H1 人工确认路由契约 + 批准本计划；H2 批准隔离测试库与可控测试用户范围
+  │
+  └─ T1 冻结契约与测试数据安全基线
+        │
+        ├─ T2 设置 UI/专属组件删除 + 双角色 E2E
+        │
+        ├─ T3 专属双语文案清理 ── ◆CP-A
+        │
+        └─ T4 自助 DELETE 删除 + 响应契约/数据不变 + 管理端点 API 回归
+              │
+              └─ T5 OpenAPI/客户端生成 + 保留方法检查 ── ◆CP-B
+                                                              │
+                                     T6 管理 UI 回归 + T7 登出后账号仍可用 ── ◆CP-C
+                                                                              │
+                                                              T8 当前文档与历史边界 ── ◆CP-D
+                                                                                       │
+                                                                       T9 残留审计 + 全量验收 ── ◆CP-E
+
+H3 根 scripts/test.sh 的数据卷销毁授权：Task 9 前另行明确
 ```
 
-按 T1–T13 串行。新增或改写的移除断言先失败再删除实现；纯删除任务以引用扫描和构建失败/生成为 RED 证据，不保留已失效的 CRUD 行为测试。
+Tasks 6 与 7 可在实现阶段只读并行规划，但均依赖 Task 5 且共享 Playwright 环境，默认串行。Task 8 可与 Task 6/7 并行编辑互不重叠的文件，但默认由同一执行者顺序完成。
 
 ## Task List
 
-### Phase 1: 前端入口移除
-- [x] Task 1: 删除 Item 路由、加载组件和侧边栏入口
-- [x] Task 2: 删除 Item 组件目录
-- [x] Task 3: 删除 Item 文案与失效前端测试
+### Phase 1: Contract and Removal
 
-### ◆ Checkpoint A: 前端源码无 Item 业务入口
-- [x] 前端 lint/build 通过，路由树无 `/items`
-- [x] 双字典和现有测试不再依赖 Item 页面
+- [ ] Task 1: 冻结已批准的路由契约、保留路径和测试数据安全基线
+- [ ] Task 2: 删除自助注销 UI 和组件，添加双角色入口移除断言
+- [ ] Task 3: 删除自助注销专属双语文案，保留共享与管理员文案
+- [ ] Task 4: 删除自助 DELETE 业务逻辑，添加移除契约和用户数据不变测试
+- [ ] Task 5: 通过生成器同步 OpenAPI 与前端客户端，验证保留契约
 
-### Phase 2: 后端与生成契约移除
-- [x] Task 4: 删除 Item API 并添加未注册路由测试
-- [x] Task 5: 删除 Item 模型、CRUD、关系及 fixture 引用
-- [x] Task 6: 删除 Item 测试工具并再生成客户端/路由树
+### ◆ Checkpoint A: Settings Surface Removed
 
-### ◆ Checkpoint B: 应用不再读写 Item
-- [x] 后端完整测试、前端 lint/build 通过
-- [x] OpenAPI 和生成客户端无 Item API/schema
+- [ ] 双角色设置页只有两个 tab；自助组件、旧交互测试和专属双语文案已删除，无悬空引用
+- [ ] 资料、改密、语言切换和登出相关定向 E2E 通过，前端 lint/build 通过
+- [ ] 管理员文案、`menu.logout` 与 `USERS_SUPERUSER_DELETE_SELF` 翻译保留
+- [ ] 人工确认该阶段后进入后端删除
 
-### Phase 3: 数据库 contract
-- [x] Task 7: 新增删表迁移与隔离 PostgreSQL 往返测试
+### ◆ Checkpoint B: API and Client Agree
 
-### ◆ Checkpoint C: 迁移安全验证
-- [x] 空库、含数据旧库、downgrade 和再次 upgrade 均通过
-- [x] User 数据保持不变；隔离库销毁；开发/生产库未操作
+- [ ] 三种凭证情形下旧 URL 均符合人工批准的响应契约，临时用户与管理员数据未改变
+- [ ] GET/PATCH me、改密和管理员 API 回归通过；生成客户端无自删方法且保留管理方法
+- [ ] `uv run pytest`、`uv run bash scripts/lint.sh`、前端 lint/build 和定向 E2E 均通过
+- [ ] 人工确认该阶段后进入保留能力回归
 
-### Phase 4: 用户路径与文档
-- [x] Task 8: 回归用户管理和普通用户 API
-- [x] Task 9: 回归管理员/普通用户导航和 Not Found
-- [x] Task 10: 更新当前 README 并删除失效截图
-- [x] Task 11: 标注历史规格中的 Item 失效口径
+### Phase 2: Retained User and Admin Flows
 
-### ◆ Checkpoint D: 用户和维护者路径一致
-- [x] 管理员其余能力及普通用户设置/登录不受影响
-- [x] 当前文档不再承诺 Item，历史记录保留
+- [ ] Task 6: 验证管理员删除他人、取消删除、自删隐藏/保护、权限控制和完整用户管理 UI
+- [ ] Task 7: 验证普通用户登出不删除账号、资料/改密/语言切换继续工作
 
-### Phase 5: 审计与验收
-- [x] Task 12: 审计当前代码、生成物和历史资料边界
-- [x] Task 13: 全量验证并逐条核对规格
+### ◆ Checkpoint C: Preserved Capabilities Work
 
-### ◆ Checkpoint E: 完成
-- [x] 规格 10 条 Success Criteria 均有证据
-- [x] 后端测试/lint、前端 lint/build、Playwright 全量通过
-- [x] 全栈脚本经单独确认后执行，或记录未执行原因
-- [x] 人工评审后才进入下一模块
+- [ ] 管理员创建、查看、编辑、停用、删除他人及重置密码均正常
+- [ ] 普通用户登出到登录页后可用原凭证重新登录；不发生 DELETE me 请求
+- [ ] 全量 Playwright 通过，未跳过或削弱管理员测试
+
+### Phase 3: Documentation
+
+- [ ] Task 8: 更新当前账号说明，标注仍被引用的当前契约文档并保留历史记录
+
+### ◆ Checkpoint D: Documentation Matches Behavior
+
+- [ ] README 明确管理员管理账号且不提供自助注销
+- [ ] 当前错误码契约不指向已删除 handler；历史发布与归档文件零改写
+
+### Phase 4: Audit and Acceptance
+
+- [ ] Task 9: 审计残留、无迁移/无数据变更，运行全量验证并逐条核对 Success Criteria
+
+### ◆ Checkpoint E: Complete
+
+- [ ] 规格 10 条 Success Criteria 均有对应测试、扫描或文档证据
+- [ ] 后端测试/coverage/lint、前端 lint/build、Playwright 全绿，coverage 门槛不降低
+- [ ] 客户端再生成幂等，无手改生成物、无新增迁移、无未经授权的数据操作
+- [ ] 根全栈脚本已按明确批准执行并记录结果；任何数据风险或预存缺陷均单独报告，不以基线问题、重跑或部分通过代替规格要求的全栈测试通过
+- [ ] 人工终审通过后才标记完成
 
 ## Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| 删表不可恢复 | 高 | 仅隔离库自动验证；真实环境先代码全量切换、备份、单独审批 |
-| downgrade 结构不完整 | 高 | 按最终旧结构逐列/约束断言，测试往返；不声称恢复数据 |
-| Alembic 误连开发库 | 高 | 测试专用环境变量、随机库名、独立 Config 和 URL 覆盖、连接目标断言、finally 清理 |
-| User→Item 残留破坏启动/管理员删除 | 高 | Task 5 同片清理模型、CRUD、关系、显式 delete 和 fixture；Task 8 回归 |
-| 生成文件误手改/误提交 | 中 | 仅用生成器，检查幂等和 Git 跟踪/忽略清单 |
-| E2E 双角色覆盖不足 | 中 | 管理员沿用 setup，普通用户用 private API 临时创建；/items 断言现有 Not Found |
-| 全栈脚本删除数据卷 | 高 | T13 前单独确认；普通 pytest/构建不调用该脚本 |
-| 历史 Item 引用误删或误留 | 低 | 历史事实保留；当前 README 与当前错误码口径明确指向新规格，语义审计而非全仓零字符串 |
+| 删除静态 DELETE 后动态路由返回 422/405 | 高 | Open Question 1 在实现前解决；隔离探针已证明纯删除/UUID converter 均不满足 404 |
+| 为满足 404 引入被禁止的兼容 handler 或改变管理员路由 | 高 | 只实施明确批准的路由设计；所有管理端点授权与行为逐项回归 |
+| pytest fixture 或根全栈脚本清空开发数据 | 高 | 隔离测试库与测试用户范围先审批；根 `down -v` 单独授权，失败时手动清理也须同一授权覆盖 |
+| 误删管理员自删保护、组件或错误码 | 高 | 跨阶段不变量；保留 `DeleteUser.tsx`、`DELETE /{user_id}`、`USERS_SUPERUSER_DELETE_SELF` 及完整测试 |
+| 仅隐藏 UI，留下可绕过后端/API client | 高 | Task 4 删除 handler，Task 5 验证 OpenAPI/客户端，Task 9 语义审计 |
+| 删除共享文案或 logout 逻辑 | 中 | 只删 `settings.tabs.danger/deleteAccount/deleteConfirmation`；保留 `menu.logout`、admin.delete 和 errors 中的自删保护翻译 |
+| E2E 用文案或持久 session 掩盖双角色差异 | 中 | 明确 tablist 总数/testid 否定断言；管理员使用现有 setup，普通用户使用独立 storageState 和受控测试用户 |
+| 生成文件被手改或漏提交 | 中 | 仅 Task 5 运行生成器；检查目标符号、其余 service 和二次生成零 diff |
+| 历史资料被误改或当前文档继续宣传旧能力 | 低 | 历史/当前分域扫描；仅 README 和必要的 SPEC-i18n 当前契约说明，归档不动 |
+| 基线 Docker 测试/health-check 缺陷造成假绿 | 中 | 预先记录已知基线；不顺手修复、不降低门槛，Task 9 单独报告并请求范围决定 |
+| 全局 lint/format 改写并发或范围外文件 | 低 | 执行前后检查 `git status/diff`，只提交本任务授权文件；格式化改动逐项复核 |
 
-## Open Questions
+## Open Questions (Blocking)
 
-无规格层未决问题。原待确认项已闭环：Task 13 的 Docker 全栈测试已于 2026-11-25 经用户单独确认执行——栈 build/prestart/up 与前端服务 200 全绿，容器内 pytest 腿因预存打包缺陷失败（Dockerfile 自基线不含 `backend/tests/`，本仓库 CI 不使用该路径，与本计划无关），详见 `tasks/todo.md` Task 13 执行记录与范围外发现。
+1. **如何实现三种请求均为默认 404，同时满足“不增加替代 handler/兼容 API”？** 已实测纯删除为 422，`{user_id:uuid}` 为 405。请明确批准一种不违反边界的设计，或将响应契约修订为经过确认的 405/422，并同步修改 spec 的 Testing Strategy 和 Success Criterion 3。此题未答前不得开始 Tasks 1–9 的产品实现；不能由执行者自行放宽断言。
+2. **测试数据隔离和允许清理的边界是什么？** 请提供/批准专用测试数据库，确认 pytest 清库只作用于该测试库；或明确哪些可控测试用户允许清理。不得以当前开发库已有用户为代价满足测试。
+3. **根 `sh scripts/test.sh` 的 `docker compose down -v --remove-orphans` 是否获准在专用可丢弃 Compose 项目/卷上执行？** 请指定隔离方式并明确是否授权运行；不能将之前的 Item-removal 授权继承到本次。若批准修复其预存 Dockerfile/health-check 缺陷，应另立任务，不纳入本规格的九项任务。
+
+## Planning Notes
+
+- 本计划仅进行了文件读取、搜索、Git 状态检查和不访问数据库的 FastAPI 路由探针，以及本计划文档的编写/归档；未修改产品代码、运行 pytest/生成器、连接/清理数据库或启动服务。
+- 缺失的 skill 参考文件 `../../references/definition-of-done.md` 在 skill 安装目录和 `/home/fk/.dsh/references/` 均不存在；本计划直接落实可验证的 per-task 验收、coverage 门槛、无跳过/无弱化和人工终审要求，没有虚构引用内容。
