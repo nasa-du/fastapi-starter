@@ -495,4 +495,4 @@ SPEC-item-removal.md 10 条 Success Criteria 核对(2026-11-25):
 - [x] SPEC-item-removal.md Success Criteria 全部达成并附证据(第 9 条附全栈预存缺陷说明,与本计划无关,见 Task 13)
 - [x] 后端测试/lint、前端 lint/build、Playwright 全量通过;隔离迁移验证通过
 - [x] 全栈测试经单独确认执行或记录未执行原因(2026-11-25 用户确认执行;结果与预存缺陷说明见 Task 13 执行记录第 7 条)
-- [ ] 人工终审通过后,按能力地图进入 `self-account-deletion-removal` 的规格评审/计划(待人工终审)
+- [x] 人工终审通过后,按能力地图进入 `self-account-deletion-removal` 的规格评审/计划(**人工终审通过:2026-11-25,用户于运行时环境(前端 5173/后端 8000)审核侧边栏无 Items、`/items` Not Found、Settings/语言切换与文档口径后确认通过**)
