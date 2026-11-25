@@ -72,18 +72,23 @@
 **描述**:RED 先行:`user-settings.spec.ts` 的共享 `tabs` 数组改为 `["my-profile", "password"]`,新增双角色断言——管理员(现有 setup storageState)与普通用户(独立 storageState + `createUser` 受控测试用户)设置页 tablist 均只有两个 tab,`settings-tab-danger-zone`、`delete-account`、`confirm-delete-account`、`account-deleted-toast` 均 `toHaveCount(0)`/不可见。跑定向测试确认 RED(旧 UI 仍有三个 tab)。GREEN:删除 `frontend/src/components/UserSettings/DeleteAccount.tsx` 与 `DeleteConfirmation.tsx` 两个文件;`settings.tsx` 删除 `DeleteAccount` 导入与 `danger-zone` tab 配置项,`tabsConfig` 只剩 profile/password 两项,并删除仅为区分超级用户而存在的 `finalTabs` 分支(所有用户同一份 tabsConfig);删除 spec 中 "Delete account" describe 块(两个旧交互测试)。UI 引用删除后,双字典中 `settings.tabs.danger`、`settings.deleteAccount.*`、`settings.deleteConfirmation.*` 暂时悬空,由 Task 3 清理(本任务不改字典,避免与后端任务共享文件边界)。
 
 **验收标准**:
-- [ ] `DeleteAccount.tsx`、`DeleteConfirmation.tsx` 删除;`settings.tsx` 无 `DeleteAccount` 导入、无 `danger-zone`、无 `is_superuser` tab 分支
-- [ ] `user-settings.spec.ts` 的 `tabs` 数组为两项;无 "Delete account" describe;新增双角色两 tab 断言
-- [ ] 双字典本任务零改动(Task 3 专属)
+- [x] `DeleteAccount.tsx`、`DeleteConfirmation.tsx` 删除;`settings.tsx` 无 `DeleteAccount` 导入、无 `danger-zone`、无 `is_superuser` tab 分支 —— commit `26335a8`;`finalTabs` 超管分支删除,`tabsConfig` 直接渲染(仅保留与角色无关的 `currentUser` 空值守卫)
+- [x] `user-settings.spec.ts` 的 `tabs` 数组为两项;无 "Delete account" describe;新增双角色两 tab 断言 —— describe「Self-service account deletion is removed」:管理员(setup storageState)与普通用户(空 storageState + `createUser` 受控用户)各一测,断言 tablist tab 数 = 2、四个移除目标 testid 均 `toHaveCount(0)`
+- [x] 双字典本任务零改动(Task 3 专属)—— `frontend/src/locales/` 未触碰,`settings.tabs.danger`、`settings.deleteAccount.*`、`settings.deleteConfirmation.*` 悬空待 Task 3
 
 **验证**:
-- [ ] RED 证据:改测试后、删实现前,定向 `bunx playwright test tests/user-settings.spec.ts` 失败于两 tab/否定断言
-- [ ] GREEN:后端 + db 运行时定向 `bunx playwright test tests/user-settings.spec.ts` 全绿(资料/改密/语言/登出既有用例零删减)
-- [ ] 引用扫描:`grep -rn "DeleteAccount\|DeleteConfirmation\|danger-zone\|deleteUserMe" frontend/src/routes frontend/src/components/UserSettings frontend/tests` 零命中(生成物 `src/client/` 除外,Task 5 清理)
-- [ ] `bun run lint` + `bun run --filter frontend build` 通过
+- [x] RED 证据:改测试后、删实现前,定向 `bunx playwright test tests/user-settings.spec.ts` 失败于两 tab/否定断言 —— commit `bcf6fd2` 后运行:2 failed + 19 passed,双角色均失败于 `getByRole('tablist').getByRole('tab')` `toHaveCount(2)` Received: 3(旧 UI 三 tab),否定断言同步失败
+- [x] GREEN:后端 + db 运行时定向 `bunx playwright test tests/user-settings.spec.ts` 全绿(资料/改密/语言/登出既有用例零删减)—— commit `26335a8` 后运行:**20 passed**(20.2s);既有用例零删减,仅按任务要求移除两个旧自助注销交互测试
+- [x] 引用扫描:`grep -rn "DeleteAccount\|DeleteConfirmation\|danger-zone\|deleteUserMe" frontend/src/routes frontend/src/components/UserSettings frontend/tests` —— 实现/组件引用零命中;仅 1 处命中为新增移除断言自身(spec 内 `settings-tab-danger-zone` `toHaveCount(0)` 否定断言,依赖该字面 testid 证明其不存在,属预期断言而非悬空引用;生成物 `src/client/` 不在扫描范围,Task 5 清理)
+- [x] `bun run lint` + `bun run --filter frontend build` 通过 —— lint:66 files,exit 0;build:含 `tsc -p tsconfig.build.json` 类型检查,vite ✓ built in 716ms,exit 0
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25):
+
+- 环境:db 容器 healthy(开发库,未执行任何迁移或用户数据清理);`uv run python app/initial_data.py` 幂等确认管理员;后端 `uv run uvicorn app.main:app`(8000)与前端 `bun run dev`(5173)以后台任务运行;在 `frontend/` 内显式传 `PLAYWRIGHT_BASE_URL=http://localhost:5173 VITE_API_URL=http://localhost:8000`(沿用归档踩坑记录)。
+- RED(commit `bcf6fd2`,仅改 spec):`tabs` → 两项;新增移除断言 describe。定向运行 2 failed + 19 passed,失败点为两 tab 断言(Received: 3)与否定断言,符合「旧 UI 仍有三个 tab」的 RED 预期。
+- 同跑附记:「Selected mode is preserved across sessions」30s 超时(radix 菜单不稳定,与归档 i18n/item-removal 已记录的时序 flake 同模式;该测试不涉及本任务改动面)→ 零改动单独复跑通过,确认 flake 非回归,未改代码未改断言。
+- GREEN(commit `26335a8`):删除两组件文件;`settings.tsx` 删 `DeleteAccount` 导入、`danger-zone` 项与 `finalTabs` 超管分支;spec 删「Delete account」describe(2 个旧交互测试)。定向运行 **20 passed**(20.2s)= 18 个既有用例 + setup + 2 个新移除断言。
+- 提交序列:RED `bcf6fd2`(test:)→ GREEN `26335a8`(feat:)→ 本记录独立 docs 提交。
 
 **依赖**:Task 1(契约冻结后才开始实现)
 
