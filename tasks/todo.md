@@ -223,16 +223,21 @@
 **描述**:零或最小源码改动,以运行既有 E2E 为主。确认 `admin.spec.ts` 全部场景通过:管理员删除其他用户(成功、toast、行消失)、取消删除、非超用户无权限访问、创建/编辑/重置密码。额外验证管理员工具链在双角色设置页改动后仍正确:管理员行 `user-actions` 隐藏(不能删自己)与普通用户行可见的既有断言。仅在现有断言不足时补最小断言(如需,先 RED 后 GREEN);如零补充,记录「现有断言已充分」结论。
 
 **验收标准**:
-- [ ] `bunx playwright test tests/admin.spec.ts` 全绿,既有用例零删减零跳过
-- [ ] 管理员删除自己入口在 UI 层仍不可达(既有断言);`Admin/DeleteUser.tsx` 零改动
-- [ ] 如补充断言,记录 RED→GREEN;如零补充,记录充分性核查结论
+- [x] `bunx playwright test tests/admin.spec.ts` 全绿,既有用例零删减零跳过 —— 基线 21 passed(20 用例 + auth setup,既有 20 用例原样全部在跑);补充断言后 **22 passed (19.1s)**,零删减零跳过
+- [x] 管理员删除自己入口在 UI 层仍不可达(既有断言);`Admin/DeleteUser.tsx` 零改动 —— 既有断言随全绿通过:全表 `user-actions` 仅 1(L78)、管理员行 `toHaveCount(0)`(L86/L103)、普通用户行可见(L96/L104);`git status` 确认 `frontend/src/components/Admin/` 零改动
+- [x] 如补充断言,记录 RED→GREEN;如零补充,记录充分性核查结论 —— 补 1 个最小用例「Cancel user deletion keeps the row」(commit `105c34a`):「取消删除」为既有 spec 唯一场景缺口(`cancel-delete-user` 仅被断言 enabled,从未被点击);该用例为保留能力断言,无旧契约可失败,RED 不适用(循 Task 7 拟引用的 item-removal Task 9 先例直接 GREEN);首版失败经网络层诊断定性为测试定位器伪象后修复转绿(见执行记录),非应用缺陷
 
 **验证**:
-- [ ] 后端 + db + 前端运行时定向 `bunx playwright test tests/admin.spec.ts` 全绿,记录通过数
-- [ ] `git status` 确认 `frontend/src/components/Admin/` 零改动
+- [x] 后端 + db + 前端运行时定向 `bunx playwright test tests/admin.spec.ts` 全绿,记录通过数 —— db healthy + backend:8000 + frontend:5173 运行中,`frontend/` 内显式传 `PLAYWRIGHT_BASE_URL=http://localhost:5173 VITE_API_URL=http://localhost:8000`:基线 21 passed (18.3s) → 补充后 22 passed (19.1s)
+- [x] `git status` 确认 `frontend/src/components/Admin/` 零改动 —— 工作树仅 `frontend/tests/admin.spec.ts` 变更(诊断用请求监听器已移除,最终 diff 为单一新增用例 +30 行)
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25):
+
+- 场景充分性核查:删除成功(toast + 行消失)、「取消创建」、创建/超管创建/编辑/编辑对话框语言校验、重置密码后新密码登录、非超用户拒绝访问 + 超管可访问、表单校验六例(必填/长度/一致性)均由既有用例覆盖,断言充分;「取消删除」为唯一缺口,补 1 用例闭合。
+- 诊断附记:首版用例失败于末尾 `userRow toBeVisible`。临时加 `page.on("request")` DELETE 监听复跑:全程**零 DELETE 请求**,证明取消路径不触发删除(应用行为正确,无既有缺陷);根因是对话框关闭后残留的模态操作菜单将表格外内容置 aria-hidden,`getByRole("row")` 默认不匹配 a11y 隐藏子树。修复:镜像既有编辑对话框用例的双重 Escape 模式(L323-326),先收起菜单再断言行仍在。诊断监听器已从最终提交移除。
+- 顺带核实:`DeleteUser.tsx` 的 `UsersService.deleteUser({ path: { user_id: id } })` 在 Task 5 再生成后方法完整保留,调用契约不变。
+- lint:66 files exit 0(测试文件改动后复跑)。
+- 提交序列:`105c34a`(test:取消删除用例)→ 本记录独立 docs 提交。
 
 **依赖**:Task 5
 
