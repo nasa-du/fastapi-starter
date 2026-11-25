@@ -103,20 +103,26 @@
 **描述**:纯删除任务,以引用扫描 + 构建为 RED 证据。双字典(en 与 zh-CN 同步)删除 `settings.tabs.danger`、`settings.deleteAccount` 组(title/description/toast)、`settings.deleteConfirmation` 组(title/descriptionStart/descriptionEmphasis/descriptionEnd/cancel/confirm)。保留所有共享文案:`settings.tabs.profile/password`、`menu.logout`、`admin.delete.*`、`errors.USERS_SUPERUSER_DELETE_SELF`(仍被管理员删除自己保护使用)及其余全部错误码。完成后双字典 key 集合 diff = 0。
 
 **验收标准**:
-- [ ] 双字典无 `settings.tabs.danger`、`settings.deleteAccount`、`settings.deleteConfirmation`;key 集合 diff = 0
-- [ ] `errors.USERS_SUPERUSER_DELETE_SELF`、`menu.logout`、`admin.delete.*` 双字典均保留
-- [ ] `frontend/src`、`frontend/tests` 无 `settings.tabs.danger`、`settings.deleteAccount.`、`settings.deleteConfirmation.` 引用
+- [x] 双字典无 `settings.tabs.danger`、`settings.deleteAccount`、`settings.deleteConfirmation`;key 集合 diff = 0 —— commit `9ec9e11`;`settings` 仅剩 `headTitle/title/description/tabs/profile/password`,flatten 后双字典各 152 个 key、`diff: []`
+- [x] `errors.USERS_SUPERUSER_DELETE_SELF`、`menu.logout`、`admin.delete.*` 双字典均保留 —— bun 脚本逐项核对 en/zh 均存在(`admin.delete` 六个键完整)
+- [x] `frontend/src`、`frontend/tests` 无 `settings.tabs.danger`、`settings.deleteAccount.`、`settings.deleteConfirmation.` 引用 —— 验证扫描零命中(exit 1)
 
 **验证**:
-- [ ] 引用扫描:`grep -rn "tabs.danger\|deleteAccount\|deleteConfirmation" frontend/src frontend/tests` 零命中
-- [ ] key 集合校验:flatten 双字典全路径 key 后 diff = 0
-- [ ] `bun run lint` + `bun run --filter frontend build` 通过
-- [ ] 定向 E2E(后端运行时):`bunx playwright test tests/language.spec.ts tests/user-settings.spec.ts` 全绿(确认无未翻译 key 泄漏到 UI)
+- [x] 引用扫描:`grep -rn "tabs.danger\|deleteAccount\|deleteConfirmation" frontend/src frontend/tests` 零命中 —— RED(删除前)仅命中双字典自身 4 行(en/zh 各 `deleteAccount`/`deleteConfirmation` 两行,即悬空 key 所在;`tabs.danger` 为嵌套 JSON 键,字面串不出现在源文件),代码引用零;GREEN(删除后)exit 1 零命中
+- [x] key 集合校验:flatten 双字典全路径 key 后 diff = 0 —— en 152 / zh 152,`diff: []`
+- [x] `bun run lint` + `bun run --filter frontend build` 通过 —— lint:66 files,exit 0;build:含 tsc 类型检查,vite ✓ built in 629ms,exit 0
+- [x] 定向 E2E(后端运行时):`bunx playwright test tests/language.spec.ts tests/user-settings.spec.ts` 全绿(确认无未翻译 key 泄漏到 UI)—— 首跑 25 passed + 1 failed,失败项为「Selected mode is preserved across sessions」(主题持久化用例,与本任务改动面无关,Task 2 已记录同款 radix 菜单时序 flake);零改动单独复跑 2 passed,确认 flake 非回归;新增双角色两 tab 移除断言与 language 用例均通过,无未翻译 key
 
-**执行记录**:
-- (待实施)
+**执行记录**(2026-11-25):
 
-**依赖**:Task 2(UI 引用先删,避免中间状态 UI 显示未翻译 key)
+- 环境:db 容器 healthy(开发库,未执行任何迁移或用户数据清理);后端 `uv run uvicorn app.main:app`(8000)与前端 `bun run dev`(5173)后台运行,`uv run python app/initial_data.py` 幂等确认管理员;E2E 在 `frontend/` 内显式传 `PLAYWRIGHT_BASE_URL=http://localhost:5173 VITE_API_URL=http://localhost:8000`。
+- RED(引用扫描 + 构建证据,纯删除任务):删除前扫描仅双字典自身 4 行命中、`frontend/src` 其余与 `frontend/tests` 零命中,证明三个 key 组自 Task 2 后已全部悬空;基线 lint/build 通过。
+- GREEN(commit `9ec9e11`):`en.json` 与 `zh-CN.json` 同步删除 `settings.tabs.danger`(tabs 仅剩 profile/password)、`settings.deleteAccount` 组(title/description/toast)与 `settings.deleteConfirmation` 组(title/descriptionStart/descriptionEmphasis/descriptionEnd/cancel/confirm),共 -30/+2 行;两文件改动完全对称。
+- 保留能力核对:`settings.tabs.profile/password`、`menu.logout`、`admin.delete.*`、`errors.USERS_SUPERUSER_DELETE_SELF` 及全部错误码在双字典中原样保留(逐项脚本核对非抽查)。
+- 附记:`danger-zone` 在 `frontend/tests` 仅剩 1 处命中,为 Task 2 新增移除断言自身(`settings-tab-danger-zone` `toHaveCount(0)`),不在本任务扫描模式内,属预期。
+- 提交序列:`9ec9e11`(feat:双语文案删除)→ 本记录独立 docs 提交。
+
+**依赖**:Task 2(UI 引用先删,避免中间状态 UI 显示未翻译 key;已完成,commit `26335a8`)
 
 **文件**:`frontend/src/locales/en.json`、`frontend/src/locales/zh-CN.json`
 
@@ -126,13 +132,13 @@
 
 ## ◆ Checkpoint A:前端设置面自助注销移除完成
 
-- [ ] 双角色设置页只有两个 tab;自助组件、旧交互测试和专属双语文案已删除,无悬空引用
-- [ ] 资料、改密、语言切换和登出相关定向 E2E 通过,前端 lint/build 通过
-- [ ] 管理员文案、`menu.logout` 与 `USERS_SUPERUSER_DELETE_SELF` 翻译保留
+- [x] 双角色设置页只有两个 tab;自助组件、旧交互测试和专属双语文案已删除,无悬空引用 —— Task 2(commit `26335a8`)+ Task 3(commit `9ec9e11`);移除断言双角色通过,引用扫描零命中,key diff = 0
+- [x] 资料、改密、语言切换和登出相关定向 E2E 通过,前端 lint/build 通过 —— Task 3 定向 `tests/language.spec.ts tests/user-settings.spec.ts`:25 passed + 1 已知时序 flake(零改动复跑 2 passed);lint/build exit 0
+- [x] 管理员文案、`menu.logout` 与 `USERS_SUPERUSER_DELETE_SELF` 翻译保留 —— Task 3 逐项脚本核对双字典均存在
 - [ ] 人工确认该阶段后进入后端删除
 
 **执行记录**:
-- (待实施)
+- (2026-11-25)前三项已由 Task 2/3 完成并附证据如上;第四项人工确认待用户给出,确认前不开始 Task 4(后端删除)。
 
 ---
 
