@@ -3,6 +3,7 @@
 > 状态:**已完成**(S1–S6 与总体验收通过,2026-11-23 人工终审通过)
 > 范围决策:六个切片共享同一消费者(应用最终用户)与同一数据资产(zh-CN/en 字典);错误码契约是 i18n 的支撑性子契约而非可独立裁剪的能力(裁掉它「错误提示全面中文化」即不成立),故作为单一能力域处理(**无 capability map**,与 `SPEC.md` 认证改造同例),验收标准按切片 S1–S6 分区。
 > 来源:`docs/ideas/i18n-zh-hans.md`(idea-refine 定稿,2026-11-19)
+> **失效口径标注(2026-11-25)**:本 spec 完成后,item-removal(见 `SPEC-item-removal.md`)已移除 Item 功能;文中 Items 页、`ITEMS_*` 错误码等描述仅为历史记录,关键条目已就地标注,当前错误码契约不含任何 `ITEMS_*` code。
 
 ## 写作前假设(评审时一并确认)
 
@@ -39,7 +40,7 @@
 { "detail": { "code": "AUTH_LOGIN_INVALID", "message": "Incorrect user code/name or password" } }
 ```
 
-- `code`:`UPPER_SNAKE_CASE` + 模块前缀(`AUTH_` / `USERS_` / `ITEMS_`),稳定机器键,前端字典翻译的索引。
+- `code`:`UPPER_SNAKE_CASE` + 模块前缀(`AUTH_` / `USERS_` / `ITEMS_`),稳定机器键,前端字典翻译的索引。(`ITEMS_` 前缀已随 item-removal 移除,见 `SPEC-item-removal.md`)
 - `message`:**固定英文**,语言中立兜底文案(不本地化)——「未知 code 回退原始 detail」的英文来源(承 idea 假设 4,故在 doc 的 `{"code"}` 简写上补 `message` 字段)。
 - 前端回退链(单点在 `utils.ts`):`errors.{code}` 字典 → `detail.message` → 原始 detail(422 数组等非契约形状沿用既有分支)。
 
@@ -62,8 +63,8 @@
 | `USERS_NOT_FOUND` | 404 | User not found | users.py:149, 196, 219 |
 | `USERS_ID_NOT_FOUND` | 404 | The user with this id does not exist in the system | users.py:170 |
 | `USERS_CODE_CONFLICT` | 409 | User with this user_code already exists | users.py:179 |
-| `ITEMS_NOT_FOUND` | 404 | Item not found | items.py:55, 88, 108 |
-| `ITEMS_FORBIDDEN` | 403 | Not enough permissions | items.py:57, 90, 110 |
+| `ITEMS_NOT_FOUND` **(已随 item-removal 移除,见 `SPEC-item-removal.md`)** | 404 | Item not found | items.py:55, 88, 108 |
+| `ITEMS_FORBIDDEN` **(已随 item-removal 移除,见 `SPEC-item-removal.md`)** | 403 | Not enough permissions | items.py:57, 90, 110 |
 
 ## Tech Stack
 
@@ -185,7 +186,7 @@ function extractErrorMessage(err: Error): string {
 - [x] 全套验证矩阵绿
 
 **S2 主框架 + Items**
-- [x] 侧边栏、Dashboard、Items 页(含 CRUD 弹窗、actions menu、成功/失败 toast)可见文案零英文残留
+- [x] 侧边栏、Dashboard、Items 页(含 CRUD 弹窗、actions menu、成功/失败 toast)可见文案零英文残留(**历史标注:Items 页已随 item-removal 移除,见 `SPEC-item-removal.md`**)
 - [x] 全部 5 处路由标题 + `index.html` title 中文化且随语言切换
 - [x] ErrorComponent / NotFound 文案入字典
 - [x] **检查点:统计 keys 总量,>400 则重估后续工作量(idea 假设 3)**
@@ -205,7 +206,7 @@ function extractErrorMessage(err: Error): string {
 - [x] `bash scripts/lint.sh` 全绿
 
 **S5 测试改造**
-- [x] 登录 / Items / Admin / Settings 关键路径以 testid 定位;文案断言仅存于 login.spec.ts(中文冒烟)
+- [x] 登录 / Items / Admin / Settings 关键路径以 testid 定位;文案断言仅存于 login.spec.ts(中文冒烟)(**历史标注:Items 关键路径已随 item-removal 移除,见 `SPEC-item-removal.md`**)
 - [x] 语言切换冒烟用例通过
 - [x] E2E 全绿;抽查验证「改一个非登录文案,测试仍绿」
 
