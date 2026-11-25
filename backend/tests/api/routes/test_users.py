@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
@@ -410,7 +411,25 @@ def test_update_user_user_code_exists(
     }
 
 
-def test_delete_user_me(client: TestClient, db: Session) -> None:
+def _user_fingerprint(user: User) -> dict[str, Any]:
+    return {
+        "id": user.id,
+        "user_code": user.user_code,
+        "full_name": user.full_name,
+        "is_active": user.is_active,
+        "is_superuser": user.is_superuser,
+        "hashed_password": user.hashed_password,
+        "created_at": user.created_at,
+    }
+
+
+def test_self_service_account_deletion_removed(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    """Self-service account deletion is removed (Task 1 approved contract):
+    DELETE /users/me answers a uniform 405 for anonymous, owner and superuser
+    credentials without exposing the legacy business error, and no user
+    record is modified or removed."""
     user_code = random_user_code()
     password = random_lower_string()
     user_in = UserCreate(user_code=user_code, password=password)
@@ -422,38 +441,58 @@ def test_delete_user_me(client: TestClient, db: Session) -> None:
         "password": password,
     }
     r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
-    tokens = r.json()
-    a_token = tokens["access_token"]
-    headers = {"Authorization": f"Bearer {a_token}"}
+    user_headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
 
-    r = client.delete(
-        f"{settings.API_V1_STR}/users/me",
-        headers=headers,
-    )
-    assert r.status_code == 200
-    deleted_user = r.json()
-    assert deleted_user["message"] == "User deleted successfully"
-    result = db.exec(select(User).where(User.id == user_id)).first()
-    assert result is None
+    admin = crud.get_user_by_code(session=db, user_code=settings.FIRST_SUPERUSER_CODE)
+    assert admin is not None
+    admin_id = admin.id
 
-    user_query = select(User).where(User.id == user_id)
-    user_db = db.execute(user_query).first()
-    assert user_db is None
+    user_before = _user_fingerprint(user)
+    admin_before = _user_fingerprint(admin)
+
+    for label, headers in (
+        ("anonymous", None),
+        ("owner token", user_headers),
+        ("superuser token", superuser_token_headers),
+    ):
+        r = client.delete(
+            f"{settings.API_V1_STR}/users/me",
+            headers=headers,
+        )
+        assert r.status_code == 405, f"{label}: expected 405, got {r.status_code}"
+        assert "USERS_SUPERUSER_DELETE_SELF" not in r.text, label
+
+    user_after = db.get(User, user_id)
+    assert user_after is not None
+    db.refresh(user_after)
+    assert _user_fingerprint(user_after) == user_before
+
+    admin_after = db.get(User, admin_id)
+    assert admin_after is not None
+    db.refresh(admin_after)
+    assert _user_fingerprint(admin_after) == admin_before
+
+    openapi_paths = client.get(f"{settings.API_V1_STR}/openapi.json").json()["paths"]
+    assert "delete" not in openapi_paths[f"{settings.API_V1_STR}/users/me"]
 
 
-def test_delete_user_me_as_superuser(
+def test_admin_dynamic_routes_reject_non_uuid_paths(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
-    r = client.delete(
-        f"{settings.API_V1_STR}/users/me",
-        headers=superuser_token_headers,
-    )
-    assert r.status_code == 403
-    response = r.json()
-    assert response["detail"] == {
-        "code": "USERS_SUPERUSER_DELETE_SELF",
-        "message": "Super users are not allowed to delete themselves",
-    }
+    """Approved side effect (Task 1): admin dynamic routes carry a uuid path
+    converter, so a non-UUID path segment is rejected at the routing layer
+    with 404 — even for an authenticated superuser (previously the request
+    reached the handlers and failed with 401/403/422 depending on
+    credentials)."""
+    base = f"{settings.API_V1_STR}/users"
+    r = client.get(f"{base}/not-a-uuid", headers=superuser_token_headers)
+    assert r.status_code == 404
+    r = client.patch(f"{base}/not-a-uuid", headers=superuser_token_headers, json={})
+    assert r.status_code == 404
+    r = client.delete(f"{base}/not-a-uuid", headers=superuser_token_headers)
+    assert r.status_code == 404
+    r = client.post(f"{base}/not-a-uuid/reset-password", headers=superuser_token_headers)
+    assert r.status_code == 404
 
 
 def test_delete_user_super_user(
