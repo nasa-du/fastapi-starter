@@ -1,6 +1,6 @@
 # Spec: self-account-deletion-removal
 
-> 状态：路由契约与测试数据边界已获人工批准（2026-11-25，见文末「契约决定记录」）；实现未开始
+> 状态：实现完成（Tasks 1–9，2026-11-25；10 条 Success Criteria 核对证据见 `tasks/todo.md` Task 9）；契约决定（含 Open Question 3 处置）见文末「契约决定记录」；待人工终审
 > 所属能力地图：`CAPABILITY-MAP.md` → `self-account-deletion-removal`
 > 本规格仅移除用户删除自己账号的自助流程，不改变管理员侧用户管理。
 
@@ -189,4 +189,4 @@ const tabsConfig = [
 
 - **响应契约（Open Question 1）**：`DELETE /api/v1/users/me` 对匿名、普通用户 token、超级用户 token 统一返回 **405**；实现方式为删除 handler 并将管理员动态路由改为 `{user_id:uuid}`，不新增替代 handler 或兼容占位。副作用已批准：管理员端点对非 UUID 路径段的请求在路由层返回 404（原按凭证 401/403/422）。
 - **测试数据边界（Open Question 2）**：pytest 继续连接现有开发库；清理范围仅限测试会话中创建的用户，禁止 `delete(User)` 全表清空，禁止删除 first superuser `admin` 及任何非测试创建的既有用户。
-- **根 `scripts/test.sh`（Open Question 3）**：推迟到 Task 9 前单独决定，未决定前不得执行。
+- **根 `scripts/test.sh`（Open Question 3）**：推迟到 Task 9 前单独决定，未决定前不得执行。**2026-11-25 人工答复**：backend coverage 脚本（`cd backend && uv run bash scripts/test.sh`）执行（全绿，TOTAL 95%）；根全栈脚本不执行并记录原因（数据保留要求 + 预存 Dockerfile/health-check 基线缺陷，见 `tasks/todo.md` Task 9 执行记录），基线缺陷另立任务。

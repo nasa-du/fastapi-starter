@@ -1,7 +1,7 @@
 # Implementation Plan: self-account-deletion-removal
 
 > 依据：`SPEC-self-account-deletion-removal.md`（已评审，契约决定见「Open Questions（2026-11-25 人工答复记录）」）与已批准的 `CAPABILITY-MAP.md`
-> 状态：**Open Questions 1–2 已于 2026-11-25 获人工答复，契约已冻结，Task 1 完成；Tasks 2–8 解除阻塞；Open Question 3 推迟至 Task 9 前决定**
+> 状态：**Tasks 1–9 全部完成（Task 9 残留审计与全量验收完成，2026-11-25）；Open Questions 1–3 均获人工答复（OQ3：backend coverage 脚本执行、根全栈脚本不执行并记录原因，见 Open Questions 节）；待人工终审**
 > 任务清单：`tasks/todo.md`（Tasks 1–9；完成状态与验证证据记录在 todo.md）
 > 2026-11-25 人工答复已显式批准路由契约（405 + `{user_id:uuid}`）与测试数据清理边界（开发库 + 限制清理范围），记录见 Open Questions 节。
 > 前计划：`item-removal` 已 100% 完成并通过人工终审，原文件完整归档至 `tasks/archive/item-removal/`，未删除任何未完成任务。
@@ -141,7 +141,7 @@ Tasks 6 与 7 可在实现阶段只读并行规划，但均依赖 Task 5 且共�
 
 1. **响应契约（已答复）**：批准「405 + uuid converter」——删除 `delete_user_me` 并把管理员动态路由改为 `{user_id:uuid}`，三种凭证（匿名/普通用户 token/超级用户 token）统一返回 405；不新增替代 handler/兼容占位。副作用已批准：管理员端点对非 UUID 路径段一律路由层 404（原按凭证 401/403/422）。spec 的 Testing Strategy、Success Criterion 3 已同步修订。
 2. **测试数据边界（已答复）**：批准「保留开发库，限制清理范围」——pytest 继续连接开发库 `app`；清理仅限测试会话中创建的用户（随机 `create_random_user` 用户及 fixture 创建的 `test-user`）；Task 4 重写 conftest fixture，禁止 `delete(User)` 全表清空，禁止删除 first superuser `admin` 及任何非测试创建的既有用户。
-3. **根 `sh scripts/test.sh`（已答复：推迟）**：保持开放，进入 Task 9 前以专用可丢弃 Compose 项目/卷方式单独决定；未决定前不得执行该脚本，也不能将 Item-removal 的授权继承到本次。其预存 Dockerfile/health-check 缺陷仍另立任务，不纳入本规格。
+3. **根 `sh scripts/test.sh`（已答复：推迟）**：保持开放，进入 Task 9 前以专用可丢弃 Compose 项目/卷方式单独决定；未决定前不得执行该脚本，也不能将 Item-removal 的授权继承到本次。其预存 Dockerfile/health-check 缺陷仍另立任务，不纳入本规格。**2026-11-25 人工答复（Task 9 执行中、根脚本执行前，ask_user_question 逐题显式确认）**：backend coverage 脚本（`cd backend && uv run bash scripts/test.sh`）＝执行（已全绿，TOTAL 95%，`users.py` 100%）；根全栈脚本 `sh scripts/test.sh` ＝不执行，如实记录原因（数据保留要求 + 预存 Dockerfile/health-check 基线缺陷使容器内 pytest 腿无法全绿），两项缺陷另立任务请求决定（见 todo.md Task 9 范围外发现）。工具审批策略「不询问用户」不构成对该处置的批准（架构决定第 11 条）。
 
 ## Planning Notes
 
