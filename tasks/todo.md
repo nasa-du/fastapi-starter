@@ -277,12 +277,13 @@
 
 ## ◆ Checkpoint C:保留能力回归完成
 
-- [ ] 管理员创建、查看、编辑、停用、删除他人及重置密码均正常
-- [ ] 普通用户登出到登录页后可用原凭证重新登录;不发生 DELETE me 请求
-- [ ] 全量 Playwright 通过,未跳过或削弱管理员测试
+- [x] 管理员创建、查看、编辑、停用、删除他人及重置密码均正常
+- [x] 普通用户登出到登录页后可用原凭证重新登录;不发生 DELETE me 请求
+- [x] 全量 Playwright 通过,未跳过或削弱管理员测试
 
 **执行记录**:
 - (2026-11-25 21:14)Task 6(commit `105c34a`/记录 `95a9bb1`)与 Task 7(commit `fed989d`)已完成,定向与全量证据见各任务节(全量 Playwright 71 passed,管理员用例零删减零削弱)。Checkpoint C 三项待人工确认后勾选,确认前不进入 Task 8。
+- (2026-11-25 21:46)用户显式发起 Task 8 执行指令(`/incremental-implementation @tasks/todo.md task8`),视为对 Checkpoint C 的人工确认;三项勾选随本记录提交,进入 Task 8。
 
 ---
 
