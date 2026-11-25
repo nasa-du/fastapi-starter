@@ -61,7 +61,7 @@
 }
 ```
 
-新增业务错误时，按 `AUTH_`、`USERS_`、`ITEMS_` 等模块前缀使用 `UPPER_SNAKE_CASE` 错误码，并同时完成：
+新增业务错误时，按 `AUTH_`、`USERS_` 等模块前缀使用 `UPPER_SNAKE_CASE` 错误码，并同时完成：
 
 1. 在两份字典的 `errors` 组中添加该错误码对应的中英文案。
 2. 后端返回 `detail = {"code": "...", "message": "固定英文兜底消息"}`，不要在后端返回本地化文案。
@@ -76,7 +76,7 @@
 - 不提供邮箱、SMTP、邮件找回密码或用户自注册功能。账号由管理员创建。
 - 初始超级用户通过 `FIRST_SUPERUSER_CODE` 与 `FIRST_SUPERUSER_PASSWORD` 配置。
 - 管理员可在用户管理中生成一次性返回的随机临时密码，供用户登录；临时密码不发送邮件，也不强制用户首次登录后修改。
-- 新建的 User 与 Item 使用 Python 3.14 标准库的 UUID v7；既有 UUID v4 数据不回填。
+- 新建的 User 使用 Python 3.14 标准库的 UUID v7；既有 UUID v4 数据不回填。
 
 ## 快速开始
 
@@ -122,10 +122,6 @@ bun run dev
 ### 管理页
 
 ![管理页截图](img/dashboard.png)
-
-### Items 页
-
-![Items 页截图](img/dashboard-items.png)
 
 ### 深色模式
 
